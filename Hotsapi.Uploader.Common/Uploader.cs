@@ -14,9 +14,9 @@ namespace Hotsapi.Uploader.Common
     {
         private static readonly Logger _log = LogManager.GetCurrentClassLogger();
 #if DEBUG
-        const string ApiEndpoint = "http://hotsapi.local/api/v1";
+        const string ApiEndpoint = "https://api.heroesprofile.com/api";
 #else
-        const string ApiEndpoint = "https://hotsapi.net/api/v1";
+        const string ApiEndpoint = "https://api.heroesprofile.com/api";
 #endif
 
         public bool UploadToHotslogs { get; set; }
@@ -40,7 +40,7 @@ namespace Hotsapi.Uploader.Common
                 _log.Debug($"File {file} marked as duplicate");
                 file.UploadStatus = UploadStatus.Duplicate;
             } else {
-                file.UploadStatus = await Upload(file.Filename);
+                file.UploadStatus = await Upload(file.Fingerprint, file.Filename);
             }
         }
 
@@ -49,12 +49,12 @@ namespace Hotsapi.Uploader.Common
         /// </summary>
         /// <param name="file">Path to file</param>
         /// <returns>Upload result</returns>
-        public async Task<UploadStatus> Upload(string file)
+        public async Task<UploadStatus> Upload(string fingerprint, string file)
         {
             try {
                 string response;
                 using (var client = new WebClient()) {
-                    var bytes = await client.UploadFileTaskAsync($"{ApiEndpoint}/upload?uploadToHotslogs={UploadToHotslogs}", file);
+                    var bytes = await client.UploadFileTaskAsync($"{ApiEndpoint}/upload?fingerprint={fingerprint}", file);
                     response = Encoding.UTF8.GetString(bytes);
                 }
                 dynamic json = JObject.Parse(response);
@@ -73,7 +73,7 @@ namespace Hotsapi.Uploader.Common
             }
             catch (WebException ex) {
                 if (await CheckApiThrottling(ex.Response)) {
-                    return await Upload(file);
+                    return await Upload(fingerprint, file);
                 }
                 _log.Warn(ex, $"Error uploading file '{file}'");
                 return UploadStatus.UploadError;
@@ -89,7 +89,7 @@ namespace Hotsapi.Uploader.Common
             try {
                 string response;
                 using (var client = new WebClient()) {
-                    response = await client.DownloadStringTaskAsync($"{ApiEndpoint}/replays/fingerprints/v3/{fingerprint}?uploadToHotslogs={UploadToHotslogs}");
+                    response = await client.DownloadStringTaskAsync($"{ApiEndpoint}/replays/fingerprints/{fingerprint}");
                 }
                 dynamic json = JObject.Parse(response);
                 return (bool)json.exists;
@@ -112,7 +112,7 @@ namespace Hotsapi.Uploader.Common
             try {
                 string response;
                 using (var client = new WebClient()) {
-                    response = await client.UploadStringTaskAsync($"{ApiEndpoint}/replays/fingerprints?uploadToHotslogs={UploadToHotslogs}", String.Join("\n", fingerprints));
+                    response = await client.UploadStringTaskAsync($"{ApiEndpoint}/replays/fingerprints", String.Join("\n", fingerprints));
                 }
                 dynamic json = JObject.Parse(response);
                 return (json.exists as JArray).Select(x => x.ToString()).ToArray();
@@ -140,9 +140,13 @@ namespace Hotsapi.Uploader.Common
         /// </summary>
         public async Task<int> GetMinimumBuild()
         {
+            //We likely want to track which replays arn't supported by HotsApi so that we don't send them to HotsApi, 
+            //but I would like to change this so that it doesn't prevent replays uploading to our own storage, as we can support any replay build
+
+
             try {
                 using (var client = new WebClient()) {
-                    var response = await client.DownloadStringTaskAsync($"{ApiEndpoint}/replays/min-build");
+                    var response = await client.DownloadStringTaskAsync($"{ApiEndpoint}/replays/hotsapi-min-build");
                     if (!int.TryParse(response, out int build)) {
                         _log.Warn($"Error parsing minimum build: {response}");
                         return 0;

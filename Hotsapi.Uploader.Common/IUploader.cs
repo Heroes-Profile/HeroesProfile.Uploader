@@ -9,6 +9,6 @@ namespace Hotsapi.Uploader.Common
         Task CheckDuplicate(IEnumerable<ReplayFile> replays);
         Task<int> GetMinimumBuild();
         Task Upload(ReplayFile file);
-        Task<UploadStatus> Upload(string file);
+        Task<UploadStatus> Upload(string fingerprint, string file);
     }
 }

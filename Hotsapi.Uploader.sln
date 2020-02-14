@@ -9,9 +9,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hotsapi.Uploader.Windows", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MpqTool.netstandard", "Heroes.ReplayParser\MpqTool\MpqTool.netstandard.csproj", "{401F4637-5826-4DDA-A666-A3B4D1994330}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Heroes.ReplayParser.netstandard", "Heroes.ReplayParser\Heroes.ReplayParser\Heroes.ReplayParser.netstandard.csproj", "{7CEC9C7E-3DC6-4C72-8DFF-FE07D086B3A4}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hotsapi.Uploader.Common.Test", "Hotsapi.Uploader.Common.Test\Hotsapi.Uploader.Common.Test.csproj", "{F0AF2897-857E-462E-86E0-2812624E2F78}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Hotsapi.Uploader.Common.Test", "Hotsapi.Uploader.Common.Test\Hotsapi.Uploader.Common.Test.csproj", "{F0AF2897-857E-462E-86E0-2812624E2F78}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,14 +43,6 @@ Global
 		{401F4637-5826-4DDA-A666-A3B4D1994330}.Release|Any CPU.Build.0 = Release|Any CPU
 		{401F4637-5826-4DDA-A666-A3B4D1994330}.Zip|Any CPU.ActiveCfg = Release|Any CPU
 		{401F4637-5826-4DDA-A666-A3B4D1994330}.Zip|Any CPU.Build.0 = Release|Any CPU
-		{7CEC9C7E-3DC6-4C72-8DFF-FE07D086B3A4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7CEC9C7E-3DC6-4C72-8DFF-FE07D086B3A4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7CEC9C7E-3DC6-4C72-8DFF-FE07D086B3A4}.Installer|Any CPU.ActiveCfg = Release|Any CPU
-		{7CEC9C7E-3DC6-4C72-8DFF-FE07D086B3A4}.Installer|Any CPU.Build.0 = Release|Any CPU
-		{7CEC9C7E-3DC6-4C72-8DFF-FE07D086B3A4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7CEC9C7E-3DC6-4C72-8DFF-FE07D086B3A4}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7CEC9C7E-3DC6-4C72-8DFF-FE07D086B3A4}.Zip|Any CPU.ActiveCfg = Release|Any CPU
-		{7CEC9C7E-3DC6-4C72-8DFF-FE07D086B3A4}.Zip|Any CPU.Build.0 = Release|Any CPU
 		{F0AF2897-857E-462E-86E0-2812624E2F78}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F0AF2897-857E-462E-86E0-2812624E2F78}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F0AF2897-857E-462E-86E0-2812624E2F78}.Installer|Any CPU.ActiveCfg = Debug|Any CPU

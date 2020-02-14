@@ -22,9 +22,16 @@ namespace Hotsapi.Uploader.Common
         public Replay Analyze(ReplayFile file)
         {
             try {
-                var result = DataParser.ParseReplay(file.Filename, false, false, false, true);
-                var replay = result.Item2;
-                var parseResult = result.Item1;
+                //filename, ignoreerrors, deletefile, allowptrregion, skipeventparsing
+                var (parseResult, replay) = DataParser.ParseReplay(file.Filename, false,
+                        new ParseOptions {
+                                ShouldParseUnits = false,
+                                ShouldParseMouseEvents = false,
+                                ShouldParseDetailedBattleLobby = true,
+                                ShouldParseEvents = false,
+                                AllowPTR = false
+                        });
+
                 var status = GetPreStatus(replay, parseResult);
 
                 if (status != null) {

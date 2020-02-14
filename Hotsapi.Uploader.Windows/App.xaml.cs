@@ -129,6 +129,7 @@ namespace Hotsapi.Uploader.Windows
             }
             Manager.Start(new Monitor(), new Analyzer(), new Common.Uploader());
 
+#pragma warning disable 162
             if (!NoSquirrel) {
                 //Check for updates on startup and then every hour
                 CheckForUpdates();
@@ -137,15 +138,20 @@ namespace Hotsapi.Uploader.Windows
                     IsEnabled = true
                 }.Tick += (_, __) => CheckForUpdates();
             }
+#pragma warning restore 162
         }
 
         private void Application_Exit(object sender, ExitEventArgs e)
         {
             BackupSettings();
             TrayIcon?.Dispose();
+#pragma warning disable 162
+            // ReSharper disable HeuristicUnreachableCode
             if (!NoSquirrel) {
                 _updateManager?.Dispose();
             }
+            // ReSharper restore HeuristicUnreachableCode
+#pragma warning restore 162
         }
 
         public void ApplyTheme(string theme)

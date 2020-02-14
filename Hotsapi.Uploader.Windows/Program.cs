@@ -14,8 +14,10 @@ namespace Hotsapi.Uploader.Windows
         [STAThread]
         public static void Main(string[] args)
         {
+#pragma warning disable 162
             if (!App.NoSquirrel) {
                 // Note, in most of these scenarios, the app exits after this method completes!
+                // ReSharper disable HeuristicUnreachableCode
                 SquirrelAwareApp.HandleEvents(
                     onInitialInstall: v => App.DummyUpdateManager.CreateShortcutForThisExe(),
                     onAppUpdate: v => App.DummyUpdateManager.CreateShortcutForThisExe(),
@@ -25,7 +27,9 @@ namespace Hotsapi.Uploader.Windows
                             Directory.Delete(App.SettingsDir, true);
                         }
                     });
+                // ReSharper restore HeuristicUnreachableCode
             }
+#pragma warning restore 162
 
             if (!Directory.Exists(App.SettingsDir)) {
                 Directory.CreateDirectory(App.SettingsDir);

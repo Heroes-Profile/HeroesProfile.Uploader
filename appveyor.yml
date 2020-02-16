@@ -1,7 +1,7 @@
 environment:
   core_version: 1.0.0
   GitHubToken:
-    secure: 8c58c9a72b8c3cc57186b6e833fe17bf66d70957
+    secure: UeXC+rN2tMjvC405NGdvDrp2ynAQiJlAULDCiBuAzBScmZr88b5Y07O1ZqN8t4HS
 image: Visual Studio 2019
 version: '$(core_version)+{branch}.{build}'
 install:
@@ -30,7 +30,7 @@ artifacts:
 deploy:
   - provider: GitHub
     auth_token:
-      secure: 8c58c9a72b8c3cc57186b6e833fe17bf66d70957
+      secure: UeXC+rN2tMjvC405NGdvDrp2ynAQiJlAULDCiBuAzBScmZr88b5Y07O1ZqN8t4HS
     repository: Heroes-Profile/HeroesProfile.Uploader
     artifact: '/.*/'
     draft: true

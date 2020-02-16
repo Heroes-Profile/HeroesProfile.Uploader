@@ -6,6 +6,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace Heroesprofile.Uploader.Common
 {
@@ -23,14 +24,7 @@ namespace Heroesprofile.Uploader.Common
         {
             try {
                 //filename, ignoreerrors, deletefile, allowptrregion, skipeventparsing
-                var (parseResult, replay) = DataParser.ParseReplay(file.Filename, false,
-                        new ParseOptions {
-                                ShouldParseUnits = false,
-                                ShouldParseMouseEvents = false,
-                                ShouldParseDetailedBattleLobby = true,
-                                ShouldParseEvents = false,
-                                AllowPTR = false
-                        });
+                var (parseResult, replay) = DataParser.ParseReplay(file.Filename, false, ParseOptions.MediumParsing);
 
                 var status = GetPreStatus(replay, parseResult);
 
@@ -105,7 +99,7 @@ namespace Heroesprofile.Uploader.Common
             buf[j] = temp;
         }
 
-        public static object ToJson(Replay replay)
+        public object ToJson(Replay replay)
         {
             var obj = new {
                 mode = replay.GameMode.ToString(),
@@ -148,7 +142,7 @@ namespace Heroesprofile.Uploader.Common
                               voice_line = p.VoiceLineAttributeId,
                           }
             };
-            return obj;
+            return JsonConvert.SerializeObject(obj);
         }
     }
 }

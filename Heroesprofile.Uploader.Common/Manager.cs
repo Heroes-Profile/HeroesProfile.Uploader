@@ -21,8 +21,8 @@ namespace Heroesprofile.Uploader.Common
         /// <summary>
         /// Upload thead count
         /// </summary>
-        public const int MaxThreads = 4;
-        //public const int MaxThreads = 1;
+        //public const int MaxThreads = 4;
+        public const int MaxThreads = 1;
 
         /// <summary>
         /// Replay list
@@ -137,9 +137,11 @@ namespace Heroesprofile.Uploader.Common
 
                     // test if replay is eligible for upload (not AI, PTR, Custom, etc)
                     var replay = _analyzer.Analyze(file);
+                    var obj = _analyzer.ToJson(replay);
+
                     if (file.UploadStatus == UploadStatus.InProgress) {
                         // if it is, upload it
-                        await _uploader.Upload(file);
+                        await _uploader.Upload(obj, file);
                     }
                     SaveReplayList();
                     if (ShouldDelete(file, replay)) {

@@ -23,18 +23,18 @@ namespace Heroesprofile.Uploader.Common.Test
 
             public Task CheckDuplicate(IEnumerable<ReplayFile> replays) => Task.CompletedTask;
             public Task<int> GetMinimumBuild() => Task.FromResult(1);
-            public Task Upload(ReplayFile file)
+            public Task Upload(object replay_json, ReplayFile file)
             {
                 UploadCallback(file);
                 return Task.CompletedTask;
             }
-            public async Task<UploadStatus> Upload(string file)
+            public async Task<UploadStatus> Upload(object replay_json, string file)
             {
                 await Task.Delay(100);
                 return UploadStatus.Success;
             }
 
-            public async Task<UploadStatus> Upload(string fingerprint, string file)
+            public async Task<UploadStatus> Upload(object replay_json, string fingerprint, string file)
             {
                 await Task.Delay(100);
                 return UploadStatus.Success;

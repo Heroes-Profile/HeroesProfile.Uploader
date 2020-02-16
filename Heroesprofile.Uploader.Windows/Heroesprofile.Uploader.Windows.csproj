@@ -50,8 +50,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>
-    </ApplicationIcon>
+    <ApplicationIcon>uploader_icon_dark.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Zip|AnyCPU'">
     <OutputPath>bin\Zip\</OutputPath>
@@ -179,6 +178,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <Resource Include="uploader_icon_dark.ico" />
     <Resource Include="uploader_dark.png" />
     <Resource Include="uploader_light.png" />
     <Resource Include="Resources\uploader_dark.png" />

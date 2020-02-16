@@ -1,0 +1,23 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:Heroesprofile.Uploader.Windows">
+
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="MetroDark.MSControls.Core.Implicit.xaml" />
+    </ResourceDictionary.MergedDictionaries>
+
+    <!-- Apply style to windows -->
+    <Style BasedOn="{StaticResource WindowStyle}" TargetType="{x:Type local:MainWindow}" />
+    <Style BasedOn="{StaticResource WindowStyle}" TargetType="{x:Type local:SettingsWindow}" />
+
+    <!-- Heroesprofile specific brushes -->
+    <SolidColorBrush x:Key="UpdateAvailableTextBrush" Color="Orange" />
+    <SolidColorBrush x:Key="FileDeletedIconBrush" Color="DarkRed" />
+    <SolidColorBrush x:Key="DimmedTextBrush" Color="{StaticResource Color_005}" />
+
+    <!-- Upload statuses -->
+    <SolidColorBrush x:Key="StatusUploadInProgressBrush" Color="{StaticResource Color_058}" />
+    <SolidColorBrush x:Key="StatusUploadSuccessBrush" Color="{StaticResource Color_049}" />
+    <SolidColorBrush x:Key="StatusUploadNeutralBrush" Color="{StaticResource Color_005}" />
+    <SolidColorBrush x:Key="StatusUploadFailedBrush" Color="{StaticResource Color_028}" />
+</ResourceDictionary>

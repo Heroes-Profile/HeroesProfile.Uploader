@@ -60,50 +60,7 @@ namespace Heroesprofile.Uploader.Common
             //I am having a hard time getting it compressed though.  I tmight be because my code is sending everything but the file as get.  So need to send the json object
             //through post, along with the file, but not sure how to do that.
 
-
-
-            var obj = new {
-                mode = replay_results.GameMode.ToString(),
-                region = replay_results.Players[0].BattleNetRegionId,
-                date = replay_results.Timestamp,
-                length = replay_results.ReplayLength,
-                map = replay_results.Map,
-                map_short = replay_results.MapAlternativeName,
-                version = replay_results.ReplayVersion,
-                version_major = replay_results.ReplayVersionMajor,
-                version_build = replay_results.ReplayBuild,
-                bans = replay_results.TeamHeroBans,
-                draft_order = replay_results.DraftOrder,
-                team_experience = replay_results.TeamPeriodicXPBreakdown,
-                players = from p in replay_results.Players
-                          select new {
-                              battletag_name = p.Name,
-                              battletag_id = p.BattleTag,
-                              blizz_id = p.BattleNetId,
-                              account_level = p.AccountLevel,
-                              hero = p.Character,
-                              hero_level = p.CharacterLevel,
-                              hero_level_taunt = p.HeroMasteryTiers,
-                              team = p.Team,
-                              winner = p.IsWinner,
-                              silenced = p.IsSilenced,
-                              party = p.PartyValue,
-                              talents = p.Talents.Select(t => t.TalentName),
-                              score = p.ScoreResult,
-                              staff = p.IsBlizzardStaff,
-                              announcer = p.AnnouncerPackAttributeId,
-                              banner = p.BannerAttributeId,
-                              skin_title = p.SkinAndSkinTint,
-                              hero_skin = p.SkinAndSkinTintAttributeId,
-                              mount_title = p.MountAndMountTint,
-                              mount = p.MountAndMountTintAttributeId,
-                              spray_title = p.Spray,
-                              spray = p.SprayAttributeId,
-                              voice_line_title = p.VoiceLine,
-                              voice_line = p.VoiceLineAttributeId,
-                          }
-            };
-            string replay_json = JsonConvert.SerializeObject(obj);
+            string replay_json = JsonConvert.SerializeObject(ToJson(replay_results));
 
             try {
                 string response;
@@ -247,6 +204,51 @@ namespace Heroesprofile.Uploader.Common
             } else {
                 return false;
             }
+        }
+        public static object ToJson(Replay replay)
+        {
+            var obj = new {
+                mode = replay.GameMode.ToString(),
+                region = replay.Players[0].BattleNetRegionId,
+                date = replay.Timestamp,
+                length = replay.ReplayLength,
+                map = replay.Map,
+                map_short = replay.MapAlternativeName,
+                version = replay.ReplayVersion,
+                version_major = replay.ReplayVersionMajor,
+                version_build = replay.ReplayBuild,
+                bans = replay.TeamHeroBans,
+                draft_order = replay.DraftOrder,
+                team_experience = replay.TeamPeriodicXPBreakdown,
+                players = from p in replay.Players
+                          select new {
+                              battletag_name = p.Name,
+                              battletag_id = p.BattleTag,
+                              blizz_id = p.BattleNetId,
+                              account_level = p.AccountLevel,
+                              hero = p.Character,
+                              hero_level = p.CharacterLevel,
+                              hero_level_taunt = p.HeroMasteryTiers,
+                              team = p.Team,
+                              winner = p.IsWinner,
+                              silenced = p.IsSilenced,
+                              party = p.PartyValue,
+                              talents = p.Talents.Select(t => t.TalentName),
+                              score = p.ScoreResult,
+                              staff = p.IsBlizzardStaff,
+                              announcer = p.AnnouncerPackAttributeId,
+                              banner = p.BannerAttributeId,
+                              skin_title = p.SkinAndSkinTint,
+                              hero_skin = p.SkinAndSkinTintAttributeId,
+                              mount_title = p.MountAndMountTint,
+                              mount = p.MountAndMountTintAttributeId,
+                              spray_title = p.Spray,
+                              spray = p.SprayAttributeId,
+                              voice_line_title = p.VoiceLine,
+                              voice_line = p.VoiceLineAttributeId,
+                          }
+            };
+            return obj;
         }
     }
 }

@@ -4,7 +4,7 @@
     <id>Heroesprofile.Uploader</id>
     <version>0.0.0.0</version>
     <title>Heroesprofile.Uploader</title>
-    <authors>Poma</authors>
+    <authors>Rebased off of HotsApi Uploader created by Poma by Zemill, M0shr00m</authors>
     <description>Uploads Heroes of the Storm replays</description>
     <dependencies />
   </metadata>

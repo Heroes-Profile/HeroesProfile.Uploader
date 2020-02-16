@@ -25,12 +25,13 @@
             <ColumnDefinition Width="auto" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="102" /><!-- better than 100 for logo aliasing -->
+            <RowDefinition Height="102" />
+            <!-- better than 100 for logo aliasing -->
             <RowDefinition Height="*" />
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
         <Grid Grid.ColumnSpan="2">
-            <Image Source="/Resources/uploader_light.png" Margin="20" SnapsToDevicePixels="True" RenderOptions.BitmapScalingMode="HighQuality" Cursor="Hand" MouseUp="Logo_MouseUp" />
+            <Image Source="uploader_light.png" SnapsToDevicePixels="True" RenderOptions.BitmapScalingMode="HighQuality" Cursor="Hand" MouseUp="Logo_MouseUp" Margin="0,0,131,0" />
         </Grid>
         <ListBox Grid.Row="1" ItemsSource="{Binding App.Manager.Files}" HorizontalContentAlignment="Stretch">
             <ListBox.ItemTemplate>
@@ -58,7 +59,6 @@
                 <TextBlock Text="{Binding App.Manager.Aggregates[Incomplete], StringFormat=Incomplete: {0}}" Visibility="{Binding App.Manager.Aggregates, Converter={StaticResource intVisibilityConverter}, ConverterParameter={x:Static heroesprofile:UploadStatus.Incomplete}}" />
             </StackPanel>
             <StackPanel DockPanel.Dock="Bottom" helpers:MarginSetter.Margin="0, 8, 8, 0">
-                <CheckBox IsChecked="{Binding App.Settings.UploadToHotslogs}" Content="Upload a copy to HotsLogs" ToolTip="Replay is uploaded only once and then a copy is sent to HotsLogs by our server" />
                 <CheckBox IsChecked="{Binding App.StartWithWindows}" Content="Start with windows" Visibility="{Binding App.StartWithWindowsCheckboxEnabled, Converter={StaticResource visibilityConverter}}" />
                 <CheckBox IsChecked="{Binding App.Settings.MinimizeToTray}" Content="Minimize to tray" />
                 <Button HorizontalAlignment="Stretch" Content="Show log" Click="ShowLog_Click" Margin="0, 8, 0, 0" />

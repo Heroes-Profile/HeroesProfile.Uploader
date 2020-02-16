@@ -1,37 +1,37 @@
 environment:
   core_version: 2.1.0
   GitHubToken:
-    secure: Hq962a6/5Qpa9d37AJuVplk7sYc4AYRn9b5dg4eLi1jXBkdvbj2zRsG+8r+4nNE3
+    secure: 8c58c9a72b8c3cc57186b6e833fe17bf66d70957
 image: Visual Studio 2019
 version: '$(core_version)+{branch}.{build}'
 install:
   - cmd: git submodule update --init --recursive
   - cmd: nuget.exe restore
-  - cmd: IF "%APPVEYOR_PULL_REQUEST_NUMBER%"=="" (%UserProfile%\.nuget\packages\squirrel.windows\1.7.8\tools\SyncReleases.exe  --url=https://github.com/poma/Hotsapi.Uploader --token=%GitHubToken%)
+  - cmd: IF "%APPVEYOR_PULL_REQUEST_NUMBER%"=="" (%UserProfile%\.nuget\packages\squirrel.windows\1.7.8\tools\SyncReleases.exe  --url=https://github.com/Heroes-Profile/HeroesProfile.Uploader --token=%GitHubToken%)
 
 assembly_info:
   patch: true
-  file: Hotsapi.Uploader.Windows\Properties\AssemblyInfo.cs
+  file: Heroesprofile.Uploader.Windows\Properties\AssemblyInfo.cs
   assembly_version: '$(core_version)'
   assembly_file_version: '$(core_version)'
   assembly_informational_version: '{version}'
 
 build_script:
-  - msbuild Hotsapi.Uploader.sln -verbosity:minimal /property:Configuration=Zip
-  - msbuild Hotsapi.Uploader.sln -verbosity:minimal /property:Configuration=Installer
+  - msbuild Heroesprofile.Uploader.sln -verbosity:minimal /property:Configuration=Zip
+  - msbuild Heroesprofile.Uploader.sln -verbosity:minimal /property:Configuration=Installer
 
 artifacts:
-  - path: Releases\HotsApiUploaderSetup.exe
-  - path: Releases\HotsApi.zip
+  - path: Releases\HeroesprofileUploaderSetup.exe
+  - path: Releases\Heroesprofile.zip
   - path: Releases\RELEASES
-  - path: Releases\Hotsapi.Uploader-$(core_version)-full.nupkg
-  - path: Releases\Hotsapi.Uploader-$(core_version)-delta.nupkg
+  - path: Releases\Heroesprofile.Uploader-$(core_version)-full.nupkg
+  - path: Releases\Heroesprofile.Uploader-$(core_version)-delta.nupkg
 
 deploy:
   - provider: GitHub
     auth_token:
-      secure: Hq962a6/5Qpa9d37AJuVplk7sYc4AYRn9b5dg4eLi1jXBkdvbj2zRsG+8r+4nNE3
-    repository: poma/Hotsapi.Uploader
+      secure: 8c58c9a72b8c3cc57186b6e833fe17bf66d70957
+    repository: Heroes-Profile/HeroesProfile.Uploader
     artifact: '/.*/'
     draft: true
     on:

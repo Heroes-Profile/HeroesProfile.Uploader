@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using Heroes.ReplayParser;
 
 namespace Heroesprofile.Uploader.Common
 {
@@ -8,7 +9,7 @@ namespace Heroesprofile.Uploader.Common
         bool UploadToHotslogs { get; set; }
         Task CheckDuplicate(IEnumerable<ReplayFile> replays);
         Task<int> GetMinimumBuild();
-        Task Upload(object replay_json, ReplayFile file);
-        Task<UploadStatus> Upload(object replay_json, string fingerprint, string file);
+        Task Upload(Replay replay_results, ReplayFile file);
+        Task<UploadStatus> Upload(Replay replay_results, string fingerprint, string file);
     }
 }

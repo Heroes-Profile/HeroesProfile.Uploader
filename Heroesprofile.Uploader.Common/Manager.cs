@@ -137,11 +137,9 @@ namespace Heroesprofile.Uploader.Common
 
                     // test if replay is eligible for upload (not AI, PTR, Custom, etc)
                     var replay = _analyzer.Analyze(file);
-                    var obj = _analyzer.ToJson(replay);
-
                     if (file.UploadStatus == UploadStatus.InProgress) {
                         // if it is, upload it
-                        await _uploader.Upload(obj, file);
+                        await _uploader.Upload(replay, file);
                     }
                     SaveReplayList();
                     if (ShouldDelete(file, replay)) {

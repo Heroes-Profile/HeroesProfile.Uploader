@@ -8,7 +8,5 @@ namespace Heroesprofile.Uploader.Common
 
         Replay Analyze(ReplayFile file);
         string GetFingerprint(Replay replay);
-
-        object ToJson(Replay replay);
     }
 }

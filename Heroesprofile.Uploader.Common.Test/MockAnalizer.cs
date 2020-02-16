@@ -11,8 +11,6 @@ namespace Heroesprofile.Uploader.Common.Test
             public Replay Analyze(ReplayFile file) => new Replay();
             public string GetFingerprint(Replay replay) => "dummy fingerprint";
 
-            public object ToJson(Replay replay) => JsonConvert.SerializeObject(new { dummy = "dummy"});
-
         }
     }
 }

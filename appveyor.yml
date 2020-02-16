@@ -1,5 +1,5 @@
 environment:
-  core_version: 2.1.0
+  core_version: 1.0.0
   GitHubToken:
     secure: 8c58c9a72b8c3cc57186b6e833fe17bf66d70957
 image: Visual Studio 2019
@@ -42,11 +42,3 @@ cache:
   - packages -> **\packages.config
   - '%USERPROFILE%\.nuget\packages -> **\*.csproj'
   - Releases
-
-notifications:
-  - provider: Webhook
-    url: https://webhooks.gitter.im/e/59b5d893e9a21d517d5e
-    method: POST
-    on_build_success: true
-    on_build_failure: true
-    on_build_status_changed: true

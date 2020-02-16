@@ -14,9 +14,12 @@ namespace Heroesprofile.Uploader.Common
     {
         private static readonly Logger _log = LogManager.GetCurrentClassLogger();
 #if DEBUG
-        const string ApiEndpoint = "https://api.heroesprofile.com/api";
+        const string HeroesProfileApiEndpoint = "https://api.heroesprofile.com/api";
+        const string HotsAPIApiEndpoint = "http://hotsapi.local/api/v1";
+
 #else
-        const string ApiEndpoint = "https://api.heroesprofile.com/api";
+        const string HeroesProfileApiEndpoint = "https://api.heroesprofile.com/api";
+        const string HotsAPIApiEndpoint = "https://hotsapi.net/api/v1";
 #endif
 
         public bool UploadToHotslogs { get; set; }
@@ -54,9 +57,24 @@ namespace Heroesprofile.Uploader.Common
             try {
                 string response;
                 using (var client = new WebClient()) {
-                    var bytes = await client.UploadFileTaskAsync($"{ApiEndpoint}/upload?fingerprint={fingerprint}", file);
+                    var bytes = await client.UploadFileTaskAsync($"{HeroesProfileApiEndpoint}/upload?fingerprint={fingerprint}", file);
                     response = Encoding.UTF8.GetString(bytes);
                 }
+
+
+                //Try upload to HotsApi as well
+                string hotsapiResponse;
+                try {
+                    using (var client = new WebClient()) {
+                        var bytes = await client.UploadFileTaskAsync($"{HotsAPIApiEndpoint}/upload?uploadToHotslogs={UploadToHotslogs}", file);
+                        hotsapiResponse = Encoding.UTF8.GetString(bytes);
+                    }
+                }
+                catch {
+
+                }
+
+
                 dynamic json = JObject.Parse(response);
                 if ((bool)json.success) {
                     if (Enum.TryParse<UploadStatus>((string)json.status, out UploadStatus status)) {
@@ -89,7 +107,7 @@ namespace Heroesprofile.Uploader.Common
             try {
                 string response;
                 using (var client = new WebClient()) {
-                    response = await client.DownloadStringTaskAsync($"{ApiEndpoint}/replays/fingerprints/{fingerprint}");
+                    response = await client.DownloadStringTaskAsync($"{HeroesProfileApiEndpoint}/replays/fingerprints/{fingerprint}");
                 }
                 dynamic json = JObject.Parse(response);
                 return (bool)json.exists;
@@ -112,7 +130,7 @@ namespace Heroesprofile.Uploader.Common
             try {
                 string response;
                 using (var client = new WebClient()) {
-                    response = await client.UploadStringTaskAsync($"{ApiEndpoint}/replays/fingerprints", String.Join("\n", fingerprints));
+                    response = await client.UploadStringTaskAsync($"{HeroesProfileApiEndpoint}/replays/fingerprints", String.Join("\n", fingerprints));
                 }
                 dynamic json = JObject.Parse(response);
                 return (json.exists as JArray).Select(x => x.ToString()).ToArray();
@@ -146,7 +164,7 @@ namespace Heroesprofile.Uploader.Common
 
             try {
                 using (var client = new WebClient()) {
-                    var response = await client.DownloadStringTaskAsync($"{ApiEndpoint}/replays/hotsapi-min-build");
+                    var response = await client.DownloadStringTaskAsync($"{HeroesProfileApiEndpoint}/replays/hotsapi-min-build");
                     if (!int.TryParse(response, out int build)) {
                         _log.Warn($"Error parsing minimum build: {response}");
                         return 0;

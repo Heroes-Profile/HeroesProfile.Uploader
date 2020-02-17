@@ -9,7 +9,7 @@
       <Value Profile="(Default)">True</Value>
     </Setting>
     <Setting Name="UpdateRepository" Type="System.String" Scope="User">
-      <Value Profile="(Default)">https://github.com/poma/Heroes-Profile.Uploader</Value>
+      <Value Profile="(Default)">https://github.com/Heroes-Profile/HeroesProfile.Uploader</Value>
     </Setting>
     <Setting Name="WindowTop" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">400</Value>

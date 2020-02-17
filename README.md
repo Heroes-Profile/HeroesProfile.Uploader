@@ -1,4 +1,4 @@
-# Heroesprofile.Uploader [![Build status](https://ci.appveyor.com/api/projects/status/6or32wokk1prr3xc/branch/master?svg=true)](https://ci.appveyor.com/project/Zemill/heroesprofile-uploader/branch/master) [![Join Discord Chat](https://img.shields.io/discord/650747275886198815?label=Discord&logo=discord)](https://discord.gg/cADfdFP)
+# Heroesprofile.Uploader [![Build status](https://ci.appveyor.com/api/projects/status/6or32wokk1prr3xc/branch/master?svg=true)](https://ci.appveyor.com/project/ChristopherMillhouse/heroesprofile-uploader/branch/master) [![Join Discord Chat](https://img.shields.io/discord/650747275886198815?label=Discord&logo=discord)](https://discord.gg/cADfdFP)
 
 Uploads Heroes of the Storm replays to [heroesprofile.com](https://www.heroesprofile.com/) ([repo link](https://github.com/Heroes-Profile/HeroesProfile.Uploader))
 

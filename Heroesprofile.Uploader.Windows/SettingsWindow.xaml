@@ -1,0 +1,50 @@
+﻿<Window x:Class="Heroesprofile.Uploader.Windows.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Heroesprofile.Uploader.Windows"
+        xmlns:helpers="clr-namespace:Heroesprofile.Uploader.Windows.UIHelpers"
+        xmlns:common="clr-namespace:Heroesprofile.Uploader.Common;assembly=Heroesprofile.Uploader.Common"
+        mc:Ignorable="d" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        Title="Settings" SizeToContent="WidthAndHeight"
+        KeyDown="Window_KeyDown">
+    <Window.Resources>
+        <helpers:FlagsConverter x:Key="flags" />
+    </Window.Resources>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="auto" />
+            <ColumnDefinition Width="auto" />
+        </Grid.ColumnDefinitions>
+        <StackPanel Grid.Column="0" Margin="20" helpers:MarginSetter.Margin="0, 8, 0, 0">
+            <TextBlock Text="Delete replays after upload:" FontWeight="Bold" Margin="0, 0, 1, 0" />
+            <TextBlock Foreground="{StaticResource DimmedTextBrush}" HorizontalAlignment="Left" FontSize="10" TextWrapping="Wrap" MaxWidth="150" Margin="0, 0, 1, 0"
+                       Text="Warning! This feature is not yet extensively tested, use at your own risk and make a backup of all important replays" />
+            <CheckBox Content="PTR" IsChecked="{Binding App.Settings.DeleteAfterUpload, Converter={StaticResource flags}, ConverterParameter={x:Static common:DeleteFiles.PTR}, Mode=TwoWay}" />
+            <CheckBox Content="AI" IsChecked="{Binding App.Settings.DeleteAfterUpload, Converter={StaticResource flags}, ConverterParameter={x:Static common:DeleteFiles.Ai}, Mode=TwoWay}" />
+            <CheckBox Content="Custom" IsChecked="{Binding App.Settings.DeleteAfterUpload, Converter={StaticResource flags}, ConverterParameter={x:Static common:DeleteFiles.Custom}, Mode=TwoWay}" />
+            <CheckBox Content="Brawl" IsChecked="{Binding App.Settings.DeleteAfterUpload, Converter={StaticResource flags}, ConverterParameter={x:Static common:DeleteFiles.Brawl}, Mode=TwoWay}" />
+            <CheckBox Content="Quick match" IsChecked="{Binding App.Settings.DeleteAfterUpload, Converter={StaticResource flags}, ConverterParameter={x:Static common:DeleteFiles.QuickMatch}, Mode=TwoWay}" />
+            <CheckBox Content="Unranked draft" IsChecked="{Binding App.Settings.DeleteAfterUpload, Converter={StaticResource flags}, ConverterParameter={x:Static common:DeleteFiles.UnrankedDraft}, Mode=TwoWay}" />
+            <CheckBox Content="Hero League" IsChecked="{Binding App.Settings.DeleteAfterUpload, Converter={StaticResource flags}, ConverterParameter={x:Static common:DeleteFiles.HeroLeague}, Mode=TwoWay}" />
+            <CheckBox Content="Team League" IsChecked="{Binding App.Settings.DeleteAfterUpload, Converter={StaticResource flags}, ConverterParameter={x:Static common:DeleteFiles.TeamLeague}, Mode=TwoWay}" />
+            <CheckBox Content="Storm League" IsChecked="{Binding App.Settings.DeleteAfterUpload, Converter={StaticResource flags}, ConverterParameter={x:Static common:DeleteFiles.StormLeague}, Mode=TwoWay}" />
+        </StackPanel>
+        <StackPanel Grid.Column="1" Margin="20" helpers:MarginSetter.Margin="0, 8, 0, 0" MinWidth="150">
+            <TextBlock Text="Theme:" FontWeight="Bold" Margin="0, 0, 1, 0" />
+            <ComboBox SelectedValue="{Binding App.Settings.Theme, Mode=TwoWay}" SelectedValuePath="Tag">
+                <ComboBox.Items>
+                    <ComboBoxItem Content="Light" Tag="Default" />
+                    <ComboBoxItem Content="Dark" Tag="MetroDark" />
+                </ComboBox.Items>
+            </ComboBox>
+            <StackPanel Margin="0, 40, 0, 0" x:Name="PreReleasePanel" Visibility="Hidden">
+                <CheckBox Content="Allow beta updates" FontWeight="SemiBold" IsChecked="{Binding App.Settings.AllowPreReleases}" />
+                <TextBlock Foreground="{StaticResource DimmedTextBrush}" HorizontalAlignment="Left" FontSize="10" TextWrapping="Wrap" MaxWidth="150" Margin="0, 0, 1, 0"
+                           Text="Intended for developers. Allows automatic updates to untested pre-release versions. Needs a restart to take effect." />
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Window>

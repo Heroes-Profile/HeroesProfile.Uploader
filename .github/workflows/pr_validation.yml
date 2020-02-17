@@ -17,4 +17,4 @@ jobs:
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: ${{ matrix.dotnet }}
-      - run: dotnet test Hotsapi.Uploader.Common.Test
+      - run: dotnet test Heroesprofile.Uploader.Common.Test

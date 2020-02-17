@@ -1,0 +1,51 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29519.87
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Heroesprofile.Uploader.Common", "Heroesprofile.Uploader.Common\Heroesprofile.Uploader.Common.csproj", "{DC695BCC-4403-4B20-B4F5-EB80683E5967}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Heroesprofile.Uploader.Windows", "Heroesprofile.Uploader.Windows\Heroesprofile.Uploader.Windows.csproj", "{F774F86B-410F-410D-9719-ADF892D315D5}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Heroesprofile.Uploader.Common.Test", "Heroesprofile.Uploader.Common.Test\Heroesprofile.Uploader.Common.Test.csproj", "{F0AF2897-857E-462E-86E0-2812624E2F78}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Installer|Any CPU = Installer|Any CPU
+		Release|Any CPU = Release|Any CPU
+		Zip|Any CPU = Zip|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DC695BCC-4403-4B20-B4F5-EB80683E5967}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DC695BCC-4403-4B20-B4F5-EB80683E5967}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DC695BCC-4403-4B20-B4F5-EB80683E5967}.Installer|Any CPU.ActiveCfg = Release|Any CPU
+		{DC695BCC-4403-4B20-B4F5-EB80683E5967}.Installer|Any CPU.Build.0 = Release|Any CPU
+		{DC695BCC-4403-4B20-B4F5-EB80683E5967}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DC695BCC-4403-4B20-B4F5-EB80683E5967}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DC695BCC-4403-4B20-B4F5-EB80683E5967}.Zip|Any CPU.ActiveCfg = Release|Any CPU
+		{DC695BCC-4403-4B20-B4F5-EB80683E5967}.Zip|Any CPU.Build.0 = Release|Any CPU
+		{F774F86B-410F-410D-9719-ADF892D315D5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F774F86B-410F-410D-9719-ADF892D315D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F774F86B-410F-410D-9719-ADF892D315D5}.Installer|Any CPU.ActiveCfg = Installer|Any CPU
+		{F774F86B-410F-410D-9719-ADF892D315D5}.Installer|Any CPU.Build.0 = Installer|Any CPU
+		{F774F86B-410F-410D-9719-ADF892D315D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F774F86B-410F-410D-9719-ADF892D315D5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F774F86B-410F-410D-9719-ADF892D315D5}.Zip|Any CPU.ActiveCfg = Zip|Any CPU
+		{F774F86B-410F-410D-9719-ADF892D315D5}.Zip|Any CPU.Build.0 = Zip|Any CPU
+		{F0AF2897-857E-462E-86E0-2812624E2F78}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F0AF2897-857E-462E-86E0-2812624E2F78}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F0AF2897-857E-462E-86E0-2812624E2F78}.Installer|Any CPU.ActiveCfg = Debug|Any CPU
+		{F0AF2897-857E-462E-86E0-2812624E2F78}.Installer|Any CPU.Build.0 = Debug|Any CPU
+		{F0AF2897-857E-462E-86E0-2812624E2F78}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F0AF2897-857E-462E-86E0-2812624E2F78}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F0AF2897-857E-462E-86E0-2812624E2F78}.Zip|Any CPU.ActiveCfg = Debug|Any CPU
+		{F0AF2897-857E-462E-86E0-2812624E2F78}.Zip|Any CPU.Build.0 = Debug|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {24555457-A9E2-4C94-B0E4-1BC34F4C042B}
+	EndGlobalSection
+EndGlobal

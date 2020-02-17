@@ -49,7 +49,7 @@ namespace Heroesprofile.Uploader.Windows.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("https://github.com/poma/Heroes-Profile.Uploader")]
+        [global::System.Configuration.DefaultSettingValueAttribute("https://github.com/Heroes-Profile/HeroesProfile.Uploader")]
         public string UpdateRepository {
             get {
                 return ((string)(this["UpdateRepository"]));

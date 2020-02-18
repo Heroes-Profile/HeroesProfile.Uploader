@@ -1,0 +1,1 @@
+Squirrel --releasify=Heroesprofile.Uploader.1.0.0.nupkg --no-msi --setupIcon=uploader_icon_light.ico

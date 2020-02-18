@@ -60,7 +60,7 @@ namespace Heroesprofile.Uploader.Common
             //I am having a hard time getting it compressed though.  I tmight be because my code is sending everything but the file as get.  So need to send the json object
             //through post, along with the file, but not sure how to do that.
 
-            string replay_json = JsonConvert.SerializeObject(ToJson(replay_results));
+            //string replay_json = JsonConvert.SerializeObject(ToJson(replay_results));
 
             try {
                 string response;
@@ -179,7 +179,7 @@ namespace Heroesprofile.Uploader.Common
                         _log.Warn($"Error parsing minimum build: {response}");
                         return 0;
                     }
-                    return build;
+                    return 0;
                 }
             }
             catch (WebException ex) {
@@ -205,6 +205,7 @@ namespace Heroesprofile.Uploader.Common
                 return false;
             }
         }
+        /*
         public static object ToJson(Replay replay)
         {
             var obj = new {
@@ -250,5 +251,6 @@ namespace Heroesprofile.Uploader.Common
             };
             return obj;
         }
+        */
     }
 }

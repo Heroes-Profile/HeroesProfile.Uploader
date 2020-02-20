@@ -48,6 +48,8 @@ namespace Heroesprofile.Uploader.Common
         {
             switch (parseResult) {
                 case DataParser.ReplayParseResult.ComputerPlayerFound:
+                case DataParser.ReplayParseResult.Incomplete:
+                    return UploadStatus.Incomplete;
                 case DataParser.ReplayParseResult.TryMeMode:
                     return UploadStatus.AiDetected;
 
@@ -56,6 +58,7 @@ namespace Heroesprofile.Uploader.Common
 
                 case DataParser.ReplayParseResult.PreAlphaWipe:
                     return UploadStatus.TooOld;
+
             }
 
             if (parseResult != DataParser.ReplayParseResult.Success) {

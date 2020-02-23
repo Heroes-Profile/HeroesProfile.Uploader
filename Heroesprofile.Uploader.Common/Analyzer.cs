@@ -23,7 +23,14 @@ namespace Heroesprofile.Uploader.Common
         {
             try {
                 //filename, ignoreerrors, deletefile, allowptrregion, skipeventparsing
-                var (parseResult, replay) = DataParser.ParseReplay(file.Filename, false, ParseOptions.MediumParsing);
+                var (parseResult, replay) = DataParser.ParseReplay(file.Filename, false,
+                        new ParseOptions {
+                            ShouldParseUnits = false,
+                            ShouldParseMouseEvents = false,
+                            ShouldParseDetailedBattleLobby = true,
+                            ShouldParseEvents = false,
+                            AllowPTR = false
+                        });
 
                 var status = GetPreStatus(replay, parseResult);
 

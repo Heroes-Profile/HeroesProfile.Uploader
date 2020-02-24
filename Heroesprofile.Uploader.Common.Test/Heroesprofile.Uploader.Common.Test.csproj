@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Heroes.ReplayParser\Heroes.ReplayParser\Heroes.ReplayParser.csproj" />
     <ProjectReference Include="..\Heroesprofile.Uploader.Common\Heroesprofile.Uploader.Common.csproj" />
   </ItemGroup>
 

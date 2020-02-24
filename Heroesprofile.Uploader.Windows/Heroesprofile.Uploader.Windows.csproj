@@ -83,9 +83,9 @@
     <PackageReference Include="NLog.Config" Version="4.5.11" />
     <PackageReference Include="NLog.Schema" Version="4.5.11" />
     <PackageReference Include="NuGet.CommandLine" Version="4.3.0" />
-    <PackageReference Include="SharpCompress" Version="0.24.0" />
+    <PackageReference Include="SharpCompress" Version="0.17.1" />
     <PackageReference Include="Splat" Version="1.6.2" />
-    <PackageReference Include="squirrel.windows" Version="1.7.8" />
+    <PackageReference Include="squirrel.windows" Version="1.9.1" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.VisualBasic" />
@@ -181,8 +181,12 @@
     <Resource Include="uploader_icon_dark.ico" />
     <Resource Include="uploader_dark.png" />
     <Resource Include="uploader_light.png" />
-    <Resource Include="Resources\uploader_dark.png" />
-    <Resource Include="Resources\uploader_light.png" />
+    <Resource Include="Resources\uploader_dark.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\uploader_light.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>

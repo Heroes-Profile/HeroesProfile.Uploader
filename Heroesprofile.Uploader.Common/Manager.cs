@@ -106,7 +106,10 @@ namespace Heroesprofile.Uploader.Common
             Files.AddRange(replays);
             replays.Where(x => x.UploadStatus == UploadStatus.None).Reverse().Map(x => processingQueue.Add(x));
 
+
             _monitor.ReplayAdded += async (_, e) => {
+                var (parseResult, replay_data) = DataParser.ParseReplay(e.Data, false, ParseOptions.BattleLobbyParsing);
+
                 await EnsureFileAvailable(e.Data, 3000);
                 var replay = new ReplayFile(e.Data);
                 Files.Insert(0, replay);

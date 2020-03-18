@@ -13,6 +13,8 @@ using Nito.AsyncEx;
 using System.Diagnostics;
 using Heroes.ReplayParser;
 using System.Collections.Concurrent;
+using System.Net.Http;
+using Newtonsoft.Json;
 
 namespace Heroesprofile.Uploader.Common
 {
@@ -110,6 +112,9 @@ namespace Heroesprofile.Uploader.Common
             _monitor.ReplayAdded += async (_, e) => {
                 var (parseResult, replay_data) = DataParser.ParseReplay(e.Data, false, ParseOptions.BattleLobbyParsing);
 
+                ///Add check here to see if users has selected prematch data
+                await runPreMatch(replay_data);
+
                 await EnsureFileAvailable(e.Data, 3000);
                 var replay = new ReplayFile(e.Data);
                 Files.Insert(0, replay);
@@ -128,6 +133,21 @@ namespace Heroesprofile.Uploader.Common
         {
             _monitor.Stop();
             processingQueue.CompleteAdding();
+        }
+
+        private async Task runPreMatch(Replay replayData)
+        {
+            HttpClient client = new HttpClient();
+            var values = new Dictionary<string, string>
+            {
+            { "data", JsonConvert.SerializeObject(replayData.Players) },
+            };
+            
+            var content = new FormUrlEncodedContent(values);
+
+            var response = await client.PostAsync("https://www.heroesprofile.com/PreMatch/", content);
+
+            var responseString = await response.Content.ReadAsStringAsync();
         }
 
         private async Task UploadLoop()

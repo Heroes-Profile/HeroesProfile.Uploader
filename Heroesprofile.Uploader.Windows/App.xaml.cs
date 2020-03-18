@@ -127,7 +127,7 @@ namespace Heroesprofile.Uploader.Windows
                 mainWindow = new MainWindow();
                 mainWindow.Show();
             }
-            Manager.Start(new Monitor(), new Analyzer(), new Common.Uploader());
+            Manager.Start(new Monitor(), new PreMatchMonitor(), new Analyzer(), new Common.Uploader());
 
 #pragma warning disable 162
             if (!NoSquirrel) {

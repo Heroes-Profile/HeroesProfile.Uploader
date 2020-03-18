@@ -15,6 +15,10 @@ using Heroes.ReplayParser;
 using System.Collections.Concurrent;
 using System.Net.Http;
 using Newtonsoft.Json;
+using MpqBattlelobby = Heroes.ReplayParser.MPQFiles.StandaloneBattleLobbyParser;
+using MpqDetails = Heroes.ReplayParser.MPQFiles.ReplayDetails;
+using MpqAttributeEvents = Heroes.ReplayParser.MPQFiles.ReplayAttributeEvents;
+using MpqGameEvents = Heroes.ReplayParser.MPQFiles.ReplayGameEvents;
 
 namespace Heroesprofile.Uploader.Common
 {
@@ -38,6 +42,7 @@ namespace Heroesprofile.Uploader.Common
         private IUploader _uploader;
         private IAnalyzer _analyzer;
         private IMonitor _monitor;
+        private PreMatchIMonitor _prematch_monitor;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -93,7 +98,7 @@ namespace Heroesprofile.Uploader.Common
         /// <summary>
         /// Start uploading and watching for new replays
         /// </summary>
-        public async void Start(IMonitor monitor, IAnalyzer analyzer, IUploader uploader)
+        public async void Start(IMonitor monitor, PreMatchIMonitor prematch_monitor, IAnalyzer analyzer, IUploader uploader)
         {
             if (_initialized) {
                 return;
@@ -103,6 +108,7 @@ namespace Heroesprofile.Uploader.Common
             _uploader = uploader;
             _analyzer = analyzer;
             _monitor = monitor;
+            _prematch_monitor = prematch_monitor;
 
             var replays = ScanReplays();
             Files.AddRange(replays);
@@ -110,17 +116,42 @@ namespace Heroesprofile.Uploader.Common
 
 
             _monitor.ReplayAdded += async (_, e) => {
-                var (parseResult, replay_data) = DataParser.ParseReplay(e.Data, false, ParseOptions.BattleLobbyParsing);
-
-                ///Add check here to see if users has selected prematch data
-                await runPreMatch(replay_data);
-
                 await EnsureFileAvailable(e.Data, 3000);
                 var replay = new ReplayFile(e.Data);
                 Files.Insert(0, replay);
                 processingQueue.Add(replay);
             };
             _monitor.Start();
+
+
+            ///Add check here to see if users has selected prematch data
+            _prematch_monitor.TempBattleLobbyCreated += async (_, e) => {
+                byte[] bytes = System.IO.File.ReadAllBytes(e.Data);
+                Replay replay = MpqBattlelobby.Parse(bytes);
+                await runPreMatch(replay);
+            };
+
+            _prematch_monitor.StormSaveCreated += async (_, e) => {
+                var replay = new Replay();
+                using (var archive = new Foole.Mpq.MpqArchive(e.Data)) {
+                    archive.AddListfileFilenames();
+                    MpqDetails.Parse(replay, DataParser.GetMpqFile(archive, "save.details"), true);
+
+                    if (archive.FileExists("replay.attributes.events")) {
+                        MpqAttributeEvents.Parse(replay, DataParser.GetMpqFile(archive, "replay.attributes.events"));
+                        //Replay replay, byte[] buffer
+                    }
+
+                    if (archive.FileExists("replay.game.events")) {
+                        MpqGameEvents.Parse(DataParser.GetMpqFile(archive, "replay.game.events"), replay.Players, replay.ReplayBuild, replay.ReplayVersionMajor, false);
+                        //byte[] buffer, Player[] clientList, int replayBuild, int replayVersionMajor, bool parseMouseMoveEvents
+                    }
+                }
+
+
+                await runPreMatch(replay);
+            };
+            _prematch_monitor.Start();
 
             _analyzer.MinimumBuild = await _uploader.GetMinimumBuild();
 

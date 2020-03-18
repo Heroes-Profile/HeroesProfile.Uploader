@@ -66,7 +66,7 @@ namespace Heroesprofile.Uploader.Common.Test
                 }
             });
 
-            manager.Start(new NoNewFilesMonitor(), new MockAnalizer(), uploadTester);
+            manager.Start(new NoNewFilesMonitor(), new PreMatchNoNewFilesMonitor(), new MockAnalizer(), uploadTester);
             await done;
         }
 
@@ -106,7 +106,7 @@ namespace Heroesprofile.Uploader.Common.Test
                 }
             });
 
-            manager.Start(new NoNewFilesMonitor(), new MockAnalizer(), uploadTester);
+            manager.Start(new NoNewFilesMonitor(), new PreMatchNoNewFilesMonitor(), new MockAnalizer(), uploadTester);
             await done;
         }
 
@@ -131,7 +131,7 @@ namespace Heroesprofile.Uploader.Common.Test
                 }
             });
 
-            manager.Start(new NoNewFilesMonitor(), new MockAnalizer(), uploadTester);
+            manager.Start(new NoNewFilesMonitor(), new PreMatchNoNewFilesMonitor(), new MockAnalizer(), uploadTester);
             var finished = await Task.WhenAny(Task.Delay(4000), done.Task);
             await finished;
             Assert.AreEqual(3, uploadsSeen);

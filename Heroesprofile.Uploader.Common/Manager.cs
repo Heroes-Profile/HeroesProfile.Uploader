@@ -16,9 +16,17 @@ using System.Collections.Concurrent;
 using System.Net.Http;
 using Newtonsoft.Json;
 using MpqBattlelobby = Heroes.ReplayParser.MPQFiles.StandaloneBattleLobbyParser;
-using MpqDetails = Heroes.ReplayParser.MPQFiles.ReplayDetails;
+using MpqHeader = Heroes.ReplayParser.MPQFiles.MpqHeader;
 using MpqAttributeEvents = Heroes.ReplayParser.MPQFiles.ReplayAttributeEvents;
-using MpqGameEvents = Heroes.ReplayParser.MPQFiles.ReplayGameEvents;
+using MpqDetails = Heroes.ReplayParser.MPQFiles.ReplayDetails;
+//using MpqGameEvents = Heroes.ReplayParser.MPQFiles.ReplayGameEvents;
+using MpqInitData = Heroes.ReplayParser.MPQFiles.ReplayInitData;
+//using MpqMessageEvents = Heroes.ReplayParser.MPQFiles.ReplayMessageEvents;
+//using MpqResumableEvents = Heroes.ReplayParser.MPQFiles.ReplayResumableEvents;
+using MpqTrackerEvents = Heroes.ReplayParser.MPQFiles.ReplayTrackerEvents;
+using Statistics = Heroes.ReplayParser.Statistics;
+//using GameEventType = Heroes.ReplayParser.MPQFiles.GameEventType;
+
 
 namespace Heroesprofile.Uploader.Common
 {
@@ -45,6 +53,8 @@ namespace Heroesprofile.Uploader.Common
         private PreMatchIMonitor _prematch_monitor;
 
         public event PropertyChangedEventHandler PropertyChanged;
+
+        private int prematch_id = 0;
 
         private string _status = "";
         /// <summary>
@@ -126,32 +136,86 @@ namespace Heroesprofile.Uploader.Common
 
             ///Add check here to see if users has selected prematch data
             _prematch_monitor.TempBattleLobbyCreated += async (_, e) => {
-                byte[] bytes = System.IO.File.ReadAllBytes(e.Data);
+                prematch_id = 0;
+                var tmpPath = Path.GetTempFileName();
+                await SafeCopy(e.Data, tmpPath, true);
+                byte[] bytes = System.IO.File.ReadAllBytes(tmpPath);
                 Replay replay = MpqBattlelobby.Parse(bytes);
                 await runPreMatch(replay);
             };
-
+            
             _prematch_monitor.StormSaveCreated += async (_, e) => {
+                var tmpPath = Path.GetTempFileName();
+                await SafeCopy(e.Data, tmpPath, true);
                 var replay = new Replay();
-                using (var archive = new Foole.Mpq.MpqArchive(e.Data)) {
+
+                MpqHeader.ParseHeader(replay, e.Data);
+
+                using (var archive = new Foole.Mpq.MpqArchive(tmpPath)) {
                     archive.AddListfileFilenames();
+
+
+                    //Gets Players
                     MpqDetails.Parse(replay, DataParser.GetMpqFile(archive, "save.details"), true);
 
+                    //Gets which Heroes each player played
                     if (archive.FileExists("replay.attributes.events")) {
                         MpqAttributeEvents.Parse(replay, DataParser.GetMpqFile(archive, "replay.attributes.events"));
-                        //Replay replay, byte[] buffer
+                    }
+                    
+
+                    //Get Game Mode
+                    if (archive.FileExists("save.initData")) {
+                        MpqInitData.Parse(replay, DataParser.GetMpqFile(archive, "save.initData"));
                     }
 
-                    if (archive.FileExists("replay.game.events")) {
-                        MpqGameEvents.Parse(DataParser.GetMpqFile(archive, "replay.game.events"), replay.Players, replay.ReplayBuild, replay.ReplayVersionMajor, false);
-                        //byte[] buffer, Player[] clientList, int replayBuild, int replayVersionMajor, bool parseMouseMoveEvents
+                    ////Fails
+                    //
+                    //if (archive.FileExists("replay.game.events")) {
+                    //    MpqGameEvents.Parse(DataParser.GetMpqFile(archive, "replay.game.events"), replay.Players, replay.ReplayBuild, replay.ReplayVersionMajor, false);
+                    //}
+                    //
+                    //
+
+                    //
+                    //
+                    ////Not Needed
+                    //
+                    //if (archive.FileExists("replay.message.events")) {
+                    //    MpqMessageEvents.Parse(replay, DataParser.GetMpqFile(archive, "replay.message.events"));
+                    //}
+                    //
+                    //
+                    ////Fails
+                    //
+                    //if (archive.FileExists("replay.resumable.events")) {
+                    //    MpqResumableEvents.Parse(replay, DataParser.GetMpqFile(archive, "replay.resumable.events"));
+                    //}
+
+
+
+                    for (int i = 0; i < replay.Players.Length; i++) {
+                        replay.Players[i].Talents = new Talent[7];
+                        for (int j = 0; j < replay.Players[i].Talents.Length; j++) {
+                            replay.Players[i].Talents[j] = new Talent();
+                        }
                     }
+                
+                    if (archive.FileExists("replay.tracker.events")) {
+                        replay.TrackerEvents = MpqTrackerEvents.Parse(DataParser.GetMpqFile(archive, "replay.tracker.events"));
+                    }
+                    
+
+                    Statistics.Parse(replay);
+                 
                 }
 
 
-                await runPreMatch(replay);
+                await updatePreMatch(replay);
             };
+
             _prematch_monitor.Start();
+         
 
             _analyzer.MinimumBuild = await _uploader.GetMinimumBuild();
 
@@ -179,6 +243,27 @@ namespace Heroesprofile.Uploader.Common
             var response = await client.PostAsync("https://www.heroesprofile.com/PreMatch/", content);
 
             var responseString = await response.Content.ReadAsStringAsync();
+
+
+            prematch_id = Convert.ToInt32(responseString);
+
+            System.Diagnostics.Process.Start("https://www.heroesprofile.com/PreMatch/Results/?prematchID=" + prematch_id);
+        }
+
+        private async Task updatePreMatch(Replay replayData)
+        {
+            HttpClient client = new HttpClient();
+            var values = new Dictionary<string, string>
+            {
+                { "prematch_id", prematch_id.ToString() },
+                { "game_type", replayData.GameMode.ToString() },
+                { "game_map", replayData.Map.ToString() },
+                { "data", JsonConvert.SerializeObject(replayData.Players) },
+            };
+
+            var content = new FormUrlEncodedContent(values);
+
+            var response = await client.PostAsync("https://www.heroesprofile.com/PreMatch/Update", content);
         }
 
         private async Task UploadLoop()
@@ -301,6 +386,25 @@ namespace Heroesprofile.Uploader.Common
                     DeleteAfterUpload.HasFlag(DeleteFiles.TeamLeague) && replay.GameMode == GameMode.TeamLeague ||
                     DeleteAfterUpload.HasFlag(DeleteFiles.StormLeague) && replay.GameMode == GameMode.StormLeague
                 );
+        }
+        private static async Task SafeCopy(string source, string dest, bool overwrite)
+        {
+            var watchdog = 10;
+            var retry = false;
+            do {
+                try {
+                    File.Copy(source, dest, overwrite);
+                    retry = false;
+                }
+                catch (Exception ex) {
+                    Debug.WriteLine($"Failed to copy ${source} to ${dest}. Counter at ${watchdog} CAUSED BY ${ex}");
+                    if (watchdog <= 0) {
+                        throw;
+                    }
+                    retry = true;
+                }
+                await Task.Delay(1000);
+            } while (watchdog-- > 0 && retry);
         }
     }
 }

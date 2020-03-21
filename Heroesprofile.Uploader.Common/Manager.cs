@@ -55,6 +55,7 @@ namespace Heroesprofile.Uploader.Common
         public event PropertyChangedEventHandler PropertyChanged;
 
         private int prematch_id = 0;
+        private DateTime lobbyLastModified;
 
         private string _status = "";
         /// <summary>
@@ -137,13 +138,28 @@ namespace Heroesprofile.Uploader.Common
             ///Add check here to see if users has selected prematch data
             _prematch_monitor.TempBattleLobbyCreated += async (_, e) => {
                 prematch_id = 0;
+                lobbyLastModified = File.GetLastWriteTime(e.Data);
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
+
+                do {
+                    //check to break out of while loop if greater than 10s
+                    if (stopwatch.ElapsedMilliseconds > 10000) {
+                        break;
+                    }
+                } while (lobbyLastModified == File.GetLastWriteTime(e.Data));
+                stopwatch.Stop();
+
                 var tmpPath = Path.GetTempFileName();
                 await SafeCopy(e.Data, tmpPath, true);
                 byte[] bytes = System.IO.File.ReadAllBytes(tmpPath);
                 Replay replay = MpqBattlelobby.Parse(bytes);
                 await runPreMatch(replay);
             };
-            
+            _prematch_monitor.Start();
+
+
+            /*
             _prematch_monitor.StormSaveCreated += async (_, e) => {
                 var tmpPath = Path.GetTempFileName();
                 await SafeCopy(e.Data, tmpPath, true);
@@ -213,9 +229,9 @@ namespace Heroesprofile.Uploader.Common
 
                 await updatePreMatch(replay);
             };
+            */
+            //_prematch_monitor.Start();
 
-            _prematch_monitor.Start();
-         
 
             _analyzer.MinimumBuild = await _uploader.GetMinimumBuild();
 

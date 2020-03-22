@@ -9,6 +9,8 @@ namespace Heroesprofile.Uploader.Common.Test
         private class PreMatchNoNewFilesMonitor : PreMatchIMonitor
         {
             public event EventHandler<EventArgs<string>> TempReplayCreated;
+            public event EventHandler<EventArgs<string>> StormSaveCreated;
+            public event EventHandler<EventArgs<string>> TempBattleLobbyCreated;
             public void Start() { }
             public void Stop() { }
         }

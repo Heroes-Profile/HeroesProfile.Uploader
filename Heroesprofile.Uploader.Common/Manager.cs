@@ -139,17 +139,7 @@ namespace Heroesprofile.Uploader.Common
             _prematch_monitor.TempBattleLobbyCreated += async (_, e) => {
                 prematch_id = 0;
                 lobbyLastModified = File.GetLastWriteTime(e.Data);
-                var stopwatch = new Stopwatch();
-                stopwatch.Start();
-
-                do {
-                    //check to break out of while loop if greater than 10s
-                    if (stopwatch.ElapsedMilliseconds > 10000) {
-                        break;
-                    }
-                } while (lobbyLastModified == File.GetLastWriteTime(e.Data));
-                stopwatch.Stop();
-
+                Thread.Sleep(1000);
                 var tmpPath = Path.GetTempFileName();
                 await SafeCopy(e.Data, tmpPath, true);
                 byte[] bytes = System.IO.File.ReadAllBytes(tmpPath);

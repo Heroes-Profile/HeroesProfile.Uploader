@@ -45,7 +45,7 @@ namespace Heroesprofile.Uploader.Common
                     Filter = "*.battlelobby",
                     IncludeSubdirectories = true
                 };
-                _battlelobby_watcher.Created += (o, e) => OnBattleLobbyAdded(e.FullPath);
+                _battlelobby_watcher.Changed += (o, e) => OnBattleLobbyAdded(e.FullPath);
             }
             _battlelobby_watcher.EnableRaisingEvents = true;
 

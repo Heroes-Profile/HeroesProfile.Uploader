@@ -178,5 +178,17 @@ namespace Heroesprofile.Uploader.Windows.Properties {
                 this["ApplicationVersion"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool PreMatchPage {
+            get {
+                return ((bool)(this["PreMatchPage"]));
+            }
+            set {
+                this["PreMatchPage"] = value;
+            }
+        }
     }
 }

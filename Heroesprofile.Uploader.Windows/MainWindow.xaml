@@ -59,9 +59,9 @@
                 <TextBlock Text="{Binding App.Manager.Aggregates[Incomplete], StringFormat=Incomplete: {0}}" Visibility="{Binding App.Manager.Aggregates, Converter={StaticResource intVisibilityConverter}, ConverterParameter={x:Static heroesprofile:UploadStatus.Incomplete}}" />
             </StackPanel>
             <StackPanel DockPanel.Dock="Bottom" helpers:MarginSetter.Margin="0, 8, 8, 0">
-                <CheckBox IsChecked="{Binding App.StartWithWindows}" Content="Start with windows" Visibility="{Binding App.StartWithWindowsCheckboxEnabled, Converter={StaticResource visibilityConverter}}" />
-                <CheckBox IsChecked="{Binding App.Settings.MinimizeToTray}" Content="Minimize to tray" Margin="0,0,8,0" />
-                <CheckBox IsChecked="True" Content="PreMatch Page" />
+                <CheckBox IsChecked="{Binding App.StartWithWindows}" Content="Start with windows" Height="23" />
+                <CheckBox IsChecked="{Binding App.Settings.MinimizeToTray}" Content="Minimize to tray" Height="23"  />
+                <CheckBox IsChecked="{Binding App.Settings.PreMatchPage}" Content="Prematch Page" Height="23"  Margin="0,0,8,0"  />
                 <Button HorizontalAlignment="Stretch" Content="Show log" Click="ShowLog_Click" Margin="0, 8, 0, 0" />
                 <Button HorizontalAlignment="Stretch" Content="Settings" Click="Settings_Click" Margin="0, 8, 0, 0" />
             </StackPanel>

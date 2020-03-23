@@ -107,6 +107,7 @@ namespace Heroesprofile.Uploader.Windows
             BindingOperations.EnableCollectionSynchronization(Manager.Files, _lock);
 
             Manager.UploadToHotslogs = Settings.UploadToHotslogs;
+            Manager.PreMatchPage = Settings.PreMatchPage;
             Manager.DeleteAfterUpload = Settings.DeleteAfterUpload;
             ApplyTheme(Settings.Theme);
             Settings.PropertyChanged += (o, ev) => {
@@ -118,6 +119,10 @@ namespace Heroesprofile.Uploader.Windows
                 }
                 if (ev.PropertyName == nameof(Settings.Theme)) {
                     ApplyTheme(Settings.Theme);
+                }
+
+                if (ev.PropertyName == nameof(Settings.PreMatchPage)) {
+                    Manager.PreMatchPage = Settings.PreMatchPage;
                 }
             };
 

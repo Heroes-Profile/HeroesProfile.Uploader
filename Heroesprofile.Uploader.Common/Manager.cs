@@ -55,7 +55,7 @@ namespace Heroesprofile.Uploader.Common
         public event PropertyChangedEventHandler PropertyChanged;
 
         private int prematch_id = 0;
-
+        public bool PreMatchPage { get; set; }
         private string _status = "";
         /// <summary>
         /// Current uploader status
@@ -124,27 +124,31 @@ namespace Heroesprofile.Uploader.Common
             Files.AddRange(replays);
             replays.Where(x => x.UploadStatus == UploadStatus.None).Reverse().Map(x => processingQueue.Add(x));
 
+            
 
             _monitor.ReplayAdded += async (_, e) => {
                 await EnsureFileAvailable(e.Data, 3000);
                 var replay = new ReplayFile(e.Data);
                 Files.Insert(0, replay);
                 processingQueue.Add(replay);
-                _prematch_monitor.Start();
+                if (PreMatchPage) {
+                    _prematch_monitor.Start();
+                }
             };
             _monitor.Start();
 
 
-            ///Add check here to see if users has selected prematch data
             _prematch_monitor.TempBattleLobbyCreated += async (_, e) => {
-                prematch_id = 0;
-                _prematch_monitor.Stop();
-                Thread.Sleep(1000);
-                var tmpPath = Path.GetTempFileName();
-                await SafeCopy(e.Data, tmpPath, true);
-                byte[] bytes = System.IO.File.ReadAllBytes(tmpPath);
-                Replay replay = MpqBattlelobby.Parse(bytes);
-                await runPreMatch(replay);
+                if (PreMatchPage) {
+                    prematch_id = 0;
+                    _prematch_monitor.Stop();
+                    Thread.Sleep(1000);
+                    var tmpPath = Path.GetTempFileName();
+                    await SafeCopy(e.Data, tmpPath, true);
+                    byte[] bytes = System.IO.File.ReadAllBytes(tmpPath);
+                    Replay replay = MpqBattlelobby.Parse(bytes);
+                    await runPreMatch(replay);
+                }
             };
             _prematch_monitor.Start();
 
@@ -168,7 +172,7 @@ namespace Heroesprofile.Uploader.Common
                     if (archive.FileExists("replay.attributes.events")) {
                         MpqAttributeEvents.Parse(replay, DataParser.GetMpqFile(archive, "replay.attributes.events"));
                     }
-                    
+
 
                     //Get Game Mode
                     if (archive.FileExists("save.initData")) {
@@ -206,14 +210,14 @@ namespace Heroesprofile.Uploader.Common
                             replay.Players[i].Talents[j] = new Talent();
                         }
                     }
-                
+
                     if (archive.FileExists("replay.tracker.events")) {
                         replay.TrackerEvents = MpqTrackerEvents.Parse(DataParser.GetMpqFile(archive, "replay.tracker.events"));
                     }
-                    
+
 
                     Statistics.Parse(replay);
-                 
+
                 }
 
 
@@ -221,6 +225,7 @@ namespace Heroesprofile.Uploader.Common
             };
             */
             //_prematch_monitor.Start();
+
 
 
             _analyzer.MinimumBuild = await _uploader.GetMinimumBuild();

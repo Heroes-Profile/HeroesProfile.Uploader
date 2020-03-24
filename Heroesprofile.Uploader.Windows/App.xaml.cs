@@ -107,6 +107,7 @@ namespace Heroesprofile.Uploader.Windows
             BindingOperations.EnableCollectionSynchronization(Manager.Files, _lock);
 
             Manager.UploadToHotslogs = Settings.UploadToHotslogs;
+            Manager.PreMatchPage = Settings.PreMatchPage;
             Manager.DeleteAfterUpload = Settings.DeleteAfterUpload;
             ApplyTheme(Settings.Theme);
             Settings.PropertyChanged += (o, ev) => {
@@ -119,6 +120,10 @@ namespace Heroesprofile.Uploader.Windows
                 if (ev.PropertyName == nameof(Settings.Theme)) {
                     ApplyTheme(Settings.Theme);
                 }
+
+                if (ev.PropertyName == nameof(Settings.PreMatchPage)) {
+                    Manager.PreMatchPage = Settings.PreMatchPage;
+                }
             };
 
             if (e.Args.Contains("--autorun") && Settings.MinimizeToTray) {
@@ -127,7 +132,7 @@ namespace Heroesprofile.Uploader.Windows
                 mainWindow = new MainWindow();
                 mainWindow.Show();
             }
-            Manager.Start(new Monitor(), new Analyzer(), new Common.Uploader());
+            Manager.Start(new Monitor(), new PreMatchMonitor(), new Analyzer(), new Common.Uploader());
 
 #pragma warning disable 162
             if (!NoSquirrel) {

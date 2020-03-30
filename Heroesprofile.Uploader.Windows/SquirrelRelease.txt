@@ -1,1 +1,11 @@
-Squirrel --releasify=Heroesprofile.Uploader.1.0.0.nupkg --no-msi --setupIcon=uploader_icon_light.ico
+1:  Change release in Heroesprofile.Uploader.Windows -> right click -> properties -> Asssembly Informationm
+
+2: Build Installer
+
+3: Build Zip
+
+4: Tools -> NuGet Package Manager -> Package Manager Console
+
+5: CD to Installer directory
+
+6: Squirrel --releasify=Heroesprofile.Uploader.1.0.5.nupkg --no-msi --setupIcon=uploader_icon_light.ico

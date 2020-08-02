@@ -137,7 +137,7 @@ namespace Heroesprofile.Uploader.Common
             };
             _monitor.Start();
 
-
+            /*
             _prematch_monitor.TempBattleLobbyCreated += async (_, e) => {
                 if (PreMatchPage) {
                     prematch_id = 0;
@@ -151,82 +151,7 @@ namespace Heroesprofile.Uploader.Common
                 }
             };
             _prematch_monitor.Start();
-
-
-            /*
-            _prematch_monitor.StormSaveCreated += async (_, e) => {
-                var tmpPath = Path.GetTempFileName();
-                await SafeCopy(e.Data, tmpPath, true);
-                var replay = new Replay();
-
-                MpqHeader.ParseHeader(replay, e.Data);
-
-                using (var archive = new Foole.Mpq.MpqArchive(tmpPath)) {
-                    archive.AddListfileFilenames();
-
-
-                    //Gets Players
-                    MpqDetails.Parse(replay, DataParser.GetMpqFile(archive, "save.details"), true);
-
-                    //Gets which Heroes each player played
-                    if (archive.FileExists("replay.attributes.events")) {
-                        MpqAttributeEvents.Parse(replay, DataParser.GetMpqFile(archive, "replay.attributes.events"));
-                    }
-
-
-                    //Get Game Mode
-                    if (archive.FileExists("save.initData")) {
-                        MpqInitData.Parse(replay, DataParser.GetMpqFile(archive, "save.initData"));
-                    }
-
-                    ////Fails
-                    //
-                    //if (archive.FileExists("replay.game.events")) {
-                    //    MpqGameEvents.Parse(DataParser.GetMpqFile(archive, "replay.game.events"), replay.Players, replay.ReplayBuild, replay.ReplayVersionMajor, false);
-                    //}
-                    //
-                    //
-
-                    //
-                    //
-                    ////Not Needed
-                    //
-                    //if (archive.FileExists("replay.message.events")) {
-                    //    MpqMessageEvents.Parse(replay, DataParser.GetMpqFile(archive, "replay.message.events"));
-                    //}
-                    //
-                    //
-                    ////Fails
-                    //
-                    //if (archive.FileExists("replay.resumable.events")) {
-                    //    MpqResumableEvents.Parse(replay, DataParser.GetMpqFile(archive, "replay.resumable.events"));
-                    //}
-
-
-
-                    for (int i = 0; i < replay.Players.Length; i++) {
-                        replay.Players[i].Talents = new Talent[7];
-                        for (int j = 0; j < replay.Players[i].Talents.Length; j++) {
-                            replay.Players[i].Talents[j] = new Talent();
-                        }
-                    }
-
-                    if (archive.FileExists("replay.tracker.events")) {
-                        replay.TrackerEvents = MpqTrackerEvents.Parse(DataParser.GetMpqFile(archive, "replay.tracker.events"));
-                    }
-
-
-                    Statistics.Parse(replay);
-
-                }
-
-
-                await updatePreMatch(replay);
-            };
             */
-            //_prematch_monitor.Start();
-
-
 
             _analyzer.MinimumBuild = await _uploader.GetMinimumBuild();
 

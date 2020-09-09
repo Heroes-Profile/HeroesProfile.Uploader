@@ -73,7 +73,8 @@ namespace Heroesprofile.Uploader.Common
             }
 
             if (replay.GameMode == GameMode.Custom) {
-                return UploadStatus.CustomGame;
+                //return UploadStatus.CustomGame;
+                return null;
             }
 
             if (replay.ReplayBuild < MinimumBuild) {

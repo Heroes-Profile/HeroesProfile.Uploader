@@ -42,7 +42,6 @@ namespace Heroesprofile.Uploader.Common
         /// Replay list
         /// </summary>
         public ObservableCollectionEx<ReplayFile> Files { get; private set; } = new ObservableCollectionEx<ReplayFile>();
-        public ObservableCollectionEx<ReplayFile> FilesReversed { get; private set; } = new ObservableCollectionEx<ReplayFile>();
 
         private static Logger _log = LogManager.GetCurrentClassLogger();
         private bool _initialized = false;

@@ -85,10 +85,10 @@ namespace Heroesprofile.Uploader.Common
 
 
                 dynamic json = JObject.Parse(response);
-                int int_val = (int)json.replayID;
+                int replayID = (int)json.replayID;
 
                 if (File.GetLastWriteTime(file) >= DateTime.Now.AddMinutes(-30) && PostMatchPage) {
-                    await postMatchAnalysis(int_val);
+                    await postMatchAnalysis(replayID);
                 }
 
                 if ((bool)json.success) {

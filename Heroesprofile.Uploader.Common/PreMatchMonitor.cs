@@ -39,7 +39,7 @@ namespace Heroesprofile.Uploader.Common
         public void Start()
         {
             if (_battlelobby_watcher == null) {
-                //System.IO.Directory.CreateDirectory(BattleLobbyTempPath);
+                System.IO.Directory.CreateDirectory(BattleLobbyTempPath);
                 _battlelobby_watcher = new FileSystemWatcher() {
                     Path = BattleLobbyTempPath,
                     Filter = "*.battlelobby",

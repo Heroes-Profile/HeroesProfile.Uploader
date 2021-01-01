@@ -102,18 +102,16 @@ namespace Heroesprofile.Uploader.Windows
                 RestoreSettings();
             }
             SetupTrayIcon();
-            Manager = new Manager(new ReplayStorage($@"{SettingsDir}\replays_v4.xml"));
+            Manager = new Manager(new ReplayStorage($@"{SettingsDir}\replays_v5.xml"));
             // Enable collection modification from any thread
             BindingOperations.EnableCollectionSynchronization(Manager.Files, _lock);
 
-            Manager.UploadToHotslogs = Settings.UploadToHotslogs;
             Manager.PreMatchPage = Settings.PreMatchPage;
+            Manager.PostMatchPage = Settings.PostMatchPage;
+
             Manager.DeleteAfterUpload = Settings.DeleteAfterUpload;
             ApplyTheme(Settings.Theme);
             Settings.PropertyChanged += (o, ev) => {
-                if (ev.PropertyName == nameof(Settings.UploadToHotslogs)) {
-                    Manager.UploadToHotslogs = Settings.UploadToHotslogs;
-                }
                 if (ev.PropertyName == nameof(Settings.DeleteAfterUpload)) {
                     Manager.DeleteAfterUpload = Settings.DeleteAfterUpload;
                 }
@@ -123,6 +121,10 @@ namespace Heroesprofile.Uploader.Windows
 
                 if (ev.PropertyName == nameof(Settings.PreMatchPage)) {
                     Manager.PreMatchPage = Settings.PreMatchPage;
+                }
+
+                if (ev.PropertyName == nameof(Settings.PostMatchPage)) {
+                    Manager.PostMatchPage = Settings.PostMatchPage;
                 }
             };
 

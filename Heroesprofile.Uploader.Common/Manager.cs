@@ -42,6 +42,7 @@ namespace Heroesprofile.Uploader.Common
         /// Replay list
         /// </summary>
         public ObservableCollectionEx<ReplayFile> Files { get; private set; } = new ObservableCollectionEx<ReplayFile>();
+        public ObservableCollectionEx<ReplayFile> FilesReversed { get; private set; } = new ObservableCollectionEx<ReplayFile>();
 
         private static Logger _log = LogManager.GetCurrentClassLogger();
         private bool _initialized = false;
@@ -56,6 +57,7 @@ namespace Heroesprofile.Uploader.Common
 
         private int prematch_id = 0;
         public bool PreMatchPage { get; set; }
+        public bool PostMatchPage { get; set; }
         private string _status = "";
         /// <summary>
         /// Current uploader status
@@ -75,21 +77,6 @@ namespace Heroesprofile.Uploader.Common
         {
             get {
                 return _aggregates;
-            }
-        }
-
-        /// <summary>
-        /// Whether to mark replays for upload to hotslogs
-        /// </summary>
-        public bool UploadToHotslogs
-        {
-            get {
-                return _uploader?.UploadToHotslogs ?? false;
-            }
-            set {
-                if (_uploader != null) {
-                    _uploader.UploadToHotslogs = value;
-                }
             }
         }
 
@@ -122,7 +109,7 @@ namespace Heroesprofile.Uploader.Common
 
             var replays = ScanReplays();
             Files.AddRange(replays);
-            replays.Where(x => x.UploadStatus == UploadStatus.None).Reverse().Map(x => processingQueue.Add(x));
+            replays.Where(x => x.UploadStatus == UploadStatus.None).Map(x => processingQueue.Add(x));
 
             
 
@@ -137,12 +124,13 @@ namespace Heroesprofile.Uploader.Common
             };
             _monitor.Start();
 
-            /*
+            
             _prematch_monitor.TempBattleLobbyCreated += async (_, e) => {
                 if (PreMatchPage) {
                     prematch_id = 0;
                     _prematch_monitor.Stop();
                     Thread.Sleep(1000);
+                    await EnsureFileAvailable(e.Data, 3000);
                     var tmpPath = Path.GetTempFileName();
                     await SafeCopy(e.Data, tmpPath, true);
                     byte[] bytes = System.IO.File.ReadAllBytes(tmpPath);
@@ -151,7 +139,8 @@ namespace Heroesprofile.Uploader.Common
                 }
             };
             _prematch_monitor.Start();
-            */
+            
+            
 
             _analyzer.MinimumBuild = await _uploader.GetMinimumBuild();
 
@@ -214,7 +203,7 @@ namespace Heroesprofile.Uploader.Common
                     var replay = _analyzer.Analyze(file);
                     if (file.UploadStatus == UploadStatus.InProgress) {
                         // if it is, upload it
-                        await _uploader.Upload(replay, file);
+                        await _uploader.Upload(replay, file, PostMatchPage);
                     }
                     SaveReplayList();
                     if (ShouldDelete(file, replay)) {

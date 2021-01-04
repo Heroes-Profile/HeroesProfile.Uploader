@@ -132,7 +132,7 @@ namespace Heroesprofile.Uploader.Common
                     await EnsureFileAvailable(e.Data, 3000);
                     var tmpPath = Path.GetTempFileName();
                     await SafeCopy(e.Data, tmpPath, true);
-                    byte[] bytes = System.IO.File.ReadAllBytes(tmpPath);
+                    byte[] bytes = File.ReadAllBytes(tmpPath);
                     Replay replay = MpqBattlelobby.Parse(bytes);
                     await runPreMatch(replay);
                 }
@@ -171,9 +171,9 @@ namespace Heroesprofile.Uploader.Common
 
             prematch_id = Convert.ToInt32(responseString);
 
-            System.Diagnostics.Process.Start("https://www.heroesprofile.com/PreMatch/Results/?prematchID=" + prematch_id);
+            Process.Start("https://www.heroesprofile.com/PreMatch/Results/?prematchID=" + prematch_id);
         }
-
+        /*
         private async Task updatePreMatch(Replay replayData)
         {
             HttpClient client = new HttpClient();
@@ -189,6 +189,7 @@ namespace Heroesprofile.Uploader.Common
 
             var response = await client.PostAsync("https://www.heroesprofile.com/PreMatch/Update", content);
         }
+        */
 
         private async Task UploadLoop()
         {
@@ -200,9 +201,11 @@ namespace Heroesprofile.Uploader.Common
 
                     // test if replay is eligible for upload (not AI, PTR, Custom, etc)
                     var replay = _analyzer.Analyze(file);
-                    if (file.UploadStatus == UploadStatus.InProgress) {
+                    if (file.UploadStatus == UploadStatus.InProgress && replay != null) {
                         // if it is, upload it
                         await _uploader.Upload(replay, file, PostMatchPage);
+                    } else {
+                        file.UploadStatus = UploadStatus.Incomplete;
                     }
                     SaveReplayList();
                     if (ShouldDelete(file, replay)) {

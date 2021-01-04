@@ -21,12 +21,13 @@ namespace Heroesprofile.Uploader.Common
 #if DEBUG
         const string HeroesProfileApiEndpoint = "https://api.heroesprofile.com/api";
         const string HeroesProfileMatchParsed = "https://api.heroesprofile.com/openApi/Replay/Parsed/?replayID=";
-
         const string HeroesProfileMatchSummary = "https://www.heroesprofile.com/Match/Single/?replayID=";
         const string HotsAPIApiEndpoint = "http://hotsapi.local/api/v1";
 
 #else
         const string HeroesProfileApiEndpoint = "https://api.heroesprofile.com/api";
+        const string HeroesProfileMatchParsed = "https://api.heroesprofile.com/openApi/Replay/Parsed/?replayID=";
+        const string HeroesProfileMatchSummary = "https://www.heroesprofile.com/Match/Single/?replayID=";
         const string HotsAPIApiEndpoint = "https://hotsapi.net/api/v1";
 #endif
 

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Heroesprofile.Uploader.Common
 {
-    public class PreMatchMonitor : PreMatchIMonitor
+    public class LiveMonitor : LiveIMonitor
     {
         private static Logger _log = LogManager.GetCurrentClassLogger();
         protected readonly string BattleLobbyTempPath = Path.Combine(Path.GetTempPath(), @"Heroes of the Storm\");
@@ -21,9 +21,10 @@ namespace Heroesprofile.Uploader.Common
         /// </summary>
         public event EventHandler<EventArgs<string>> TempBattleLobbyCreated;
         public event EventHandler<EventArgs<string>> StormSaveCreated;
+
         protected virtual void OnBattleLobbyAdded(string path)
         {
-            _log.Debug($"Detected new temp prematch replay: {path}");
+            _log.Debug($"Detected new temp live replay: {path}");
             TempBattleLobbyCreated?.Invoke(this, new EventArgs<string>(path));
         }
 

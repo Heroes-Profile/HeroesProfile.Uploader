@@ -202,5 +202,65 @@ namespace Heroesprofile.Uploader.Windows.Properties {
                 this["PostMatchPage"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string HPAPIEmail {
+            get {
+                return ((string)(this["HPAPIEmail"]));
+            }
+            set {
+                this["HPAPIEmail"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string TwitchNickname {
+            get {
+                return ((string)(this["TwitchNickname"]));
+            }
+            set {
+                this["TwitchNickname"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string HPKey {
+            get {
+                return ((string)(this["HPKey"]));
+            }
+            set {
+                this["HPKey"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int HPAPIUserID {
+            get {
+                return ((int)(this["HPAPIUserID"]));
+            }
+            set {
+                this["HPAPIUserID"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool HPTwitchExtension {
+            get {
+                return ((bool)(this["HPTwitchExtension"]));
+            }
+            set {
+                this["HPTwitchExtension"] = value;
+            }
+        }
     }
 }

@@ -13,8 +13,8 @@ using Nito.AsyncEx;
 using System.Diagnostics;
 using Heroes.ReplayParser;
 using System.Collections.Concurrent;
-using System.Net.Http;
-using Newtonsoft.Json;
+//using System.Net.Http;
+//using Newtonsoft.Json;
 using MpqBattlelobby = Heroes.ReplayParser.MPQFiles.StandaloneBattleLobbyParser;
 using MpqHeader = Heroes.ReplayParser.MPQFiles.MpqHeader;
 using MpqAttributeEvents = Heroes.ReplayParser.MPQFiles.ReplayAttributeEvents;
@@ -50,14 +50,24 @@ namespace Heroesprofile.Uploader.Common
         private IUploader _uploader;
         private IAnalyzer _analyzer;
         private IMonitor _monitor;
-        private PreMatchIMonitor _prematch_monitor;
-
+        private LiveIMonitor _live_monitor;
+        private ILiveProcessor _liveProcessor;
         public event PropertyChangedEventHandler PropertyChanged;
 
-        private int prematch_id = 0;
+        public string hpTwitchAPIKey { get; set; }
+        public string hpAPIEmail { get; set; }
+        public string twitchKnickname { get; set; }
+        public int hpAPIUserID { get; set; }
+
         public bool PreMatchPage { get; set; }
         public bool PostMatchPage { get; set; }
+        public bool TwitchExtension { get; set; }
+
         private string _status = "";
+
+
+
+
         /// <summary>
         /// Current uploader status
         /// </summary>
@@ -94,7 +104,7 @@ namespace Heroesprofile.Uploader.Common
         /// <summary>
         /// Start uploading and watching for new replays
         /// </summary>
-        public async void Start(IMonitor monitor, PreMatchIMonitor prematch_monitor, IAnalyzer analyzer, IUploader uploader)
+        public async void Start(IMonitor monitor, LiveIMonitor live_monitor, IAnalyzer analyzer, IUploader uploader, ILiveProcessor liveProcessor)
         {
             if (_initialized) {
                 return;
@@ -103,8 +113,16 @@ namespace Heroesprofile.Uploader.Common
 
             _uploader = uploader;
             _analyzer = analyzer;
+            _liveProcessor = liveProcessor;
+            liveProcessor.PreMatchPage = PreMatchPage;
+            liveProcessor.TwitchExtension = TwitchExtension;
+            liveProcessor.hpTwitchAPIKey = hpTwitchAPIKey;
+            liveProcessor.hpAPIEmail = hpAPIEmail;
+            liveProcessor.twitchKnickname = twitchKnickname;
+            liveProcessor.hpAPIUserID = hpAPIUserID;
+
             _monitor = monitor;
-            _prematch_monitor = prematch_monitor;
+            _live_monitor = live_monitor;
 
             var replays = ScanReplays();
             Files.AddRange(replays);
@@ -117,27 +135,30 @@ namespace Heroesprofile.Uploader.Common
                 var replay = new ReplayFile(e.Data);
                 Files.Insert(0, replay);
                 processingQueue.Add(replay);
-                if (PreMatchPage) {
-                    _prematch_monitor.Start();
+                if (PreMatchPage || TwitchExtension) {
+                    if (TwitchExtension) {
+                        Thread.Sleep(1000);
+                        await EnsureFileAvailable(e.Data, 3000);
+                        var tmpPath = Path.GetTempFileName();
+                        await SafeCopy(e.Data, tmpPath, true);
+                        await _liveProcessor.saveTalentDataTwenty(tmpPath);
+                    }
+                    liveProcessor = new LiveProcessor();
+                    _live_monitor.Start();
                 }
             };
             _monitor.Start();
 
             
-            _prematch_monitor.TempBattleLobbyCreated += async (_, e) => {
-                if (PreMatchPage) {
-                    prematch_id = 0;
-                    _prematch_monitor.Stop();
-                    Thread.Sleep(1000);
-                    await EnsureFileAvailable(e.Data, 3000);
-                    var tmpPath = Path.GetTempFileName();
-                    await SafeCopy(e.Data, tmpPath, true);
-                    byte[] bytes = File.ReadAllBytes(tmpPath);
-                    Replay replay = MpqBattlelobby.Parse(bytes);
-                    await runPreMatch(replay);
-                }
+            _live_monitor.TempBattleLobbyCreated += async (_, e) => {
+                //_live_monitor.Stop();
+                Thread.Sleep(1000);
+                await EnsureFileAvailable(e.Data, 3000);
+                var tmpPath = Path.GetTempFileName();
+                await SafeCopy(e.Data, tmpPath, true);
+                await _liveProcessor.Start(tmpPath);
             };
-            _prematch_monitor.Start();
+            _live_monitor.Start();
             
             
 
@@ -153,43 +174,6 @@ namespace Heroesprofile.Uploader.Common
             _monitor.Stop();
             processingQueue.CompleteAdding();
         }
-
-        private async Task runPreMatch(Replay replayData)
-        {
-            HttpClient client = new HttpClient();
-            var values = new Dictionary<string, string>
-            {
-            { "data", JsonConvert.SerializeObject(replayData.Players) },
-            };
-            
-            var content = new FormUrlEncodedContent(values);
-
-            var response = await client.PostAsync("https://www.heroesprofile.com/PreMatch/", content);
-
-            var responseString = await response.Content.ReadAsStringAsync();
-
-
-            prematch_id = Convert.ToInt32(responseString);
-
-            Process.Start("https://www.heroesprofile.com/PreMatch/Results/?prematchID=" + prematch_id);
-        }
-        /*
-        private async Task updatePreMatch(Replay replayData)
-        {
-            HttpClient client = new HttpClient();
-            var values = new Dictionary<string, string>
-            {
-                { "prematch_id", prematch_id.ToString() },
-                { "game_type", replayData.GameMode.ToString() },
-                { "game_map", replayData.Map.ToString() },
-                { "data", JsonConvert.SerializeObject(replayData.Players) },
-            };
-
-            var content = new FormUrlEncodedContent(values);
-
-            var response = await client.PostAsync("https://www.heroesprofile.com/PreMatch/Update", content);
-        }
-        */
 
         private async Task UploadLoop()
         {

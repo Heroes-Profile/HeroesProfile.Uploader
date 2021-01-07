@@ -14,6 +14,9 @@ namespace Heroesprofile.Uploader.Windows
         public MainWindow()
         {
             InitializeComponent();
+            if (Properties.Settings.Default.HPTwitchExtension) {
+                Twitch_Extension_Checkbox.IsEnabled = true;
+            }
         }
 
         private void Window_StateChanged(object sender, EventArgs e)
@@ -46,6 +49,11 @@ namespace Heroesprofile.Uploader.Windows
         private void Settings_Click(object sender, RoutedEventArgs e)
         {
             new SettingsWindow() { Owner = this, DataContext = this }.ShowDialog();
+            if (Properties.Settings.Default.HPTwitchExtension) {
+                Twitch_Extension_Checkbox.IsEnabled = true;
+            } else {
+                Twitch_Extension_Checkbox.IsEnabled = false;
+            }
         }
 
         private async void Restart_Click(object sender, RoutedEventArgs e)

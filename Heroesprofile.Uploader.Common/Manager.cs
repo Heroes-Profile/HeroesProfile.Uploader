@@ -151,13 +151,25 @@ namespace Heroesprofile.Uploader.Common
 
             
             _live_monitor.TempBattleLobbyCreated += async (_, e) => {
-                //_live_monitor.Stop();
+                _live_monitor.StopBattleLobbyWatcher();
                 Thread.Sleep(1000);
                 await EnsureFileAvailable(e.Data, 3000);
                 var tmpPath = Path.GetTempFileName();
                 await SafeCopy(e.Data, tmpPath, true);
                 await _liveProcessor.Start(tmpPath);
             };
+
+
+            _live_monitor.StormSaveCreated += async (_, e) => {
+                //_live_monitor.StopStormSaveWatcher();
+                Thread.Sleep(1000);
+                await EnsureFileAvailable(e.Data, 3000);
+                var tmpPath = Path.GetTempFileName();
+                await SafeCopy(e.Data, tmpPath, true);
+                await _liveProcessor.Update(tmpPath);
+            };
+
+
             _live_monitor.Start();
             
             

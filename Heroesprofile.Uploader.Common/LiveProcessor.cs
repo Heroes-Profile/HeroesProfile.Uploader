@@ -43,36 +43,42 @@ namespace Heroesprofile.Uploader.Common
         private static readonly string preMatchURI = @"PreMatch/Results/?prematchID=";
 
         private static readonly string saveReplayUrl = @"twitch/extension/save/replay";
+        private static readonly string updateReplayDataUrl = @"twitch/extension/update/replay/";
         private static readonly string savePlayersUrl = @"twitch/extension/save/player";
+        private static readonly string updatePlayerDataUrl = @"twitch/extension/update/player";
         private static readonly string saveTalentsUrl = @"twitch/extension/save/talent";
 
-        private bool start_new_parse = true;
+        private bool gameModeUpdated = false;
         private int latest_replayID = 0;
-        private bool preMatchRan = false;
         private int latest_trackever_event = 0;
         private Dictionary<int, int> playerIDTalentIndexDictionary = new Dictionary<int, int>();
 
-        public async Task Start(string stormSavePath)
+        public async Task Start(string battleLobbyPath)
         {
-            if (PreMatchPage && !preMatchRan) {
-                await runPreMatch(stormSavePath);
-                preMatchRan = true;
+            byte[] replayBytes = File.ReadAllBytes(battleLobbyPath);
+            Replay replayData = MpqBattlelobby.Parse(replayBytes);
+
+            if (PreMatchPage) {
+                await runPreMatch(replayData);
             }
 
             if (TwitchExtension) {
-                await runTwitchExtension(stormSavePath);
+                await runTwitchExtensionStart(replayData);
             }
 
+        }
+
+        public async Task Update(string stormSavePath)
+        {
+            await runTwitchExtensionUpdate(stormSavePath);
         }
 
 
         /// <summary>
         /// Upload replay data to Heroes Profile and open up PreMatch page
         /// </summary>
-        private async Task runPreMatch(string stormSavePath)
+        private async Task runPreMatch(Replay replayData)
         {
-            byte[] replayBytes = File.ReadAllBytes(stormSavePath);
-            Replay replayData = MpqBattlelobby.Parse(replayBytes);
 
             HttpClient client = new HttpClient();
             var values = new Dictionary<string, string>
@@ -93,117 +99,103 @@ namespace Heroesprofile.Uploader.Common
             }
         }
 
-
-
-
-        private async Task runTwitchExtension(string stormSavePath)
+        private async Task runTwitchExtensionStart(Replay replayData)
         {
-
-            var replay = new Replay();
-            MpqHeader.ParseHeader(replay, stormSavePath);
-
-            using (var archive = new Foole.Mpq.MpqArchive(stormSavePath)) {
-                archive.AddListfileFilenames();
-
-
-                MpqDetails.Parse(replay, DataParser.GetMpqFile(archive, "save.details"), true);
-
-                if (archive.FileExists("replay.attributes.events")) {
-                    MpqAttributeEvents.Parse(replay, DataParser.GetMpqFile(archive, "replay.attributes.events"));
-                }
-
-                //Get Game Mode               
-                if (archive.FileExists("save.initData")) {
-                    MpqInitData.Parse(replay, DataParser.GetMpqFile(archive, "save.initData"));
-                }
-
-
-                //Uneeded
-                //if (archive.FileExists("replay.game.events")) {
-                //    MpqGameEvents.Parse(DataParser.GetMpqFile(archive, "replay.game.events"), replay.Players, replay.ReplayBuild, replay.ReplayVersionMajor, false);
-                //}
-
-                //Uneeded
-                //if (archive.FileExists("replay.message.events")) {
-                //    MpqMessageEvents.Parse(replay, DataParser.GetMpqFile(archive, "replay.message.events"));
-                //}
-
-                //Fails
-                //if (archive.FileExists("replay.resumable.events")) {
-                //    MpqResumableEvents.Parse(replay, DataParser.GetMpqFile(archive, "replay.resumable.events"));
-                //}
-
-
-                //Uneeded
-
-                //for (int i = 0; i < replay.Players.Length; i++)
-                //{
-                //    replay.Players[i].Talents = new Talent[7];
-                //    for (int j = 0; j < replay.Players[i].Talents.Length; j++)
-                //    {
-                //        replay.Players[i].Talents[j] = new Talent();
-                //    }
-                //}
-
-
-                if (archive.FileExists("replay.tracker.events")) {
-                    replay.TrackerEvents = MpqTrackerEvents.Parse(DataParser.GetMpqFile(archive, "replay.tracker.events"));
-                }
-
-
-                for (int i = latest_trackever_event; i < replay.TrackerEvents.Count; i++) {
-                    //[367] = { StatGameEvent: { "TalentChosen", [{ { "PurchaseName"}, "UtherMasteryWaveofLightHolyRadiance"}], [{ { "PlayerID"}, 2}], } }
-                    //"TalentChosen"
-
-                    if (replay.TrackerEvents[i].Data.dictionary[0].blobText == "TalentChosen") {
-                        Talent talent = new Talent();
-
-                        talent.TalentName = replay.TrackerEvents[i].Data.dictionary[1].optionalData.array[0].dictionary[1].blobText;
-                        long playerID = replay.TrackerEvents[i].Data.dictionary[2].optionalData.array[0].dictionary[1].vInt.Value;
-                        //talent.TalentID = heroTalentIds[replay.Players[playerID - 1].Character + "|" + talent.TalentName];
-                        talent.TimeSpanSelected = replay.TrackerEvents[i].TimeSpan;
-
-
-                        if (!playerIDTalentIndexDictionary.ContainsKey(Convert.ToInt32(playerID - 1)))
-                            playerIDTalentIndexDictionary[Convert.ToInt32(playerID - 1)] = 0;
-
-                        //players[playerID - 1].Talents[playerIDTalentIndexDictionary[Convert.ToInt32(playerID - 1)]++] = talent;
-
-
-
-
-
-                        //int talent_level = heroTalentLevels[replay.Players[playerID - 1].Character + "|" + talent.TalentName];
-
-
-                        if (start_new_parse) {
-                            start_new_parse = false;
-                            await saveReplayData(replay);//Save replay data
-                            await savePlayerData(replay);
-                        }
-                        await saveTalentData(replay, replay.Players[playerID - 1], talent);
-                    }
-                }
-                latest_trackever_event = replay.TrackerEvents.Count - 1;
-                //Statistics.Parse(replay);
-            }
-
-
-            //if (start_new_parse) {
-            //    start_new_parse = false;
-            //    await saveReplayData(replay);//Save replay data
-            //    await savePlayerData(replay);
-            //}
-
-
-            //await saveReplayData(replay);
-            //if (latest_replayID != 0) {
-            //    await savePlayerData(replay);
-            //}
+            await getNewReplayID();
+            await savePlayerData(replayData);
         }
 
 
-        private async Task saveReplayData(Replay replay)
+
+        private async Task runTwitchExtensionUpdate(string stormSavePath)
+        {
+            if (latest_replayID != 0) {
+                var replay = new Replay();
+                MpqHeader.ParseHeader(replay, stormSavePath);
+
+                using (var archive = new Foole.Mpq.MpqArchive(stormSavePath)) {
+                    archive.AddListfileFilenames();
+
+
+                    MpqDetails.Parse(replay, DataParser.GetMpqFile(archive, "save.details"), true);
+
+                    if (archive.FileExists("replay.attributes.events")) {
+                        MpqAttributeEvents.Parse(replay, DataParser.GetMpqFile(archive, "replay.attributes.events"));
+                    }
+
+                    //Get Game Mode               
+                    if (archive.FileExists("save.initData") && !gameModeUpdated) {
+                        MpqInitData.Parse(replay, DataParser.GetMpqFile(archive, "save.initData"));
+                    }
+
+
+                    //Uneeded
+                    //if (archive.FileExists("replay.game.events")) {
+                    //    MpqGameEvents.Parse(DataParser.GetMpqFile(archive, "replay.game.events"), replay.Players, replay.ReplayBuild, replay.ReplayVersionMajor, false);
+                    //}
+
+                    //Uneeded
+                    //if (archive.FileExists("replay.message.events")) {
+                    //    MpqMessageEvents.Parse(replay, DataParser.GetMpqFile(archive, "replay.message.events"));
+                    //}
+
+                    //Fails
+                    //if (archive.FileExists("replay.resumable.events")) {
+                    //    MpqResumableEvents.Parse(replay, DataParser.GetMpqFile(archive, "replay.resumable.events"));
+                    //}
+
+
+                    //Uneeded
+
+                    //for (int i = 0; i < replay.Players.Length; i++)
+                    //{
+                    //    replay.Players[i].Talents = new Talent[7];
+                    //    for (int j = 0; j < replay.Players[i].Talents.Length; j++)
+                    //    {
+                    //        replay.Players[i].Talents[j] = new Talent();
+                    //    }
+                    //}
+
+
+                    if (archive.FileExists("replay.tracker.events")) {
+                        replay.TrackerEvents = MpqTrackerEvents.Parse(DataParser.GetMpqFile(archive, "replay.tracker.events"));
+                    }
+
+                    if (replay.TrackerEvents != null) {
+                        for (int i = latest_trackever_event; i < replay.TrackerEvents.Count; i++) {
+                            if (replay.TrackerEvents[i].Data.dictionary[0].blobText == "TalentChosen") {
+                                Talent talent = new Talent();
+
+                                talent.TalentName = replay.TrackerEvents[i].Data.dictionary[1].optionalData.array[0].dictionary[1].blobText;
+                                long playerID = replay.TrackerEvents[i].Data.dictionary[2].optionalData.array[0].dictionary[1].vInt.Value;
+                                talent.TimeSpanSelected = replay.TrackerEvents[i].TimeSpan;
+                                if (!playerIDTalentIndexDictionary.ContainsKey(Convert.ToInt32(playerID - 1)))
+                                    playerIDTalentIndexDictionary[Convert.ToInt32(playerID - 1)] = 0;
+
+                                if (!gameModeUpdated) {
+                                    await updateReplayData(replay);
+                                    await updatePlayerData(replay);
+                                    gameModeUpdated = false;
+                                }
+                                await saveTalentData(replay, replay.Players[playerID - 1], talent);
+                            }
+                        }
+                        latest_trackever_event = replay.TrackerEvents.Count - 1;
+                    }
+
+                    if (!gameModeUpdated) {
+                        await updateReplayData(replay);
+                        await updatePlayerData(replay);
+                        gameModeUpdated = false;
+                    }
+
+                    //Statistics.Parse(replay);
+                }
+            }
+        }
+
+
+        private async Task getNewReplayID()
         {
             var values = new Dictionary<string, string>
             {
@@ -211,11 +203,7 @@ namespace Heroesprofile.Uploader.Common
                 { "email", hpAPIEmail },
                 { "twitch_nickname", twitchKnickname },
                 { "user_id", hpAPIUserID.ToString() },
-                { "game_type", replay.GameMode.ToString() },
                 { "game_date", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") },
-                { "game_map", replay.Map },
-                { "game_version", replay.ReplayVersion },
-                { "region", replay.Players[0].BattleNetRegionId.ToString() },
             };
 
             var content = new FormUrlEncodedContent(values);
@@ -232,8 +220,50 @@ namespace Heroesprofile.Uploader.Common
             }
         }
 
+        private async Task updateReplayData(Replay replay)
+        {
+            var values = new Dictionary<string, string>
+{
+                { "hp_twitch_key", hpTwitchAPIKey },
+                { "email", hpAPIEmail },
+                { "twitch_nickname", twitchKnickname },
+                { "user_id", hpAPIUserID.ToString() },
+                { "replayID", latest_replayID.ToString() },
+                { "game_type", replay.GameMode.ToString() },
+                { "game_map", replay.Map },
+                { "game_version", replay.ReplayVersion },
+                { "region", replay.Players[0].BattleNetRegionId.ToString() },
+            };
+            var content = new FormUrlEncodedContent(values);
+            var response = await client.PostAsync($"{heresprofileAPI}{updateReplayDataUrl}", content);
+            //_log.Info("Updating Game Mode Data for Live Extension:" + response);
 
+        }
         private async Task savePlayerData(Replay replay)
+        {
+
+            for (int i = 0; i < replay.Players.Length; i++) {
+                var values = new Dictionary<string, string>
+                {
+                    { "hp_twitch_key", hpTwitchAPIKey },
+                    { "email", hpAPIEmail },
+                    { "twitch_nickname", twitchKnickname },
+                    { "user_id", hpAPIUserID.ToString() },
+                    { "replayID", latest_replayID.ToString() },
+                    //{ "blizz_id", replay.Players[i].BattleNetId.ToString() },
+                    { "battletag", replay.Players[i].Name },
+                    //{ "hero", replay.Players[i].Character },
+                    { "team", replay.Players[i].Team.ToString() },
+                    //{ "region", replay.Players[i].BattleNetRegionId.ToString() },
+                };
+
+                var content = new FormUrlEncodedContent(values);
+                var response = await client.PostAsync($"{heresprofileAPI}{savePlayersUrl}", content);
+               // _log.Info("Saving player data for twitch extension" + response);
+            }
+        }
+
+        private async Task updatePlayerData(Replay replay)
         {
 
             for (int i = 0; i < replay.Players.Length; i++) {
@@ -252,8 +282,8 @@ namespace Heroesprofile.Uploader.Common
                 };
 
                 var content = new FormUrlEncodedContent(values);
-                var response = await client.PostAsync($"{heresprofileAPI}{savePlayersUrl}", content);
-                _log.Info("Saving player data for twitch extension" + response);
+                var response = await client.PostAsync($"{heresprofileAPI}{updatePlayerDataUrl}", content);
+                //_log.Info("Updating player data for twitch extension" + response);
             }
         }
 
@@ -275,7 +305,7 @@ namespace Heroesprofile.Uploader.Common
 
             var content = new FormUrlEncodedContent(values);
             var response = await client.PostAsync($"{heresprofileAPI}{saveTalentsUrl}", content);
-            _log.Info("Saving talents for twitch extension" + response);
+           // _log.Info("Saving talents for twitch extension" + response);
         }
 
         public async Task saveTalentDataTwenty(string stormReplayPath)
@@ -284,23 +314,28 @@ namespace Heroesprofile.Uploader.Common
             
             foreach (var player in replay.Players.OrderByDescending(i => i.IsWinner)) 
             {
-                var values = new Dictionary<string, string>
-{
-                { "hp_twitch_key", hpTwitchAPIKey },
-                { "email", hpAPIEmail },
-                { "twitch_nickname", twitchKnickname },
-                { "user_id", hpAPIUserID.ToString() },
-                { "replayID", latest_replayID.ToString() },
-                { "blizz_id", player.BattleNetId.ToString() },
-                { "battletag", player.Name },
-                { "region", player.BattleNetRegionId.ToString() },
-                { "talent", player.Talents[6].TalentName },
-                { "hero", player.Character },
-            };
+                if (player.Talents != null) {
+                    if (player.Talents[6] != null) {
+                        var values = new Dictionary<string, string>
+                        {
+                            { "hp_twitch_key", hpTwitchAPIKey },
+                            { "email", hpAPIEmail },
+                            { "twitch_nickname", twitchKnickname },
+                            { "user_id", hpAPIUserID.ToString() },
+                            { "replayID", latest_replayID.ToString() },
+                            { "blizz_id", player.BattleNetId.ToString() },
+                            { "battletag", player.Name },
+                            { "region", player.BattleNetRegionId.ToString() },
+                            { "talent", player.Talents[6].TalentName },
+                            { "hero", player.Character },
+                        };
+                        var content = new FormUrlEncodedContent(values);
+                        var response = await client.PostAsync($"{heresprofileAPI}{saveTalentsUrl}", content);
+                        // _log.Info("Saving level twenties for twitch extension" + response);
+                    }
+                }
 
-                var content = new FormUrlEncodedContent(values);
-                var response = await client.PostAsync($"{heresprofileAPI}{saveTalentsUrl}", content);
-                _log.Info("Saving level twenties for twitch extension" + response);
+
             }
         }
 

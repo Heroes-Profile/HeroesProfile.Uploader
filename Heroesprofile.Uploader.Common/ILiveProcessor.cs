@@ -14,7 +14,8 @@ namespace Heroesprofile.Uploader.Common
         int hpAPIUserID { get; set; }
 
 
-        Task Start(string stormSavePath);
+        Task Start(string battleLobbyPath);
+        Task Update(string stormSavePath);
 
         Task saveTalentDataTwenty(string stormReplayPath);
     }

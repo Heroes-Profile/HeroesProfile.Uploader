@@ -9,5 +9,6 @@ namespace Heroesprofile.Uploader.Common
         event EventHandler<EventArgs<string>> StormSaveCreated;
         void Start();
         void Stop();
+        bool IsRunning();
     }
 }

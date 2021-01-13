@@ -117,17 +117,20 @@ namespace Heroesprofile.Uploader.Common
                 var replay = new ReplayFile(e.Data);
                 Files.Insert(0, replay);
                 processingQueue.Add(replay);
+
                 if (PreMatchPage) {
-                    _prematch_monitor.Start();
+                    if (!_prematch_monitor.IsRunning()) {
+                        _prematch_monitor.Start();
+                    }
+
                 }
             };
             _monitor.Start();
 
-            
-            _prematch_monitor.TempBattleLobbyCreated += async (_, e) => {
-                if (PreMatchPage) {
+            if (PreMatchPage) {
+                _prematch_monitor.TempBattleLobbyCreated += async (_, e) => {
                     prematch_id = 0;
-                    _prematch_monitor.Stop();
+                    //_prematch_monitor.Stop();
                     Thread.Sleep(1000);
                     await EnsureFileAvailable(e.Data, 3000);
                     var tmpPath = Path.GetTempFileName();
@@ -135,11 +138,9 @@ namespace Heroesprofile.Uploader.Common
                     byte[] bytes = File.ReadAllBytes(tmpPath);
                     Replay replay = MpqBattlelobby.Parse(bytes);
                     await runPreMatch(replay);
-                }
-            };
-            _prematch_monitor.Start();
-            
-            
+                };
+                _prematch_monitor.Start();
+            }
 
             _analyzer.MinimumBuild = await _uploader.GetMinimumBuild();
 

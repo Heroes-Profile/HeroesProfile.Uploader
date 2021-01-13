@@ -75,5 +75,10 @@ namespace Heroesprofile.Uploader.Common
             }
             _log.Debug($"Stopped watching for new replays");
         }
+
+        public bool IsRunning()
+        {
+            return _battlelobby_watcher == null ? false : true;
+        }
     }
 }

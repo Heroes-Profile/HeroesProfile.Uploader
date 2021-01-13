@@ -163,7 +163,7 @@ namespace Heroesprofile.Uploader.Common
                     await EnsureFileAvailable(e.Data, 3000);
                     var tmpPath = Path.GetTempFileName();
                     await SafeCopy(e.Data, tmpPath, true);
-                    await _liveProcessor.Start(tmpPath);
+                    await _liveProcessor.StartProcessing(tmpPath);
                 };
 
 
@@ -173,8 +173,9 @@ namespace Heroesprofile.Uploader.Common
                     await EnsureFileAvailable(e.Data, 3000);
                     var tmpPath = Path.GetTempFileName();
                     await SafeCopy(e.Data, tmpPath, true);
-                    await _liveProcessor.Update(tmpPath);
+                    await _liveProcessor.UpdateData(tmpPath);
                 };
+
                 _live_monitor.Start();
             }
 

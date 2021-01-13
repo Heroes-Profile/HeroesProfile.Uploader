@@ -53,7 +53,7 @@ namespace Heroesprofile.Uploader.Common
         private int latest_trackever_event = 0;
         private Dictionary<int, int> playerIDTalentIndexDictionary = new Dictionary<int, int>();
 
-        public async Task Start(string battleLobbyPath)
+        public async Task StartProcessing(string battleLobbyPath)
         {
             byte[] replayBytes = File.ReadAllBytes(battleLobbyPath);
             Replay replayData = MpqBattlelobby.Parse(replayBytes);
@@ -68,7 +68,7 @@ namespace Heroesprofile.Uploader.Common
 
         }
 
-        public async Task Update(string stormSavePath)
+        public async Task UpdateData(string stormSavePath)
         {
             await runTwitchExtensionUpdate(stormSavePath);
         }

@@ -144,34 +144,41 @@ namespace Heroesprofile.Uploader.Common
                         await _liveProcessor.saveTalentDataTwenty(tmpPath);
                     }
                     liveProcessor = new LiveProcessor();
-                    _live_monitor.Start();
+
+                    if (PreMatchPage || TwitchExtension) {
+                        if (!_live_monitor.IsRunning()) {
+                            _live_monitor.Start();
+                        }
+
+                    }
                 }
             };
             _monitor.Start();
 
-            
-            _live_monitor.TempBattleLobbyCreated += async (_, e) => {
-                _live_monitor.StopBattleLobbyWatcher();
-                liveProcessor = new LiveProcessor();
-                Thread.Sleep(1000);
-                await EnsureFileAvailable(e.Data, 3000);
-                var tmpPath = Path.GetTempFileName();
-                await SafeCopy(e.Data, tmpPath, true);
-                await _liveProcessor.Start(tmpPath);
-            };
+            if (PreMatchPage || TwitchExtension) {
+                _live_monitor.TempBattleLobbyCreated += async (_, e) => {
+                    //_live_monitor.StopBattleLobbyWatcher();
+                    liveProcessor = new LiveProcessor();
+                    Thread.Sleep(1000);
+                    await EnsureFileAvailable(e.Data, 3000);
+                    var tmpPath = Path.GetTempFileName();
+                    await SafeCopy(e.Data, tmpPath, true);
+                    await _liveProcessor.Start(tmpPath);
+                };
 
 
-            _live_monitor.StormSaveCreated += async (_, e) => {
-                //_live_monitor.StopStormSaveWatcher();
-                Thread.Sleep(1000);
-                await EnsureFileAvailable(e.Data, 3000);
-                var tmpPath = Path.GetTempFileName();
-                await SafeCopy(e.Data, tmpPath, true);
-                await _liveProcessor.Update(tmpPath);
-            };
+                _live_monitor.StormSaveCreated += async (_, e) => {
+                    //_live_monitor.StopStormSaveWatcher();
+                    Thread.Sleep(1000);
+                    await EnsureFileAvailable(e.Data, 3000);
+                    var tmpPath = Path.GetTempFileName();
+                    await SafeCopy(e.Data, tmpPath, true);
+                    await _liveProcessor.Update(tmpPath);
+                };
+                _live_monitor.Start();
+            }
 
 
-            _live_monitor.Start();
             
             
 

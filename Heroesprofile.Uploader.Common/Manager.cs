@@ -152,6 +152,7 @@ namespace Heroesprofile.Uploader.Common
             
             _live_monitor.TempBattleLobbyCreated += async (_, e) => {
                 _live_monitor.StopBattleLobbyWatcher();
+                liveProcessor = new LiveProcessor();
                 Thread.Sleep(1000);
                 await EnsureFileAvailable(e.Data, 3000);
                 var tmpPath = Path.GetTempFileName();

@@ -178,9 +178,9 @@ namespace Heroesprofile.Uploader.Common
                                     gameModeUpdated = false;
                                 }
                                 await saveTalentData(replay, replay.Players[playerID - 1], talent);
+                                latest_trackever_event = i + 1;
                             }
                         }
-                        latest_trackever_event = replay.TrackerEvents.Count - 1;
                     }
 
                     if (!gameModeUpdated) {

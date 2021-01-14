@@ -119,18 +119,14 @@ namespace Heroesprofile.Uploader.Common
                 processingQueue.Add(replay);
 
                 if (PreMatchPage) {
-                    if (!_prematch_monitor.IsRunning()) {
-                        _prematch_monitor.Start();
-                    }
-
+                    _prematch_monitor.Start();
                 }
             };
             _monitor.Start();
 
             if (PreMatchPage) {
                 _prematch_monitor.TempBattleLobbyCreated += async (_, e) => {
-                    prematch_id = 0;
-                    //_prematch_monitor.Stop();
+                    _prematch_monitor.Stop();
                     Thread.Sleep(1000);
                     await EnsureFileAvailable(e.Data, 3000);
                     var tmpPath = Path.GetTempFileName();
@@ -174,23 +170,6 @@ namespace Heroesprofile.Uploader.Common
 
             Process.Start("https://www.heroesprofile.com/PreMatch/Results/?prematchID=" + prematch_id);
         }
-        /*
-        private async Task updatePreMatch(Replay replayData)
-        {
-            HttpClient client = new HttpClient();
-            var values = new Dictionary<string, string>
-            {
-                { "prematch_id", prematch_id.ToString() },
-                { "game_type", replayData.GameMode.ToString() },
-                { "game_map", replayData.Map.ToString() },
-                { "data", JsonConvert.SerializeObject(replayData.Players) },
-            };
-
-            var content = new FormUrlEncodedContent(values);
-
-            var response = await client.PostAsync("https://www.heroesprofile.com/PreMatch/Update", content);
-        }
-        */
 
         private async Task UploadLoop()
         {

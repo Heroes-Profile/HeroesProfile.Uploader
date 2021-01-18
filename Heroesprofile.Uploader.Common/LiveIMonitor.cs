@@ -7,9 +7,15 @@ namespace Heroesprofile.Uploader.Common
     {
         event EventHandler<EventArgs<string>> TempBattleLobbyCreated;
         event EventHandler<EventArgs<string>> StormSaveCreated;
-        void Start();
-        bool IsRunning();
+        void StartBattleLobby();
+        void StartStormSave();
+
+
         void StopBattleLobbyWatcher();
         void StopStormSaveWatcher();
+
+        bool IsBattleLobbyRunning();
+        bool IsStormSaveRunning();
+
     }
 }

@@ -29,7 +29,7 @@ namespace Heroesprofile.Uploader.Common
 
         public string hpTwitchAPIKey { get; set; }
         public string hpAPIEmail { get; set; }
-        public string twitchKnickname { get; set; }
+        public string twitchNickname { get; set; }
         public int hpAPIUserID { get; set; }
 
         private static Logger _log = LogManager.GetCurrentClassLogger();
@@ -47,10 +47,12 @@ namespace Heroesprofile.Uploader.Common
         private static readonly string savePlayersUrl = @"twitch/extension/save/player";
         private static readonly string updatePlayerDataUrl = @"twitch/extension/update/player";
         private static readonly string saveTalentsUrl = @"twitch/extension/save/talent";
+        private static readonly string notifyUrl = @"twitch/extension/notify/talent/update";
 
         private bool gameModeUpdated = false;
         private int latest_replayID = 0;
         private int latest_trackever_event = 0;
+        private bool talentUpdate = false;
         private Dictionary<int, int> playerIDTalentIndexDictionary = new Dictionary<int, int>();
 
         public async Task StartProcessing(string battleLobbyPath)
@@ -103,6 +105,7 @@ namespace Heroesprofile.Uploader.Common
         {
             await getNewReplayID();
             await savePlayerData(replayData);
+            await notifyTwitchOfTalentChange();
         }
 
 
@@ -162,6 +165,8 @@ namespace Heroesprofile.Uploader.Common
                     }
 
                     if (replay.TrackerEvents != null) {
+
+                        //Seems like you could run some sort of linq filter expression to only return those tracker events that correspond to value "TalentChosen"
                         for (int i = latest_trackever_event; i < replay.TrackerEvents.Count; i++) {
                             if (replay.TrackerEvents[i].Data.dictionary[0].blobText == "TalentChosen") {
                                 Talent talent = new Talent();
@@ -179,8 +184,17 @@ namespace Heroesprofile.Uploader.Common
                                 }
                                 await saveTalentData(replay, replay.Players[playerID - 1], talent);
                                 latest_trackever_event = i + 1;
+
+                                talentUpdate = true;
                             }
                         }
+                        
+                        if (talentUpdate) {
+                            await notifyTwitchOfTalentChange();
+                            talentUpdate = false;
+                        }
+                        
+                        
                     }
 
                     if (!gameModeUpdated) {
@@ -194,6 +208,7 @@ namespace Heroesprofile.Uploader.Common
             }
         }
 
+        
 
         private async Task getNewReplayID()
         {
@@ -201,7 +216,7 @@ namespace Heroesprofile.Uploader.Common
             {
                 { "hp_twitch_key", hpTwitchAPIKey },
                 { "email", hpAPIEmail },
-                { "twitch_nickname", twitchKnickname },
+                { "twitch_nickname", twitchNickname },
                 { "user_id", hpAPIUserID.ToString() },
                 { "game_date", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") },
             };
@@ -226,7 +241,7 @@ namespace Heroesprofile.Uploader.Common
 {
                 { "hp_twitch_key", hpTwitchAPIKey },
                 { "email", hpAPIEmail },
-                { "twitch_nickname", twitchKnickname },
+                { "twitch_nickname", twitchNickname },
                 { "user_id", hpAPIUserID.ToString() },
                 { "replayID", latest_replayID.ToString() },
                 { "game_type", replay.GameMode.ToString() },
@@ -247,7 +262,7 @@ namespace Heroesprofile.Uploader.Common
                 {
                     { "hp_twitch_key", hpTwitchAPIKey },
                     { "email", hpAPIEmail },
-                    { "twitch_nickname", twitchKnickname },
+                    { "twitch_nickname", twitchNickname },
                     { "user_id", hpAPIUserID.ToString() },
                     { "replayID", latest_replayID.ToString() },
                     //{ "blizz_id", replay.Players[i].BattleNetId.ToString() },
@@ -271,7 +286,7 @@ namespace Heroesprofile.Uploader.Common
                 {
                     { "hp_twitch_key", hpTwitchAPIKey },
                     { "email", hpAPIEmail },
-                    { "twitch_nickname", twitchKnickname },
+                    { "twitch_nickname", twitchNickname },
                     { "user_id", hpAPIUserID.ToString() },
                     { "replayID", latest_replayID.ToString() },
                     { "blizz_id", replay.Players[i].BattleNetId.ToString() },
@@ -293,7 +308,7 @@ namespace Heroesprofile.Uploader.Common
             {
                 { "hp_twitch_key", hpTwitchAPIKey },
                 { "email", hpAPIEmail },
-                { "twitch_nickname", twitchKnickname },
+                { "twitch_nickname", twitchNickname },
                 { "user_id", hpAPIUserID.ToString() },
                 { "replayID", latest_replayID.ToString() },
                 { "blizz_id", player.BattleNetId.ToString() },
@@ -321,7 +336,7 @@ namespace Heroesprofile.Uploader.Common
                                     {
                                     { "hp_twitch_key", hpTwitchAPIKey },
                                     { "email", hpAPIEmail },
-                                    { "twitch_nickname", twitchKnickname },
+                                    { "twitch_nickname", twitchNickname },
                                     { "user_id", hpAPIUserID.ToString() },
                                     { "replayID", latest_replayID.ToString() },
                                     { "blizz_id", player.BattleNetId.ToString() },
@@ -340,5 +355,18 @@ namespace Heroesprofile.Uploader.Common
             }
         }
 
+        private async Task notifyTwitchOfTalentChange()
+        {
+            var values = new Dictionary<string, string>
+{
+                { "hp_twitch_key", hpTwitchAPIKey },
+                { "email", hpAPIEmail },
+                { "twitch_nickname", twitchNickname },
+                { "user_id", hpAPIUserID.ToString() },
+            };
+            var content = new FormUrlEncodedContent(values);
+            var response = await client.PostAsync($"{heresprofileAPI}{notifyUrl}", content);
+            //_log.Info("Updating Game Mode Data for Live Extension:" + response);
+        }
     }
 }

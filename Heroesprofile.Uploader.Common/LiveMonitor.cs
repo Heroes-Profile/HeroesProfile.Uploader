@@ -36,9 +36,9 @@ namespace Heroesprofile.Uploader.Common
         }
 
         /// <summary>
-        /// Starts watching filesystem for new replays. When found raises <see cref="TempReplayCreated"/> event.
+        /// Starts watching filesystem for new battlelobby. When found raises <see cref="OnBattleLobbyAdded"/> event.
         /// </summary>
-        public void Start()
+        public void StartBattleLobby()
         {
             if (_battlelobby_watcher == null) {
                // Directory.CreateDirectory(BattleLobbyTempPath);
@@ -51,6 +51,14 @@ namespace Heroesprofile.Uploader.Common
             }
             _battlelobby_watcher.EnableRaisingEvents = true;
 
+            _log.Debug($"Started watching for new battlelobby");
+        }
+
+        /// <summary>
+        /// Starts watching filesystem for new storm saves. When found raises <see cref="OnStormSaveAdded"/> event.
+        /// </summary>
+        public void StartStormSave()
+        {
             if (_stormsave_watcher == null) {
                 _stormsave_watcher = new FileSystemWatcher() {
                     Path = StormSavePath,
@@ -61,8 +69,9 @@ namespace Heroesprofile.Uploader.Common
             }
             _stormsave_watcher.EnableRaisingEvents = true;
 
-            _log.Debug($"Started watching for new stormsave replays");
+            _log.Debug($"Started watching for new storm save");
         }
+
 
         /// <summary>
         /// Stops watching filesystem for new replays
@@ -80,12 +89,17 @@ namespace Heroesprofile.Uploader.Common
             if (_stormsave_watcher != null) {
                 _stormsave_watcher.EnableRaisingEvents = false;
             }
-            _log.Debug($"Stopped watching for new replays");
+            _log.Debug($"Stopped watching for new storm save files");
         }
 
-        public bool IsRunning()
+        public bool IsBattleLobbyRunning()
         {
             return _battlelobby_watcher == null ? false : true;
+        }
+
+        public bool IsStormSaveRunning()
+        {
+            return _stormsave_watcher == null ? false : true;
         }
     }
 }

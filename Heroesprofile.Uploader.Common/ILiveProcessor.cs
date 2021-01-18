@@ -10,7 +10,7 @@ namespace Heroesprofile.Uploader.Common
 
         string hpTwitchAPIKey { get; set; }
         string hpAPIEmail { get; set; }
-        string twitchKnickname { get; set; }
+        string twitchNickname { get; set; }
         int hpAPIUserID { get; set; }
 
 

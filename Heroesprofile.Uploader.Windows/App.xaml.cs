@@ -111,7 +111,7 @@ namespace Heroesprofile.Uploader.Windows
             Manager.TwitchExtension = Settings.HPTwitchExtension;
             Manager.hpTwitchAPIKey = Settings.HPKey;
             Manager.hpAPIEmail = Settings.HPAPIEmail;
-            Manager.twitchKnickname = Settings.TwitchNickname;
+            Manager.twitchNickname = Settings.TwitchNickname;
             Manager.hpAPIUserID = Settings.HPAPIUserID;
 
 

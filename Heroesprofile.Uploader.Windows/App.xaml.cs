@@ -140,7 +140,7 @@ namespace Heroesprofile.Uploader.Windows
                 mainWindow = new MainWindow();
                 mainWindow.Show();
             }
-            Manager.Start(new Monitor(), new LiveMonitor(), new Analyzer(), new Common.Uploader(), new LiveProcessor());
+            Manager.Start(new Monitor(), new LiveMonitor(), new Analyzer(), new Common.Uploader(), new LiveProcessor(Manager.PreMatchPage, Manager.TwitchExtension, Manager.hpTwitchAPIKey, Manager.hpAPIEmail, Manager.twitchNickname, Manager.hpAPIUserID));
 
 #pragma warning disable 162
             if (!NoSquirrel) {

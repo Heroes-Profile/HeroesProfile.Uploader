@@ -114,12 +114,6 @@ namespace Heroesprofile.Uploader.Common
             _uploader = uploader;
             _analyzer = analyzer;
             _liveProcessor = liveProcessor;
-            liveProcessor.PreMatchPage = PreMatchPage;
-            liveProcessor.TwitchExtension = TwitchExtension;
-            liveProcessor.hpTwitchAPIKey = hpTwitchAPIKey;
-            liveProcessor.hpAPIEmail = hpAPIEmail;
-            liveProcessor.twitchNickname = twitchNickname;
-            liveProcessor.hpAPIUserID = hpAPIUserID;
 
             _monitor = monitor;
             _live_monitor = live_monitor;
@@ -144,16 +138,17 @@ namespace Heroesprofile.Uploader.Common
                         await _liveProcessor.saveTalentDataTwenty(tmpPath);
                     }
 
-                    if (PreMatchPage || TwitchExtension) {
-                        if (!_live_monitor.IsBattleLobbyRunning() || !_live_monitor.IsStormSaveRunning()) {
-                            _live_monitor.StartBattleLobby();
+                    _live_monitor = new LiveMonitor();
+                    if (!_live_monitor.IsBattleLobbyRunning()) {
+                        _live_monitor.StartBattleLobby();
+                    }
+
+                    if (TwitchExtension) {
+                        if (!_live_monitor.IsStormSaveRunning()) {
                             _live_monitor.StartStormSave();
                         }
-
                     }
                 }
-                liveProcessor = new LiveProcessor();
-                _live_monitor.StartBattleLobby();
             };
             _monitor.Start();
 
@@ -161,7 +156,7 @@ namespace Heroesprofile.Uploader.Common
             if (PreMatchPage || TwitchExtension) {
                 _live_monitor.TempBattleLobbyCreated += async (_, e) => {
                     _live_monitor.StopBattleLobbyWatcher();
-                    liveProcessor = new LiveProcessor();
+                    _liveProcessor = new LiveProcessor(PreMatchPage, TwitchExtension, hpTwitchAPIKey, hpAPIEmail, twitchNickname, hpAPIUserID);
                     Thread.Sleep(1000);
                     await EnsureFileAvailable(e.Data, 3000);
                     var tmpPath = Path.GetTempFileName();
@@ -169,7 +164,10 @@ namespace Heroesprofile.Uploader.Common
                     await _liveProcessor.StartProcessing(tmpPath);
                 };
 
+                _live_monitor.StartBattleLobby();
+            }
 
+            if (TwitchExtension) {
                 _live_monitor.StormSaveCreated += async (_, e) => {
                     Thread.Sleep(1000);
                     await EnsureFileAvailable(e.Data, 3000);
@@ -177,11 +175,8 @@ namespace Heroesprofile.Uploader.Common
                     await SafeCopy(e.Data, tmpPath, true);
                     await _liveProcessor.UpdateData(tmpPath);
                 };
-
-                _live_monitor.StartBattleLobby();
                 _live_monitor.StartStormSave();
             }
-
 
 
 

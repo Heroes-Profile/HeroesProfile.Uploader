@@ -55,6 +55,16 @@ namespace Heroesprofile.Uploader.Common
         private bool talentUpdate = false;
         private Dictionary<int, int> playerIDTalentIndexDictionary = new Dictionary<int, int>();
 
+        public LiveProcessor(bool PreMatchPage, bool TwitchExtension, string hpTwitchAPIKey, string hpAPIEmail, string twitchNickname, int hpAPIUserID)
+        {
+            this.PreMatchPage = PreMatchPage;
+            this.TwitchExtension = TwitchExtension;
+            this.hpTwitchAPIKey = hpTwitchAPIKey;
+            this.hpAPIEmail = hpAPIEmail;
+            this.twitchNickname = twitchNickname;
+            this.hpAPIUserID = hpAPIUserID;
+        }
+
         public async Task StartProcessing(string battleLobbyPath)
         {
             byte[] replayBytes = File.ReadAllBytes(battleLobbyPath);
@@ -254,6 +264,7 @@ namespace Heroesprofile.Uploader.Common
             //_log.Info("Updating Game Mode Data for Live Extension:" + response);
 
         }
+
         private async Task savePlayerData(Replay replay)
         {
 
@@ -327,31 +338,34 @@ namespace Heroesprofile.Uploader.Common
         {
             if(latest_replayID != 0) {
                 var (replayParseResult, replay) = DataParser.ParseReplay(stormReplayPath, deleteFile: false, ParseOptions.DefaultParsing);
-
-                foreach (var player in replay.Players.OrderByDescending(i => i.IsWinner)) {
-                    if (player.Talents != null) {
-                        if (player.Talents.Length == 7) {
-                            if (player.Talents[6] != null) {
-                                var values = new Dictionary<string, string>
-                                    {
-                                    { "hp_twitch_key", hpTwitchAPIKey },
-                                    { "email", hpAPIEmail },
-                                    { "twitch_nickname", twitchNickname },
-                                    { "user_id", hpAPIUserID.ToString() },
-                                    { "replayID", latest_replayID.ToString() },
-                                    { "blizz_id", player.BattleNetId.ToString() },
-                                    { "battletag", player.Name },
-                                    { "region", player.BattleNetRegionId.ToString() },
-                                    { "talent", player.Talents[6].TalentName },
-                                    { "hero", player.Character },
-                                };
-                                var content = new FormUrlEncodedContent(values);
-                                var response = await client.PostAsync($"{heresprofileAPI}{saveTalentsUrl}", content);
-                                // _log.Info("Saving level twenties for twitch extension" + response);
+                if (replay != null) {
+                    foreach (var player in replay.Players.OrderByDescending(i => i.IsWinner)) {
+                        if (player.Talents != null) {
+                            if (player.Talents.Length == 7) {
+                                if (player.Talents[6] != null) {
+                                    var values = new Dictionary<string, string>
+                                        {
+                                            { "hp_twitch_key", hpTwitchAPIKey },
+                                            { "email", hpAPIEmail },
+                                            { "twitch_nickname", twitchNickname },
+                                            { "user_id", hpAPIUserID.ToString() },
+                                            { "replayID", latest_replayID.ToString() },
+                                            { "blizz_id", player.BattleNetId.ToString() },
+                                            { "battletag", player.Name },
+                                            { "region", player.BattleNetRegionId.ToString() },
+                                            { "talent", player.Talents[6].TalentName },
+                                            { "hero", player.Character },
+                                        };
+                                    var content = new FormUrlEncodedContent(values);
+                                    var response = await client.PostAsync($"{heresprofileAPI}{saveTalentsUrl}", content);
+                                    // _log.Info("Saving level twenties for twitch extension" + response);
+                                }
                             }
                         }
                     }
+                    await notifyTwitchOfTalentChange();
                 }
+
             }
         }
 

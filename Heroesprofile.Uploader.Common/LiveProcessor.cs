@@ -54,6 +54,7 @@ namespace Heroesprofile.Uploader.Common
         private int latest_trackever_event = 0;
         private bool talentUpdate = false;
         private Dictionary<int, int> playerIDTalentIndexDictionary = new Dictionary<int, int>();
+        private Dictionary<string, string> foundTalents = new Dictionary<string, string>();
 
         public LiveProcessor(bool PreMatchPage, bool TwitchExtension, string hpTwitchAPIKey, string hpAPIEmail, string twitchNickname, int hpAPIUserID)
         {
@@ -177,7 +178,8 @@ namespace Heroesprofile.Uploader.Common
                     if (replay.TrackerEvents != null) {
 
                         //Seems like you could run some sort of linq filter expression to only return those tracker events that correspond to value "TalentChosen"
-                        for (int i = latest_trackever_event; i < replay.TrackerEvents.Count; i++) {
+                        //for (int i = latest_trackever_event; i < replay.TrackerEvents.Count; i++) {
+                        for (int i = 0; i < replay.TrackerEvents.Count; i++) {
                             if (replay.TrackerEvents[i].Data.dictionary[0].blobText == "TalentChosen") {
                                 Talent talent = new Talent();
 
@@ -192,10 +194,14 @@ namespace Heroesprofile.Uploader.Common
                                     await updatePlayerData(replay);
                                     gameModeUpdated = false;
                                 }
-                                await saveTalentData(replay, replay.Players[playerID - 1], talent);
-                                latest_trackever_event = i + 1;
+                                if (!foundTalents.ContainsKey(talent.TalentName)) {
+                                    foundTalents.Add(talent.TalentName, talent.TalentName);
+                                    await saveTalentData(replay, replay.Players[playerID - 1], talent);
+                                    talentUpdate = true;
+                                }
+                          
+                                //latest_trackever_event = i;
 
-                                talentUpdate = true;
                             }
                         }
                         

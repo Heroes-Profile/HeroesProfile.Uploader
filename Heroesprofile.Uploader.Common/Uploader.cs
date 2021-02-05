@@ -5,13 +5,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Heroes.ReplayParser;
-using Newtonsoft.Json;
 using System.IO;
 using System.Diagnostics;
-using NLog.LayoutRenderers;
 
 namespace Heroesprofile.Uploader.Common
 {
@@ -122,22 +119,21 @@ namespace Heroesprofile.Uploader.Common
 
         private async Task postMatchAnalysis(int replayID)
         {
-
+            
             var timer = new Stopwatch();
             timer.Start();
-            while (timer.ElapsedMilliseconds < 300000) {
+            while (timer.ElapsedMilliseconds < 15000) {
                 string response;
                 using (var client = new WebClient()) {
                     response = await client.DownloadStringTaskAsync($"{HeroesProfileMatchParsed}{replayID}");
                 }
                 if (response == "true") {
-                    System.Diagnostics.Process.Start($"{HeroesProfileMatchSummary}{replayID}");
+                    Process.Start($"{HeroesProfileMatchSummary}{replayID}");
                     return;
                 }
                 await Task.Delay(1000);
             }
-
-            //HeroesProfileMatchParsed
+            
 
         }
         /// <summary>

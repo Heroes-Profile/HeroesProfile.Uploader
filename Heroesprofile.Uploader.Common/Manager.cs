@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Threading;
@@ -13,21 +10,7 @@ using Nito.AsyncEx;
 using System.Diagnostics;
 using Heroes.ReplayParser;
 using System.Collections.Concurrent;
-//using System.Net.Http;
-//using Newtonsoft.Json;
-using MpqBattlelobby = Heroes.ReplayParser.MPQFiles.StandaloneBattleLobbyParser;
-using MpqHeader = Heroes.ReplayParser.MPQFiles.MpqHeader;
-using MpqAttributeEvents = Heroes.ReplayParser.MPQFiles.ReplayAttributeEvents;
-using MpqDetails = Heroes.ReplayParser.MPQFiles.ReplayDetails;
-//using MpqGameEvents = Heroes.ReplayParser.MPQFiles.ReplayGameEvents;
-using MpqInitData = Heroes.ReplayParser.MPQFiles.ReplayInitData;
-//using MpqMessageEvents = Heroes.ReplayParser.MPQFiles.ReplayMessageEvents;
-//using MpqResumableEvents = Heroes.ReplayParser.MPQFiles.ReplayResumableEvents;
-using MpqTrackerEvents = Heroes.ReplayParser.MPQFiles.ReplayTrackerEvents;
-using Statistics = Heroes.ReplayParser.Statistics;
-//using GameEventType = Heroes.ReplayParser.MPQFiles.GameEventType;
-
-
+ 
 namespace Heroesprofile.Uploader.Common
 {
     public class Manager : INotifyPropertyChanged
@@ -126,9 +109,6 @@ namespace Heroesprofile.Uploader.Common
 
             _monitor.ReplayAdded += async (_, e) => {
                 await EnsureFileAvailable(e.Data, 3000);
-                var replay = new ReplayFile(e.Data);
-                Files.Insert(0, replay);
-                processingQueue.Add(replay);
                 if (PreMatchPage || TwitchExtension) {
                     if (TwitchExtension) {
                         Thread.Sleep(1000);
@@ -138,21 +118,41 @@ namespace Heroesprofile.Uploader.Common
                         await _liveProcessor.saveTalentDataTwenty(tmpPath);
                     }
 
-                    _live_monitor = new LiveMonitor();
-                    if (!_live_monitor.IsBattleLobbyRunning()) {
-                        _live_monitor.StartBattleLobby();
+                    //_live_monitor = new LiveMonitor();
+                    //startLiveWatcherEvents();
+                    if (PreMatchPage || TwitchExtension) {
+                        if (!_live_monitor.IsBattleLobbyRunning()) {
+                            _live_monitor.StartBattleLobby();
+                            startBattleLobbyWatcherEvent();
+                        }
                     }
+  
 
                     if (TwitchExtension) {
                         if (!_live_monitor.IsStormSaveRunning()) {
                             _live_monitor.StartStormSave();
+                            startStormSaveWatcherEvent();
                         }
                     }
                 }
+
+                var replay = new ReplayFile(e.Data);
+                Files.Insert(0, replay);
+                processingQueue.Add(replay);
+
             };
             _monitor.Start();
+            startBattleLobbyWatcherEvent();
+            startStormSaveWatcherEvent();
 
-
+            _analyzer.MinimumBuild = await _uploader.GetMinimumBuild();
+            
+            for (int i = 0; i < MaxThreads; i++) {
+                Task.Run(UploadLoop).Forget();
+            }
+        }
+        private void startBattleLobbyWatcherEvent()
+        {
             if (PreMatchPage || TwitchExtension) {
                 _live_monitor.TempBattleLobbyCreated += async (_, e) => {
                     _live_monitor.StopBattleLobbyWatcher();
@@ -166,7 +166,10 @@ namespace Heroesprofile.Uploader.Common
 
                 _live_monitor.StartBattleLobby();
             }
+        }
 
+        private void startStormSaveWatcherEvent()
+        {
             if (TwitchExtension) {
                 _live_monitor.StormSaveCreated += async (_, e) => {
                     Thread.Sleep(1000);
@@ -176,15 +179,6 @@ namespace Heroesprofile.Uploader.Common
                     await _liveProcessor.UpdateData(tmpPath);
                 };
                 _live_monitor.StartStormSave();
-            }
-
-
-
-
-            _analyzer.MinimumBuild = await _uploader.GetMinimumBuild();
-
-            for (int i = 0; i < MaxThreads; i++) {
-                Task.Run(UploadLoop).Forget();
             }
         }
 

@@ -29,6 +29,12 @@ namespace Heroesprofile.Uploader.Common
             TempBattleLobbyCreated?.Invoke(this, new EventArgs<string>(path));
         }
 
+        protected virtual void OnBattleLobbyCreated(string path)
+        {
+            _log.Debug($"Detected new temp live replay: {path}");
+            TempBattleLobbyCreated?.Invoke(this, new EventArgs<string>(path));
+        }
+
         protected virtual void OnStormSaveAdded(string path)
         {
             _log.Debug($"Detected new StormSave replay: {path}");
@@ -65,6 +71,7 @@ namespace Heroesprofile.Uploader.Common
                     Filter = "*.StormSave",
                     IncludeSubdirectories = true
                 };
+                _stormsave_watcher.Changed += (o, e) => OnStormSaveAdded(e.FullPath);
                 _stormsave_watcher.Created += (o, e) => OnStormSaveAdded(e.FullPath);
             }
             _stormsave_watcher.EnableRaisingEvents = true;

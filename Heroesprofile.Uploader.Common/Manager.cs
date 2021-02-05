@@ -117,22 +117,15 @@ namespace Heroesprofile.Uploader.Common
                         await SafeCopy(e.Data, tmpPath, true);
                         await _liveProcessor.saveTalentDataTwenty(tmpPath);
                     }
+                    _live_monitor.StopBattleLobbyWatcher();
+                    _live_monitor.StopStormSaveWatcher();
 
-                    //_live_monitor = new LiveMonitor();
-                    //startLiveWatcherEvents();
+                    _live_monitor = new LiveMonitor();
                     if (PreMatchPage || TwitchExtension) {
-                        if (!_live_monitor.IsBattleLobbyRunning()) {
-                            _live_monitor.StartBattleLobby();
+                        //if (!_live_monitor.IsBattleLobbyRunning()) {
+                        //    _live_monitor.StartBattleLobby();
                             startBattleLobbyWatcherEvent();
-                        }
-                    }
-  
-
-                    if (TwitchExtension) {
-                        if (!_live_monitor.IsStormSaveRunning()) {
-                            _live_monitor.StartStormSave();
-                            startStormSaveWatcherEvent();
-                        }
+                        //}
                     }
                 }
 
@@ -143,7 +136,6 @@ namespace Heroesprofile.Uploader.Common
             };
             _monitor.Start();
             startBattleLobbyWatcherEvent();
-            startStormSaveWatcherEvent();
 
             _analyzer.MinimumBuild = await _uploader.GetMinimumBuild();
             
@@ -162,6 +154,12 @@ namespace Heroesprofile.Uploader.Common
                     var tmpPath = Path.GetTempFileName();
                     await SafeCopy(e.Data, tmpPath, true);
                     await _liveProcessor.StartProcessing(tmpPath);
+
+
+
+                    if (TwitchExtension) {
+                        startStormSaveWatcherEvent();
+                    }
                 };
 
                 _live_monitor.StartBattleLobby();

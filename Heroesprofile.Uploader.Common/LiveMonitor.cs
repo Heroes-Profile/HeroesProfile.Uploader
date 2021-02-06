@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Heroesprofile.Uploader.Common
 {
-    public class LiveMonitor : LiveIMonitor
+    public class LiveMonitor : ILiveMonitor
     {
         private static Logger _log = LogManager.GetCurrentClassLogger();
         //protected readonly string BattleLobbyTempPath = Path.Combine(Path.GetTempPath(), @"Heroes of the Storm\");
@@ -23,17 +23,17 @@ namespace Heroesprofile.Uploader.Common
         public event EventHandler<EventArgs<string>> TempBattleLobbyCreated;
         public event EventHandler<EventArgs<string>> StormSaveCreated;
 
-        protected virtual void OnBattleLobbyAdded(string path)
+        protected virtual void OnBattleLobbyAdded(object source, FileSystemEventArgs e)
         {
-            _log.Debug($"Detected new temp live replay: {path}");
-            TempBattleLobbyCreated?.Invoke(this, new EventArgs<string>(path));
+            _log.Debug($"Detected new temp live replay: {e.FullPath}");
+            TempBattleLobbyCreated?.Invoke(this, new EventArgs<string>(e.FullPath));
         }
 
 
-        protected virtual void OnStormSaveAdded(string path)
+        protected virtual void OnStormSaveAdded(object source, FileSystemEventArgs e)
         {
-            _log.Debug($"Detected new StormSave replay: {path}");
-            StormSaveCreated?.Invoke(this, new EventArgs<string>(path));
+            _log.Debug($"Detected new StormSave replay: {e.FullPath}");
+            StormSaveCreated?.Invoke(this, new EventArgs<string>(e.FullPath));
         }
 
         /// <summary>
@@ -48,7 +48,8 @@ namespace Heroesprofile.Uploader.Common
                     Filter = "*.battlelobby",
                     IncludeSubdirectories = true
                 };
-                _battlelobby_watcher.Changed += (o, e) => OnBattleLobbyAdded(e.FullPath);
+                _battlelobby_watcher.Changed -= OnBattleLobbyAdded;
+                _battlelobby_watcher.Changed += OnBattleLobbyAdded;
             }
             _battlelobby_watcher.EnableRaisingEvents = true;
 
@@ -66,7 +67,8 @@ namespace Heroesprofile.Uploader.Common
                     Filter = "*.StormSave",
                     IncludeSubdirectories = true
                 };
-                _stormsave_watcher.Created += (o, e) => OnStormSaveAdded(e.FullPath);
+                _stormsave_watcher.Created -= OnStormSaveAdded;
+                _stormsave_watcher.Created += OnStormSaveAdded;
             }
             _stormsave_watcher.EnableRaisingEvents = true;
 

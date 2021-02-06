@@ -80,18 +80,23 @@ namespace Heroesprofile.Uploader.Common
                 catch {
 
                 }
-
-
                 dynamic json = JObject.Parse(response);
-                int replayID = 0;
 
-                if (json.replayID != null) {
-                    replayID = json.replayID;
+                try {
+                    int replayID = 0;
+
+                    if (json.replayID != null) {
+                        replayID = json.replayID;
+                    }
+
+                    if (File.GetLastWriteTime(file) >= DateTime.Now.Subtract(TimeSpan.FromMinutes(60)) && PostMatchPage && replayID != 0) {
+                        await postMatchAnalysis(replayID);
+                    }
+                }
+                catch {
+
                 }
 
-                if (File.GetLastWriteTime(file) >= DateTime.Now.AddMinutes(-60) && PostMatchPage && replayID != 0) {
-                    await postMatchAnalysis(replayID);
-                }
 
                 if ((bool)json.success) {
                     if (Enum.TryParse<UploadStatus>((string)json.status, out UploadStatus status)) {

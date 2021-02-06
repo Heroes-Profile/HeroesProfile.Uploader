@@ -33,7 +33,7 @@ namespace Heroesprofile.Uploader.Common
         private IUploader _uploader;
         private IAnalyzer _analyzer;
         private IMonitor _monitor;
-        private LiveIMonitor _live_monitor;
+        private ILiveMonitor _live_monitor;
         private ILiveProcessor _liveProcessor;
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -87,7 +87,7 @@ namespace Heroesprofile.Uploader.Common
         /// <summary>
         /// Start uploading and watching for new replays
         /// </summary>
-        public async void Start(IMonitor monitor, LiveIMonitor live_monitor, IAnalyzer analyzer, IUploader uploader, ILiveProcessor liveProcessor)
+        public async void Start(IMonitor monitor, ILiveMonitor live_monitor, IAnalyzer analyzer, IUploader uploader, ILiveProcessor liveProcessor)
         {
             if (_initialized) {
                 return;

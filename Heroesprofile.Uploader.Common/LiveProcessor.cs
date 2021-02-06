@@ -10,6 +10,7 @@ using System.Net.Http;
 using Newtonsoft.Json;
 using System.Diagnostics;
 using System.IO;
+using Newtonsoft.Json.Linq;
 
 
 //Live File Parsers
@@ -196,7 +197,8 @@ namespace Heroesprofile.Uploader.Common
                                 }
                                 if (!foundTalents.ContainsKey(talent.TalentName)) {
                                     foundTalents.Add(talent.TalentName, talent.TalentName);
-                                    await saveTalentData(replay, replay.Players[playerID - 1], talent);
+                                    bool talentSave = await saveTalentData(replay, replay.Players[playerID - 1], talent);
+                                    //Do something
                                     talentUpdate = true;
                                 }
                           
@@ -319,7 +321,7 @@ namespace Heroesprofile.Uploader.Common
             }
         }
 
-        private async Task saveTalentData(Replay replay, Player player, Talent talent)
+        private async Task<bool> saveTalentData(Replay replay, Player player, Talent talent)
         {
             var values = new Dictionary<string, string>
             {
@@ -337,6 +339,14 @@ namespace Heroesprofile.Uploader.Common
 
             var content = new FormUrlEncodedContent(values);
             var response = await client.PostAsync($"{heresprofileAPI}{saveTalentsUrl}", content);
+
+            try {
+                dynamic json = JObject.Parse(response.ToString());
+                return json.Updated;
+            }
+            catch {
+                return false;
+            }
            // _log.Info("Saving talents for twitch extension" + response);
         }
 

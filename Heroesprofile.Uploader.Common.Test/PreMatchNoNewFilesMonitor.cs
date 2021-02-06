@@ -6,7 +6,7 @@ namespace Heroesprofile.Uploader.Common.Test
 {
     public partial class ManagerTests
     {
-        private class PreMatchNoNewFilesMonitor : LiveIMonitor
+        private class PreMatchNoNewFilesMonitor : ILiveMonitor
         {
             public event EventHandler<EventArgs<string>> TempReplayCreated;
             public event EventHandler<EventArgs<string>> StormSaveCreated;

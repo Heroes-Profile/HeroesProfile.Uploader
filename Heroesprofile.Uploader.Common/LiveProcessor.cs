@@ -228,7 +228,7 @@ namespace Heroesprofile.Uploader.Common
 
         
 
-        private async Task getNewReplayID()
+        private async Task getNewReplayID(int loop = 0)
         {
             var values = new Dictionary<string, string>
             {
@@ -243,17 +243,23 @@ namespace Heroesprofile.Uploader.Common
 
             var response = await client.PostAsync($"{heresprofileAPI}{saveReplayUrl}", content);
 
-            if (response.IsSuccessStatusCode) {
+            if (response.IsSuccessStatusCode && response.StatusCode.ToString() != "429") {
 
                 if (Int32.TryParse(response.Content.ReadAsStringAsync().Result, out int value)) {
                     latest_replayID = value;
                 }
-            } else {
+            } else if(response.StatusCode.ToString() == "429" && response.ReasonPhrase.ToString() == "Too Many Requests" && loop < 5) {
+                await Task.Delay((Int32.Parse(response.Headers.RetryAfter.ToString()) + 1) * 1000);
+                loop++;
+                await getNewReplayID(loop);
+            }
+            
+            else {
                 _log.Error("{0} ({1})", (int)response.StatusCode, response.ReasonPhrase);
             }
         }
 
-        private async Task updateReplayData(Replay replay)
+        private async Task updateReplayData(Replay replay, int loop = 0)
         {
             var values = new Dictionary<string, string>
 {
@@ -271,12 +277,24 @@ namespace Heroesprofile.Uploader.Common
             var response = await client.PostAsync($"{heresprofileAPI}{updateReplayDataUrl}", content);
             //_log.Info("Updating Game Mode Data for Live Extension:" + response);
 
+            try {
+                if (response.StatusCode.ToString() == "429" && response.ReasonPhrase.ToString() == "Too Many Requests" && loop < 5) {
+
+
+                    await Task.Delay((Int32.Parse(response.Headers.RetryAfter.ToString()) + 1) * 1000);
+                    loop++;
+                    await updateReplayData(replay, loop);
+                }
+            }
+            catch (Exception e) {
+                var error = e.ToString();
+            }
         }
 
-        private async Task savePlayerData(Replay replay)
+        private async Task savePlayerData(Replay replay, int incrementValue = 0, int loop = 0)
         {
 
-            for (int i = 0; i < replay.Players.Length; i++) {
+            for (int i = incrementValue; i < replay.Players.Length; i++) {
                 var values = new Dictionary<string, string>
                 {
                     { "hp_twitch_key", hpTwitchAPIKey },
@@ -293,14 +311,28 @@ namespace Heroesprofile.Uploader.Common
 
                 var content = new FormUrlEncodedContent(values);
                 var response = await client.PostAsync($"{heresprofileAPI}{savePlayersUrl}", content);
-               // _log.Info("Saving player data for twitch extension" + response);
+                // _log.Info("Saving player data for twitch extension" + response);
+
+
+                try {
+                    if (response.StatusCode.ToString() == "429" && response.ReasonPhrase.ToString() == "Too Many Requests" && loop < 5) {
+
+
+                        await Task.Delay((Int32.Parse(response.Headers.RetryAfter.ToString()) + 1) * 1000);
+                        loop++;
+                        await savePlayerData(replay, i, loop);
+                    }
+                }
+                catch (Exception e) {
+                    var error = e.ToString();
+                }
             }
         }
 
-        private async Task updatePlayerData(Replay replay)
+        private async Task updatePlayerData(Replay replay, int incrementValue = 0, int loop = 0)
         {
 
-            for (int i = 0; i < replay.Players.Length; i++) {
+            for (int i = incrementValue; i < replay.Players.Length; i++) {
                 var values = new Dictionary<string, string>
                 {
                     { "hp_twitch_key", hpTwitchAPIKey },
@@ -318,6 +350,19 @@ namespace Heroesprofile.Uploader.Common
                 var content = new FormUrlEncodedContent(values);
                 var response = await client.PostAsync($"{heresprofileAPI}{updatePlayerDataUrl}", content);
                 //_log.Info("Updating player data for twitch extension" + response);
+
+                try {
+                    if (response.StatusCode.ToString() == "429" && response.ReasonPhrase.ToString() == "Too Many Requests" && loop < 5) {
+
+
+                        await Task.Delay((Int32.Parse(response.Headers.RetryAfter.ToString()) + 1) * 1000);
+                        loop++;
+                        await updatePlayerData(replay, i, loop);
+                    }
+                }
+                catch (Exception e) {
+                    var error = e.ToString();
+                }
             }
         }
 
@@ -377,11 +422,10 @@ namespace Heroesprofile.Uploader.Common
                     }
                     await notifyTwitchOfTalentChange();
                 }
-
             }
         }
 
-        private async Task notifyTwitchOfTalentChange()
+        private async Task notifyTwitchOfTalentChange(int loop = 0)
         {
             var values = new Dictionary<string, string>
 {
@@ -392,6 +436,20 @@ namespace Heroesprofile.Uploader.Common
             };
             var content = new FormUrlEncodedContent(values);
             var response = await client.PostAsync($"{heresprofileAPI}{notifyUrl}", content);
+
+            try {
+                if (response.StatusCode.ToString() == "429" && response.ReasonPhrase.ToString() == "Too Many Requests" && loop < 5) {
+
+
+                    await Task.Delay((Int32.Parse(response.Headers.RetryAfter.ToString()) + 1) * 1000);
+                    loop++;
+                    await notifyTwitchOfTalentChange(loop);
+                }
+            }
+            catch (Exception e) {
+                var error = e.ToString();
+            }
+
             //_log.Info("Updating Game Mode Data for Live Extension:" + response);
         }
     }

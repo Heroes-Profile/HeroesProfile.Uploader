@@ -11,7 +11,7 @@ using Newtonsoft.Json;
 using System.Diagnostics;
 using System.IO;
 using Newtonsoft.Json.Linq;
-
+using System.Net;
 
 //Live File Parsers
 using MpqBattlelobby = Heroes.ReplayParser.MPQFiles.StandaloneBattleLobbyParser;
@@ -257,7 +257,7 @@ namespace Heroesprofile.Uploader.Common
             //_log.Info("Updating Game Mode Data for Live Extension:" + response);
 
             try {
-                if (response.StatusCode.ToString() == "429" && response.ReasonPhrase.ToString() == "Too Many Requests" && loop < 5) {
+                if (response.StatusCode == (HttpStatusCode)429 && loop < 5) {
 
 
                     await Task.Delay(response.Headers.RetryAfter.Delta.Value);
@@ -294,7 +294,7 @@ namespace Heroesprofile.Uploader.Common
 
 
                 try {
-                    if (response.StatusCode.ToString() == "429" && response.ReasonPhrase.ToString() == "Too Many Requests" && loop < 5) {
+                    if (response.StatusCode == (HttpStatusCode)429 && loop < 5) {
 
 
                         await Task.Delay((Int32.Parse(response.Headers.RetryAfter.ToString()) + 1) * 1000);
@@ -331,7 +331,7 @@ namespace Heroesprofile.Uploader.Common
                 //_log.Info("Updating player data for twitch extension" + response);
 
                 try {
-                    if (response.StatusCode.ToString() == "429" && response.ReasonPhrase.ToString() == "Too Many Requests" && loop < 5) {
+                    if (response.StatusCode == (HttpStatusCode)429 && loop < 5) {
 
 
                         await Task.Delay(response.Headers.RetryAfter.Delta.Value);
@@ -367,7 +367,7 @@ namespace Heroesprofile.Uploader.Common
    
 
             try {
-                if (response.StatusCode.ToString() == "429" && response.ReasonPhrase.ToString() == "Too Many Requests" && loop < 5) {
+                if (response.StatusCode == (HttpStatusCode)429 && loop < 5) {
 
                     
                     await Task.Delay(response.Headers.RetryAfter.Delta.Value);
@@ -417,8 +417,8 @@ namespace Heroesprofile.Uploader.Common
             var response = await client.PostAsync($"{heresprofileAPI}{notifyUrl}", content);
 
             try {
-                if (response.StatusCode.ToString() == "429" && response.ReasonPhrase.ToString() == "Too Many Requests" && loop < 5) {
 
+                if (response.StatusCode == (HttpStatusCode)429 && loop < 5) {
 
                     await Task.Delay(response.Headers.RetryAfter.Delta.Value);
                     loop++;

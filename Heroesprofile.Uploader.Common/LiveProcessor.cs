@@ -154,33 +154,13 @@ namespace Heroesprofile.Uploader.Common
                     //    MpqMessageEvents.Parse(replay, DataParser.GetMpqFile(archive, "replay.message.events"));
                     //}
 
-                    //Fails
-                    //if (archive.FileExists("replay.resumable.events")) {
-                    //    MpqResumableEvents.Parse(replay, DataParser.GetMpqFile(archive, "replay.resumable.events"));
-                    //}
-
-
-                    //Uneeded
-
-                    //for (int i = 0; i < replay.Players.Length; i++)
-                    //{
-                    //    replay.Players[i].Talents = new Talent[7];
-                    //    for (int j = 0; j < replay.Players[i].Talents.Length; j++)
-                    //    {
-                    //        replay.Players[i].Talents[j] = new Talent();
-                    //    }
-                    //}
-
-
                     if (archive.FileExists("replay.tracker.events")) {
                         replay.TrackerEvents = MpqTrackerEvents.Parse(DataParser.GetMpqFile(archive, "replay.tracker.events"));
                     }
 
                     if (replay.TrackerEvents != null) {
 
-                        //Seems like you could run some sort of linq filter expression to only return those tracker events that correspond to value "TalentChosen"
                         for (int i = latest_trackever_event; i < replay.TrackerEvents.Count; i++) {
-                        //for (int i = 0; i < replay.TrackerEvents.Count; i++) {
                             if (replay.TrackerEvents[i].Data.dictionary[0].blobText == "TalentChosen") {
                                 Talent talent = new Talent();
 
@@ -198,7 +178,6 @@ namespace Heroesprofile.Uploader.Common
                                 if (!foundTalents.ContainsKey(replay.Players[playerID - 1].Name+ talent.TalentName)) {
                                     foundTalents.Add(replay.Players[playerID - 1].Name+talent.TalentName, replay.Players[playerID - 1]+talent.TalentName);
                                     await saveTalentData(replay, replay.Players[playerID - 1], talent);
-                                    //Do something
                                     talentUpdate = true;
                                 }
                           

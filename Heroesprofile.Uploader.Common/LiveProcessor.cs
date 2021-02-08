@@ -228,7 +228,7 @@ namespace Heroesprofile.Uploader.Common
                     latest_replayID = value;
                 }
             } else if(response.StatusCode.ToString() == "429" && response.ReasonPhrase.ToString() == "Too Many Requests" && loop < 5) {
-                await Task.Delay((Int32.Parse(response.Headers.RetryAfter.ToString()) + 1) * 1000);
+                await Task.Delay(response.Headers.RetryAfter.Delta.Value);
                 loop++;
                 await getNewReplayID(loop);
             }
@@ -260,7 +260,7 @@ namespace Heroesprofile.Uploader.Common
                 if (response.StatusCode.ToString() == "429" && response.ReasonPhrase.ToString() == "Too Many Requests" && loop < 5) {
 
 
-                    await Task.Delay((Int32.Parse(response.Headers.RetryAfter.ToString()) + 1) * 1000);
+                    await Task.Delay(response.Headers.RetryAfter.Delta.Value);
                     loop++;
                     await updateReplayData(replay, loop);
                 }
@@ -334,7 +334,7 @@ namespace Heroesprofile.Uploader.Common
                     if (response.StatusCode.ToString() == "429" && response.ReasonPhrase.ToString() == "Too Many Requests" && loop < 5) {
 
 
-                        await Task.Delay((Int32.Parse(response.Headers.RetryAfter.ToString()) + 1) * 1000);
+                        await Task.Delay(response.Headers.RetryAfter.Delta.Value);
                         loop++;
                         await updatePlayerData(replay, i, loop);
                     }
@@ -370,7 +370,7 @@ namespace Heroesprofile.Uploader.Common
                 if (response.StatusCode.ToString() == "429" && response.ReasonPhrase.ToString() == "Too Many Requests" && loop < 5) {
 
                     
-                    await Task.Delay((Int32.Parse(response.Headers.RetryAfter.ToString()) + 1) * 1000);
+                    await Task.Delay(response.Headers.RetryAfter.Delta.Value);
                     loop++;
                     await saveTalentData(replay, player, talent, loop);
                 }
@@ -420,7 +420,7 @@ namespace Heroesprofile.Uploader.Common
                 if (response.StatusCode.ToString() == "429" && response.ReasonPhrase.ToString() == "Too Many Requests" && loop < 5) {
 
 
-                    await Task.Delay((Int32.Parse(response.Headers.RetryAfter.ToString()) + 1) * 1000);
+                    await Task.Delay(response.Headers.RetryAfter.Delta.Value);
                     loop++;
                     await notifyTwitchOfTalentChange(loop);
                 }

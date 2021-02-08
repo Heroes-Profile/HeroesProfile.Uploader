@@ -179,8 +179,8 @@ namespace Heroesprofile.Uploader.Common
                     if (replay.TrackerEvents != null) {
 
                         //Seems like you could run some sort of linq filter expression to only return those tracker events that correspond to value "TalentChosen"
-                        //for (int i = latest_trackever_event; i < replay.TrackerEvents.Count; i++) {
-                        for (int i = 0; i < replay.TrackerEvents.Count; i++) {
+                        for (int i = latest_trackever_event; i < replay.TrackerEvents.Count; i++) {
+                        //for (int i = 0; i < replay.TrackerEvents.Count; i++) {
                             if (replay.TrackerEvents[i].Data.dictionary[0].blobText == "TalentChosen") {
                                 Talent talent = new Talent();
 
@@ -195,14 +195,14 @@ namespace Heroesprofile.Uploader.Common
                                     await updatePlayerData(replay);
                                     gameModeUpdated = false;
                                 }
-                                if (!foundTalents.ContainsKey(talent.TalentName)) {
-                                    foundTalents.Add(talent.TalentName, talent.TalentName);
-                                    bool talentSave = await saveTalentData(replay, replay.Players[playerID - 1], talent);
+                                if (!foundTalents.ContainsKey(replay.Players[playerID - 1].Name+ talent.TalentName)) {
+                                    foundTalents.Add(replay.Players[playerID - 1].Name+talent.TalentName, replay.Players[playerID - 1]+talent.TalentName);
+                                    await saveTalentData(replay, replay.Players[playerID - 1], talent);
                                     //Do something
                                     talentUpdate = true;
                                 }
                           
-                                //latest_trackever_event = i;
+                                latest_trackever_event = i;
 
                             }
                         }
@@ -321,7 +321,7 @@ namespace Heroesprofile.Uploader.Common
             }
         }
 
-        private async Task<bool> saveTalentData(Replay replay, Player player, Talent talent)
+        private async Task saveTalentData(Replay replay, Player player, Talent talent, int loop = 0)
         {
             var values = new Dictionary<string, string>
             {
@@ -340,41 +340,37 @@ namespace Heroesprofile.Uploader.Common
             var content = new FormUrlEncodedContent(values);
             var response = await client.PostAsync($"{heresprofileAPI}{saveTalentsUrl}", content);
 
+   
+
             try {
-                dynamic json = JObject.Parse(response.ToString());
-                return json.Updated;
+                if (response.StatusCode.ToString() == "429" && response.ReasonPhrase.ToString() == "Too Many Requests" && loop < 5) {
+
+                    
+                    await Task.Delay((Int32.Parse(response.Headers.RetryAfter.ToString()) + 1) * 1000);
+                    loop++;
+                    await saveTalentData(replay, player, talent, loop);
+                }
             }
-            catch {
-                return false;
+            catch (Exception e) {
+                var error = e.ToString();
             }
+
+         
            // _log.Info("Saving talents for twitch extension" + response);
         }
 
-        public async Task saveTalentDataTwenty(string stormReplayPath)
+        public async Task saveMissingTalentData(string stormReplayPath)
         {
             if(latest_replayID != 0) {
                 var (replayParseResult, replay) = DataParser.ParseReplay(stormReplayPath, deleteFile: false, ParseOptions.DefaultParsing);
                 if (replay != null) {
                     foreach (var player in replay.Players.OrderByDescending(i => i.IsWinner)) {
+
+                   
                         if (player.Talents != null) {
-                            if (player.Talents.Length == 7) {
-                                if (player.Talents[6] != null) {
-                                    var values = new Dictionary<string, string>
-                                        {
-                                            { "hp_twitch_key", hpTwitchAPIKey },
-                                            { "email", hpAPIEmail },
-                                            { "twitch_nickname", twitchNickname },
-                                            { "user_id", hpAPIUserID.ToString() },
-                                            { "replayID", latest_replayID.ToString() },
-                                            { "blizz_id", player.BattleNetId.ToString() },
-                                            { "battletag", player.Name },
-                                            { "region", player.BattleNetRegionId.ToString() },
-                                            { "talent", player.Talents[6].TalentName },
-                                            { "hero", player.Character },
-                                        };
-                                    var content = new FormUrlEncodedContent(values);
-                                    var response = await client.PostAsync($"{heresprofileAPI}{saveTalentsUrl}", content);
-                                    // _log.Info("Saving level twenties for twitch extension" + response);
+                            for (int i = 0; i < player.Talents.Length; i++) {
+                                if (!foundTalents.ContainsKey(player.Name + player.Talents[i].TalentName)) {
+                                    await saveTalentData(replay, player, player.Talents[i]);
                                 }
                             }
                         }

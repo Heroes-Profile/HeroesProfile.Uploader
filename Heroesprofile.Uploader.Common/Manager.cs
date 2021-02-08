@@ -115,7 +115,7 @@ namespace Heroesprofile.Uploader.Common
                         await EnsureFileAvailable(e.Data, 3000);
                         var tmpPath = Path.GetTempFileName();
                         await SafeCopy(e.Data, tmpPath, true);
-                        await _liveProcessor.saveTalentDataTwenty(tmpPath);
+                        await _liveProcessor.saveMissingTalentData(tmpPath);
                     }
                     _live_monitor.StopBattleLobbyWatcher();
                     _live_monitor.StopStormSaveWatcher();

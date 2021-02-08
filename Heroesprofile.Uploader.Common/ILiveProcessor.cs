@@ -17,6 +17,6 @@ namespace Heroesprofile.Uploader.Common
         Task StartProcessing(string battleLobbyPath);
         Task UpdateData(string stormSavePath);
 
-        Task saveTalentDataTwenty(string stormReplayPath);
+        Task saveMissingTalentData(string stormReplayPath);
     }
 }

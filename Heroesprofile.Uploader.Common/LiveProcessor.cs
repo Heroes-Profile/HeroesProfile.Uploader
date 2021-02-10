@@ -321,7 +321,10 @@ namespace Heroesprofile.Uploader.Common
                     { "replayID", latest_replayID.ToString() },
                     { "blizz_id", replay.Players[i].BattleNetId.ToString() },
                     { "battletag", replay.Players[i].Name },
+                    { "battlenet_id", replay.Players[i].BattleNetId.ToString() },
                     { "hero", replay.Players[i].Character },
+                    { "hero_id", replay.Players[i].HeroId },
+                    { "hero_attribute_id", replay.Players[i].HeroAttributeId },
                     { "team", replay.Players[i].Team.ToString() },
                     { "region", replay.Players[i].BattleNetRegionId.ToString() },
                 };
@@ -356,6 +359,7 @@ namespace Heroesprofile.Uploader.Common
                 { "replayID", latest_replayID.ToString() },
                 { "blizz_id", player.BattleNetId.ToString() },
                 { "battletag", player.Name },
+                { "battlenet_id", player.BattleNetId.ToString() },
                 { "region", player.BattleNetRegionId.ToString() },
                 { "talent", talent.TalentName },
                 { "hero", player.Character },

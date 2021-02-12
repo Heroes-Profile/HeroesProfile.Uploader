@@ -162,10 +162,10 @@ namespace Heroesprofile.Uploader.Common
 
                     //Statistics.Parse(replay);
 
-                    for (int i = 0; i < replayData.Players.Length; i++) {
-                        for (int j = 0; j < replay.Players.Length; j++) {
-                            if (replayData.Players[i].Name == replay.Players[j].Name) {
-                                replay.Players[j].BattleTag = replayData.Players[i].BattleTag;
+                    foreach (var battlelobbyPlayer in replayData.Players) {
+                        foreach (var stormSavePlayer in replay.Players) {
+                            if (battlelobbyPlayer.Name == stormSavePlayer.Name) {
+                                stormSavePlayer.BattleTag = battlelobbyPlayer.BattleTag;
                                 break;
                             }
                         }
@@ -234,12 +234,13 @@ namespace Heroesprofile.Uploader.Common
 
             var response = await client.PostAsync($"{heresprofileAPI}{saveReplayUrl}", content);
 
-            if (response.IsSuccessStatusCode && response.StatusCode.ToString() != "429") {
+            if (response.IsSuccessStatusCode) {
 
-                if (Int32.TryParse(response.Content.ReadAsStringAsync().Result, out int value)) {
+
+                if (Int32.TryParse(response.Content.ReadAsStringAsync().ToString(), out int value)) {
                     latest_replayID = value;
                 }
-            } else if(response.StatusCode.ToString() == "429" && response.ReasonPhrase.ToString() == "Too Many Requests" && loop < 5) {
+            } else if(response.StatusCode == (HttpStatusCode)429 && loop < 5) {
                 await Task.Delay(response.Headers.RetryAfter.Delta.Value);
                 loop++;
                 await getNewReplayID(loop);
@@ -304,9 +305,7 @@ namespace Heroesprofile.Uploader.Common
 
                 try {
                     if (response.StatusCode == (HttpStatusCode)429 && loop < 5) {
-
-
-                        await Task.Delay((Int32.Parse(response.Headers.RetryAfter.ToString()) + 1) * 1000);
+                        await Task.Delay(response.Headers.RetryAfter.Delta.Value);
                         loop++;
                         await savePlayerData(replay, i, loop);
                     }

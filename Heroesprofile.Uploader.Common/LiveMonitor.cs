@@ -11,15 +11,11 @@ namespace Heroesprofile.Uploader.Common
     public class LiveMonitor : ILiveMonitor
     {
         private static Logger _log = LogManager.GetCurrentClassLogger();
-        //protected readonly string BattleLobbyTempPath = Path.Combine(Path.GetTempPath(), @"Heroes of the Storm\");
         protected readonly string BattleLobbyTempPath = Path.GetTempPath();
         protected readonly string StormSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), @"Heroes of the Storm\Accounts");
         protected FileSystemWatcher _battlelobby_watcher;
         protected FileSystemWatcher _stormsave_watcher;
 
-        /// <summary>
-        /// Fires when a new replay file is found
-        /// </summary>
         public event EventHandler<EventArgs<string>> TempBattleLobbyCreated;
         public event EventHandler<EventArgs<string>> StormSaveCreated;
 
@@ -77,7 +73,7 @@ namespace Heroesprofile.Uploader.Common
 
 
         /// <summary>
-        /// Stops watching filesystem for new replays
+        /// Stops watching filesystem for new battlelobby
         /// </summary>
         public void StopBattleLobbyWatcher()
         {
@@ -87,6 +83,9 @@ namespace Heroesprofile.Uploader.Common
             _log.Debug($"Stopped watching for new replays");
         }
 
+        /// <summary>
+        /// Stops watching filesystem for new stormsave
+        /// </summary>
         public void StopStormSaveWatcher()
         {
             if (_stormsave_watcher != null) {
@@ -95,11 +94,17 @@ namespace Heroesprofile.Uploader.Common
             _log.Debug($"Stopped watching for new storm save files");
         }
 
+        /// <summary>
+        /// Checks whether battlelobby watcher is running
+        /// </summary>
         public bool IsBattleLobbyRunning()
         {
             return _battlelobby_watcher == null ? false : true;
         }
 
+        /// <summary>
+        /// Checks whether stormsave watcher is running
+        /// </summary>
         public bool IsStormSaveRunning()
         {
             return _stormsave_watcher == null ? false : true;

@@ -111,7 +111,7 @@ namespace Heroesprofile.Uploader.Common
                 await EnsureFileAvailable(e.Data, 3000);
                 if (PreMatchPage || TwitchExtension) {
                     if (TwitchExtension) {
-                        Thread.Sleep(1000);
+                        //Thread.Sleep(1000);
                         await EnsureFileAvailable(e.Data, 3000);
                         var tmpPath = Path.GetTempFileName();
                         await SafeCopy(e.Data, tmpPath, true);
@@ -122,10 +122,7 @@ namespace Heroesprofile.Uploader.Common
 
                     _live_monitor = new LiveMonitor();
                     if (PreMatchPage || TwitchExtension) {
-                        //if (!_live_monitor.IsBattleLobbyRunning()) {
-                        //    _live_monitor.StartBattleLobby();
-                            startBattleLobbyWatcherEvent();
-                        //}
+                        startBattleLobbyWatcherEvent();
                     }
                 }
 

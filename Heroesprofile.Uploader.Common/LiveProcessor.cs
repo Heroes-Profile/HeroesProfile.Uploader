@@ -81,7 +81,6 @@ namespace Heroesprofile.Uploader.Common
             if (TwitchExtension) {
                 await runTwitchExtensionStart(replayData);
             }
-
         }
 
         public async Task UpdateData(string stormSavePath)
@@ -130,6 +129,9 @@ namespace Heroesprofile.Uploader.Common
                 var replay = new Replay();
                 MpqHeader.ParseHeader(replay, stormSavePath);
 
+            
+
+
                 using (var archive = new Foole.Mpq.MpqArchive(stormSavePath)) {
                     archive.AddListfileFilenames();
 
@@ -162,14 +164,14 @@ namespace Heroesprofile.Uploader.Common
 
                     //Statistics.Parse(replay);
 
-                    foreach (var battlelobbyPlayer in replayData.Players) {
-                        foreach (var stormSavePlayer in replay.Players) {
-                            if (battlelobbyPlayer.Name == stormSavePlayer.Name) {
-                                stormSavePlayer.BattleTag = battlelobbyPlayer.BattleTag;
-                                break;
-                            }
+
+                    for (int i = 0; i < replay.Players.Length; i++) {
+                        if (replay.Players[i].Name == replayData.Players[i].Name) {
+                            replay.Players[i].BattleTag = replayData.Players[i].BattleTag;
                         }
                     }
+
+
 
                     if (replay.TrackerEvents != null) {
 

@@ -186,7 +186,7 @@ namespace Heroesprofile.Uploader.Common
                                 if (!gameModeUpdated) {
                                     await updateReplayData(replay);
                                     await updatePlayerData(replay);
-                                    gameModeUpdated = false;
+                                    gameModeUpdated = true;
                                 }
                                 if (!foundTalents.ContainsKey(replay.Players[playerID - 1].Name+ talent.TalentName)) {
                                     foundTalents.Add(replay.Players[playerID - 1].Name+talent.TalentName, replay.Players[playerID - 1]+talent.TalentName);
@@ -210,7 +210,7 @@ namespace Heroesprofile.Uploader.Common
                     if (!gameModeUpdated) {
                         await updateReplayData(replay);
                         await updatePlayerData(replay);
-                        gameModeUpdated = false;
+                        gameModeUpdated = true;
                     }
 
                 }

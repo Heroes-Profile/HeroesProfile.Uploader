@@ -57,6 +57,8 @@ namespace Heroesprofile.Uploader.Common
         private Dictionary<int, int> playerIDTalentIndexDictionary = new Dictionary<int, int>();
         private Dictionary<string, string> foundTalents = new Dictionary<string, string>();
 
+        private Replay replayData;
+
         public LiveProcessor(bool PreMatchPage, bool TwitchExtension, string hpTwitchAPIKey, string hpAPIEmail, string twitchNickname, int hpAPIUserID)
         {
             this.PreMatchPage = PreMatchPage;
@@ -70,7 +72,7 @@ namespace Heroesprofile.Uploader.Common
         public async Task StartProcessing(string battleLobbyPath)
         {
             byte[] replayBytes = File.ReadAllBytes(battleLobbyPath);
-            Replay replayData = MpqBattlelobby.Parse(replayBytes);
+            replayData = MpqBattlelobby.Parse(replayBytes);
 
             if (PreMatchPage) {
                 await runPreMatch(replayData);
@@ -158,6 +160,17 @@ namespace Heroesprofile.Uploader.Common
                         replay.TrackerEvents = MpqTrackerEvents.Parse(DataParser.GetMpqFile(archive, "replay.tracker.events"));
                     }
 
+                    //Statistics.Parse(replay);
+
+                    for (int i = 0; i < replayData.Players.Length; i++) {
+                        for (int j = 0; j < replay.Players.Length; j++) {
+                            if (replayData.Players[i].Name == replay.Players[j].Name) {
+                                replay.Players[j].BattleTag = replayData.Players[i].BattleTag;
+                                break;
+                            }
+                        }
+                    }
+
                     if (replay.TrackerEvents != null) {
 
                         for (int i = latest_trackever_event; i < replay.TrackerEvents.Count; i++) {
@@ -200,7 +213,6 @@ namespace Heroesprofile.Uploader.Common
                         gameModeUpdated = false;
                     }
 
-                    //Statistics.Parse(replay);
                 }
             }
         }
@@ -281,11 +293,8 @@ namespace Heroesprofile.Uploader.Common
                     { "twitch_nickname", twitchNickname },
                     { "user_id", hpAPIUserID.ToString() },
                     { "replayID", latest_replayID.ToString() },
-                    //{ "blizz_id", replay.Players[i].BattleNetId.ToString() },
-                    { "battletag", replay.Players[i].Name },
-                    //{ "hero", replay.Players[i].Character },
+                    { "battletag", replay.Players[i].Name + "#" +  replay.Players[i].BattleTag},
                     { "team", replay.Players[i].Team.ToString() },
-                    //{ "region", replay.Players[i].BattleNetRegionId.ToString() },
                 };
 
                 var content = new FormUrlEncodedContent(values);
@@ -320,8 +329,7 @@ namespace Heroesprofile.Uploader.Common
                     { "user_id", hpAPIUserID.ToString() },
                     { "replayID", latest_replayID.ToString() },
                     { "blizz_id", replay.Players[i].BattleNetId.ToString() },
-                    { "battletag", replay.Players[i].Name },
-                    { "battlenet_id", replay.Players[i].BattleNetId.ToString() },
+                    { "battletag", replay.Players[i].Name + "#" + replay.Players[i].BattleTag},
                     { "hero", replay.Players[i].Character },
                     { "hero_id", replay.Players[i].HeroId },
                     { "hero_attribute_id", replay.Players[i].HeroAttributeId },
@@ -358,8 +366,7 @@ namespace Heroesprofile.Uploader.Common
                 { "user_id", hpAPIUserID.ToString() },
                 { "replayID", latest_replayID.ToString() },
                 { "blizz_id", player.BattleNetId.ToString() },
-                { "battletag", player.Name },
-                { "battlenet_id", player.BattleNetId.ToString() },
+                { "battletag", player.Name + "#" + player.BattleTag},
                 { "region", player.BattleNetRegionId.ToString() },
                 { "talent", talent.TalentName },
                 { "hero", player.Character },

@@ -237,7 +237,7 @@ namespace Heroesprofile.Uploader.Common
             if (response.IsSuccessStatusCode) {
 
 
-                if (Int32.TryParse(response.Content.ReadAsStringAsync().ToString(), out int value)) {
+                if (Int32.TryParse(response.Content.ReadAsStringAsync().Result, out int value)) {
                     latest_replayID = value;
                 }
             } else if(response.StatusCode == (HttpStatusCode)429 && loop < 5) {

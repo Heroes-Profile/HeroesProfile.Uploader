@@ -371,6 +371,8 @@ namespace Heroesprofile.Uploader.Common
                 { "region", player.BattleNetRegionId.ToString() },
                 { "talent", talent.TalentName },
                 { "hero", player.Character },
+                { "hero_id", player.HeroId },
+                { "hero_attribute_id", player.HeroAttributeId },
             };
 
             var content = new FormUrlEncodedContent(values);

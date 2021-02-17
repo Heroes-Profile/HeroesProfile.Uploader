@@ -10,7 +10,7 @@ using Nito.AsyncEx;
 using System.Diagnostics;
 using Heroes.ReplayParser;
 using System.Collections.Concurrent;
- 
+
 namespace Heroesprofile.Uploader.Common
 {
     public class Manager : INotifyPropertyChanged
@@ -35,7 +35,9 @@ namespace Heroesprofile.Uploader.Common
         private IMonitor _monitor;
         private ILiveMonitor _live_monitor;
         private ILiveProcessor _liveProcessor;
+        private TimeSpan _waitTime = TimeSpan.FromSeconds(3);
         public event PropertyChangedEventHandler PropertyChanged;
+
 
         public string hpTwitchAPIKey { get; set; }
         public string hpAPIEmail { get; set; }
@@ -105,14 +107,11 @@ namespace Heroesprofile.Uploader.Common
             Files.AddRange(replays);
             replays.Where(x => x.UploadStatus == UploadStatus.None).Map(x => processingQueue.Add(x));
 
-            
-
             _monitor.ReplayAdded += async (_, e) => {
-                await EnsureFileAvailable(e.Data, 3000);
+                await EnsureFileAvailable(e.Data);
                 if (PreMatchPage || TwitchExtension) {
                     if (TwitchExtension) {
-                        //Thread.Sleep(1000);
-                        await EnsureFileAvailable(e.Data, 3000);
+                        await EnsureFileAvailable(e.Data);
                         var tmpPath = Path.GetTempFileName();
                         await SafeCopy(e.Data, tmpPath, true);
                         await _liveProcessor.saveMissingTalentData(tmpPath);
@@ -121,8 +120,9 @@ namespace Heroesprofile.Uploader.Common
                     _live_monitor.StopStormSaveWatcher();
 
                     _live_monitor = new LiveMonitor();
+
                     if (PreMatchPage || TwitchExtension) {
-                        startBattleLobbyWatcherEvent();
+                        StartBattleLobbyWatcherEvent();
                     }
                 }
 
@@ -131,31 +131,31 @@ namespace Heroesprofile.Uploader.Common
                 processingQueue.Add(replay);
 
             };
+
             _monitor.Start();
-            startBattleLobbyWatcherEvent();
+            StartBattleLobbyWatcherEvent();
 
             _analyzer.MinimumBuild = await _uploader.GetMinimumBuild();
-            
+
             for (int i = 0; i < MaxThreads; i++) {
                 Task.Run(UploadLoop).Forget();
             }
         }
-        private void startBattleLobbyWatcherEvent()
+        private void StartBattleLobbyWatcherEvent()
         {
             if (PreMatchPage || TwitchExtension) {
                 _live_monitor.TempBattleLobbyCreated += async (_, e) => {
+
                     _live_monitor.StopBattleLobbyWatcher();
                     _liveProcessor = new LiveProcessor(PreMatchPage, TwitchExtension, hpTwitchAPIKey, hpAPIEmail, twitchNickname, hpAPIUserID);
-                    Thread.Sleep(1000);
-                    await EnsureFileAvailable(e.Data, 3000);
+
+                    await EnsureFileAvailable(e.Data);
                     var tmpPath = Path.GetTempFileName();
                     await SafeCopy(e.Data, tmpPath, true);
                     await _liveProcessor.StartProcessing(tmpPath);
 
-
-
                     if (TwitchExtension) {
-                        startStormSaveWatcherEvent();
+                        StartStormSaveWatcherEvent();
                     }
                 };
 
@@ -163,12 +163,12 @@ namespace Heroesprofile.Uploader.Common
             }
         }
 
-        private void startStormSaveWatcherEvent()
+        private void StartStormSaveWatcherEvent()
         {
             if (TwitchExtension) {
                 _live_monitor.StormSaveCreated += async (_, e) => {
                     Thread.Sleep(1000);
-                    await EnsureFileAvailable(e.Data, 3000);
+                    await EnsureFileAvailable(e.Data);
                     var tmpPath = Path.GetTempFileName();
                     await SafeCopy(e.Data, tmpPath, true);
                     await _liveProcessor.UpdateData(tmpPath);
@@ -263,11 +263,11 @@ namespace Heroesprofile.Uploader.Common
         /// <param name="filename">Filename to test</param>
         /// <param name="timeout">Timeout in milliseconds</param>
         /// <param name="testWrite">Whether to test read or write access</param>
-        public async Task EnsureFileAvailable(string filename, int timeout, bool testWrite = true)
+        public async Task EnsureFileAvailable(string filename, bool testWrite = true)
         {
-            var timer = new Stopwatch();
-            timer.Start();
-            while (timer.ElapsedMilliseconds < timeout) {
+            var timer = Stopwatch.StartNew();
+
+            while (timer.Elapsed < _waitTime) {
                 try {
                     if (testWrite) {
                         File.OpenWrite(filename).Close();

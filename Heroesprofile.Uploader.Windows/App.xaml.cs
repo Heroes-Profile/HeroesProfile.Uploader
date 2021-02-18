@@ -1,7 +1,11 @@
 ﻿using Heroesprofile.Uploader.Common;
+
 using Microsoft.Win32;
+
 using NLog;
+
 using Squirrel;
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -15,6 +19,7 @@ using System.Windows;
 using System.Windows.Data;
 using System.Windows.Forms;
 using System.Windows.Threading;
+
 using Application = System.Windows.Application;
 using MessageBox = System.Windows.MessageBox;
 
@@ -59,6 +64,7 @@ namespace Heroesprofile.Uploader.Windows
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(UpdateAvailable)));
             }
         }
+
         public static Version Version { get { return Assembly.GetExecutingAssembly().GetName().Version; } }
         public string VersionString
         {
@@ -113,10 +119,10 @@ namespace Heroesprofile.Uploader.Windows
             Manager.hpAPIEmail = Settings.HPAPIEmail;
             Manager.twitchNickname = Settings.TwitchNickname;
             Manager.hpAPIUserID = Settings.HPAPIUserID;
+            Manager.DeleteAfterUpload = Settings.DeleteAfterUpload;
 
-
-        Manager.DeleteAfterUpload = Settings.DeleteAfterUpload;
             ApplyTheme(Settings.Theme);
+
             Settings.PropertyChanged += (o, ev) => {
                 if (ev.PropertyName == nameof(Settings.DeleteAfterUpload)) {
                     Manager.DeleteAfterUpload = Settings.DeleteAfterUpload;
@@ -132,7 +138,13 @@ namespace Heroesprofile.Uploader.Windows
                 if (ev.PropertyName == nameof(Settings.PostMatchPage)) {
                     Manager.PostMatchPage = Settings.PostMatchPage;
                 }
+
+                if (ev.PropertyName == nameof(Settings.HPTwitchExtension)) {
+                    Manager.TwitchExtension = Settings.HPTwitchExtension;
+                }
             };
+
+            Settings.HPTwitchValidated = TwitchSettingsValidator.Validate();
 
             if (e.Args.Contains("--autorun") && Settings.MinimizeToTray) {
                 TrayIcon.Visible = true;
@@ -258,7 +270,7 @@ namespace Heroesprofile.Uploader.Windows
                     Settings.Upgrade();
 
                     if (string.IsNullOrEmpty(Settings.ApplicationVersion)) { // < v1.7
-                    
+
                     } else {
                         var previous = Version.Parse(Settings.ApplicationVersion);
 

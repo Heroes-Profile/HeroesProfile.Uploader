@@ -120,6 +120,7 @@
     <Compile Include="SettingsWindow.xaml.cs">
       <DependentUpon>SettingsWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="TwitchSettingsValidator.cs" />
     <Compile Include="UIHelpers\FilenameConverter.cs" />
     <Compile Include="UIHelpers\FlagsConverter.cs" />
     <Compile Include="UIHelpers\GenericValueConverter.cs" />

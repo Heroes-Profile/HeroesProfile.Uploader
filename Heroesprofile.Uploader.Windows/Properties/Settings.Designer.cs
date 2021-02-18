@@ -262,5 +262,19 @@ namespace Heroesprofile.Uploader.Windows.Properties {
                 this["HPTwitchExtension"] = value;
             }
         }
+
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool HPTwitchValidated
+        {
+            get {
+                return ((bool)(this["HPTwitchValidated"]));
+            }
+            set {
+                this["HPTwitchValidated"] = value;
+            }
+        }
     }
 }

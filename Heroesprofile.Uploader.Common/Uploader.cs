@@ -5,10 +5,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Heroes.ReplayParser;
-using Newtonsoft.Json;
+using System.IO;
+using System.Diagnostics;
 
 namespace Heroesprofile.Uploader.Common
 {
@@ -17,15 +17,18 @@ namespace Heroesprofile.Uploader.Common
         private static readonly Logger _log = LogManager.GetCurrentClassLogger();
 #if DEBUG
         const string HeroesProfileApiEndpoint = "https://api.heroesprofile.com/api";
+        const string HeroesProfileMatchParsed = "https://api.heroesprofile.com/openApi/Replay/Parsed/?replayID=";
+        const string HeroesProfileMatchSummary = "https://www.heroesprofile.com/Match/Single/?replayID=";
         const string HotsAPIApiEndpoint = "http://hotsapi.local/api/v1";
 
 #else
         const string HeroesProfileApiEndpoint = "https://api.heroesprofile.com/api";
+        const string HeroesProfileMatchParsed = "https://api.heroesprofile.com/openApi/Replay/Parsed/?replayID=";
+        const string HeroesProfileMatchSummary = "https://www.heroesprofile.com/Match/Single/?replayID=";
         const string HotsAPIApiEndpoint = "https://hotsapi.net/api/v1";
 #endif
 
         public bool UploadToHotslogs { get; set; }
-
         /// <summary>
         /// New instance of replay uploader
         /// </summary>
@@ -38,14 +41,14 @@ namespace Heroesprofile.Uploader.Common
         /// Upload replay
         /// </summary>
         /// <param name="file"></param>
-        public async Task Upload(Replay replay_results, ReplayFile file)
+        public async Task Upload(Replay replay_results, ReplayFile file, bool PostMatchPage)
         {
             file.UploadStatus = UploadStatus.InProgress;
             if (file.Fingerprint != null && await CheckDuplicate(file.Fingerprint)) {
                 _log.Debug($"File {file} marked as duplicate");
                 file.UploadStatus = UploadStatus.Duplicate;
             } else {
-                file.UploadStatus = await Upload(replay_results, file.Fingerprint, file.Filename);
+                file.UploadStatus = await Upload(replay_results, file.Fingerprint, file.Filename, PostMatchPage);
             }
         }
 
@@ -54,14 +57,8 @@ namespace Heroesprofile.Uploader.Common
         /// </summary>
         /// <param name="file">Path to file</param>
         /// <returns>Upload result</returns>
-        public async Task<UploadStatus> Upload(Replay replay_results, string fingerprint, string file)
+        public async Task<UploadStatus> Upload(Replay replay_results, string fingerprint, string file, bool PostMatchPage)
         {
-            //I am having issues with the request being too large due to the replay_json object.  Might try compressing it and then decompressing it on the laravel side
-            //I am having a hard time getting it compressed though.  I tmight be because my code is sending everything but the file as get.  So need to send the json object
-            //through post, along with the file, but not sure how to do that.
-
-            //string replay_json = JsonConvert.SerializeObject(ToJson(replay_results));
-
             try {
                 string response;
                 using (var client = new WebClient()) {
@@ -83,9 +80,24 @@ namespace Heroesprofile.Uploader.Common
                 catch {
 
                 }
-
-
                 dynamic json = JObject.Parse(response);
+
+                try {
+                    int replayID = 0;
+
+                    if (json.replayID != null) {
+                        replayID = json.replayID;
+                    }
+
+                    if (File.GetLastWriteTime(file) >= DateTime.Now.Subtract(TimeSpan.FromMinutes(60)) && PostMatchPage && replayID != 0) {
+                        await postMatchAnalysis(replayID);
+                    }
+                }
+                catch {
+
+                }
+
+
                 if ((bool)json.success) {
                     if (Enum.TryParse<UploadStatus>((string)json.status, out UploadStatus status)) {
                         _log.Debug($"Uploaded file '{file}': {status}");
@@ -98,16 +110,37 @@ namespace Heroesprofile.Uploader.Common
                     _log.Warn($"Error uploading file '{file}': {response}");
                     return UploadStatus.UploadError;
                 }
+
+          
             }
             catch (WebException ex) {
                 if (await CheckApiThrottling(ex.Response)) {
-                    return await Upload(replay_results, fingerprint, file);
+                    return await Upload(replay_results, fingerprint, file, PostMatchPage);
                 }
                 _log.Warn(ex, $"Error uploading file '{file}'");
                 return UploadStatus.UploadError;
             }
         }
 
+        private async Task postMatchAnalysis(int replayID)
+        {
+            
+            var timer = new Stopwatch();
+            timer.Start();
+            while (timer.ElapsedMilliseconds < 15000) {
+                string response;
+                using (var client = new WebClient()) {
+                    response = await client.DownloadStringTaskAsync($"{HeroesProfileMatchParsed}{replayID}");
+                }
+                if (response == "true") {
+                    Process.Start($"{HeroesProfileMatchSummary}{replayID}");
+                    return;
+                }
+                await Task.Delay(1000);
+            }
+            
+
+        }
         /// <summary>
         /// Check replay fingerprint against database to detect duplicate
         /// </summary>
@@ -205,52 +238,5 @@ namespace Heroesprofile.Uploader.Common
                 return false;
             }
         }
-        /*
-        public static object ToJson(Replay replay)
-        {
-            var obj = new {
-                mode = replay.GameMode.ToString(),
-                region = replay.Players[0].BattleNetRegionId,
-                date = replay.Timestamp,
-                length = replay.ReplayLength,
-                map = replay.Map,
-                map_short = replay.MapAlternativeName,
-                version = replay.ReplayVersion,
-                version_major = replay.ReplayVersionMajor,
-                version_build = replay.ReplayBuild,
-                bans = replay.TeamHeroBans,
-                draft_order = replay.DraftOrder,
-                team_experience = replay.TeamPeriodicXPBreakdown,
-                players = from p in replay.Players
-                          select new {
-                              battletag_name = p.Name,
-                              battletag_id = p.BattleTag,
-                              blizz_id = p.BattleNetId,
-                              account_level = p.AccountLevel,
-                              hero = p.Character,
-                              hero_level = p.CharacterLevel,
-                              hero_level_taunt = p.HeroMasteryTiers,
-                              team = p.Team,
-                              winner = p.IsWinner,
-                              silenced = p.IsSilenced,
-                              party = p.PartyValue,
-                              talents = p.Talents.Select(t => t.TalentName),
-                              score = p.ScoreResult,
-                              staff = p.IsBlizzardStaff,
-                              announcer = p.AnnouncerPackAttributeId,
-                              banner = p.BannerAttributeId,
-                              skin_title = p.SkinAndSkinTint,
-                              hero_skin = p.SkinAndSkinTintAttributeId,
-                              mount_title = p.MountAndMountTint,
-                              mount = p.MountAndMountTintAttributeId,
-                              spray_title = p.Spray,
-                              spray = p.SprayAttributeId,
-                              voice_line_title = p.VoiceLine,
-                              voice_line = p.VoiceLineAttributeId,
-                          }
-            };
-            return obj;
-        }
-        */
     }
 }

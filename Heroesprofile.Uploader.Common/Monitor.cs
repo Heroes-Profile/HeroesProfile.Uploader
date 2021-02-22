@@ -18,10 +18,10 @@ namespace Heroesprofile.Uploader.Common
         /// Fires when a new replay file is found
         /// </summary>
         public event EventHandler<EventArgs<string>> ReplayAdded;
-        protected virtual void OnReplayAdded(string path)
+        protected virtual void OnReplayAdded(object source, FileSystemEventArgs e)
         {
-            _log.Debug($"Detected new replay: {path}");
-            ReplayAdded?.Invoke(this, new EventArgs<string>(path));
+            _log.Debug($"Detected new replay: {e.FullPath}");
+            ReplayAdded?.Invoke(this, new EventArgs<string>(e.FullPath));
         }
 
         /// <summary>
@@ -35,7 +35,7 @@ namespace Heroesprofile.Uploader.Common
                     Filter = "*.StormReplay",
                     IncludeSubdirectories = true
                 };
-                _watcher.Created += (o, e) => OnReplayAdded(e.FullPath);
+                _watcher.Created += OnReplayAdded;
             }
             _watcher.EnableRaisingEvents = true;
             _log.Debug($"Started watching for new replays");

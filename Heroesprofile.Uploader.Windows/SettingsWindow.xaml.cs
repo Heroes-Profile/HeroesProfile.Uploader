@@ -19,6 +19,7 @@ namespace Heroesprofile.Uploader.Windows
     /// </summary>
     public partial class SettingsWindow : Window
     {
+        private bool showHideButton = true;
         public SettingsWindow()
         {
             InitializeComponent();
@@ -31,6 +32,24 @@ namespace Heroesprofile.Uploader.Windows
         {
             if (e.Key == Key.Z && Keyboard.Modifiers == ModifierKeys.Control) {
                 PreReleasePanel.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void Twitch_Extension_Validation_Button_Click(object sender, RoutedEventArgs e)
+        {
+            new TwitchExtensionValidationWindow() { Owner = this }.ShowDialog();
+        }
+
+        private void Show_HP_Api_Key_Button_Click(object sender, RoutedEventArgs e)
+        {
+            if (showHideButton) {
+                Show_HP_Api_Key_Button.Content = "hide";
+                hp_api_key_label.Content = Properties.Settings.Default.HPKey;
+                showHideButton = false;
+            } else {
+                Show_HP_Api_Key_Button.Content = "show";
+                hp_api_key_label.Content = "HP Twitch API Key";
+                showHideButton = true;
             }
         }
     }

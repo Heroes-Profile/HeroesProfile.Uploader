@@ -6,6 +6,7 @@
     <AssemblyName>Heroesprofile.Uploader.Common</AssemblyName>
     <RootNamespace>Heroesprofile.Uploader.Common</RootNamespace>
     <Version>1.0.4</Version>
+    <AssemblyVersion>1.0.9.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

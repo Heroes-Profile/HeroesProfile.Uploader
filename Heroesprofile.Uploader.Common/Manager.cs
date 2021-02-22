@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Threading;
@@ -13,20 +10,6 @@ using Nito.AsyncEx;
 using System.Diagnostics;
 using Heroes.ReplayParser;
 using System.Collections.Concurrent;
-using System.Net.Http;
-using Newtonsoft.Json;
-using MpqBattlelobby = Heroes.ReplayParser.MPQFiles.StandaloneBattleLobbyParser;
-using MpqHeader = Heroes.ReplayParser.MPQFiles.MpqHeader;
-using MpqAttributeEvents = Heroes.ReplayParser.MPQFiles.ReplayAttributeEvents;
-using MpqDetails = Heroes.ReplayParser.MPQFiles.ReplayDetails;
-//using MpqGameEvents = Heroes.ReplayParser.MPQFiles.ReplayGameEvents;
-using MpqInitData = Heroes.ReplayParser.MPQFiles.ReplayInitData;
-//using MpqMessageEvents = Heroes.ReplayParser.MPQFiles.ReplayMessageEvents;
-//using MpqResumableEvents = Heroes.ReplayParser.MPQFiles.ReplayResumableEvents;
-using MpqTrackerEvents = Heroes.ReplayParser.MPQFiles.ReplayTrackerEvents;
-using Statistics = Heroes.ReplayParser.Statistics;
-//using GameEventType = Heroes.ReplayParser.MPQFiles.GameEventType;
-
 
 namespace Heroesprofile.Uploader.Common
 {
@@ -50,13 +33,26 @@ namespace Heroesprofile.Uploader.Common
         private IUploader _uploader;
         private IAnalyzer _analyzer;
         private IMonitor _monitor;
-        private PreMatchIMonitor _prematch_monitor;
-
+        private ILiveMonitor _live_monitor;
+        private ILiveProcessor _liveProcessor;
+        private TimeSpan _waitTime = TimeSpan.FromSeconds(3);
         public event PropertyChangedEventHandler PropertyChanged;
 
-        private int prematch_id = 0;
+
+        public string hpTwitchAPIKey { get; set; }
+        public string hpAPIEmail { get; set; }
+        public string twitchNickname { get; set; }
+        public int hpAPIUserID { get; set; }
+
         public bool PreMatchPage { get; set; }
+        public bool PostMatchPage { get; set; }
+        public bool TwitchExtension { get; set; }
+
         private string _status = "";
+
+
+
+
         /// <summary>
         /// Current uploader status
         /// </summary>
@@ -79,21 +75,6 @@ namespace Heroesprofile.Uploader.Common
         }
 
         /// <summary>
-        /// Whether to mark replays for upload to hotslogs
-        /// </summary>
-        public bool UploadToHotslogs
-        {
-            get {
-                return _uploader?.UploadToHotslogs ?? false;
-            }
-            set {
-                if (_uploader != null) {
-                    _uploader.UploadToHotslogs = value;
-                }
-            }
-        }
-
-        /// <summary>
         /// Which replays to delete after upload
         /// </summary>
         public DeleteFiles DeleteAfterUpload { get; set; }
@@ -108,7 +89,7 @@ namespace Heroesprofile.Uploader.Common
         /// <summary>
         /// Start uploading and watching for new replays
         /// </summary>
-        public async void Start(IMonitor monitor, PreMatchIMonitor prematch_monitor, IAnalyzer analyzer, IUploader uploader)
+        public async void Start(IMonitor monitor, ILiveMonitor live_monitor, IAnalyzer analyzer, IUploader uploader, ILiveProcessor liveProcessor)
         {
             if (_initialized) {
                 return;
@@ -117,41 +98,42 @@ namespace Heroesprofile.Uploader.Common
 
             _uploader = uploader;
             _analyzer = analyzer;
+            _liveProcessor = liveProcessor;
+
             _monitor = monitor;
-            _prematch_monitor = prematch_monitor;
+            _live_monitor = live_monitor;
 
             var replays = ScanReplays();
             Files.AddRange(replays);
-            replays.Where(x => x.UploadStatus == UploadStatus.None).Reverse().Map(x => processingQueue.Add(x));
-
-            
+            replays.Where(x => x.UploadStatus == UploadStatus.None).Map(x => processingQueue.Add(x));
 
             _monitor.ReplayAdded += async (_, e) => {
-                await EnsureFileAvailable(e.Data, 3000);
+                await EnsureFileAvailable(e.Data);
+                if (PreMatchPage || TwitchExtension) {
+                    if (TwitchExtension) {
+                        await EnsureFileAvailable(e.Data);
+                        var tmpPath = Path.GetTempFileName();
+                        await SafeCopy(e.Data, tmpPath, true);
+                        await _liveProcessor.saveMissingTalentData(tmpPath);
+                    }
+                    _live_monitor.StopBattleLobbyWatcher();
+                    _live_monitor.StopStormSaveWatcher();
+
+                    _live_monitor = new LiveMonitor();
+
+                    if (PreMatchPage || TwitchExtension) {
+                        StartBattleLobbyWatcherEvent();
+                    }
+                }
+
                 var replay = new ReplayFile(e.Data);
                 Files.Insert(0, replay);
                 processingQueue.Add(replay);
-                if (PreMatchPage) {
-                    _prematch_monitor.Start();
-                }
-            };
-            _monitor.Start();
 
-            /*
-            _prematch_monitor.TempBattleLobbyCreated += async (_, e) => {
-                if (PreMatchPage) {
-                    prematch_id = 0;
-                    _prematch_monitor.Stop();
-                    Thread.Sleep(1000);
-                    var tmpPath = Path.GetTempFileName();
-                    await SafeCopy(e.Data, tmpPath, true);
-                    byte[] bytes = System.IO.File.ReadAllBytes(tmpPath);
-                    Replay replay = MpqBattlelobby.Parse(bytes);
-                    await runPreMatch(replay);
-                }
             };
-            _prematch_monitor.Start();
-            */
+
+            _monitor.Start();
+            StartBattleLobbyWatcherEvent();
 
             _analyzer.MinimumBuild = await _uploader.GetMinimumBuild();
 
@@ -159,47 +141,46 @@ namespace Heroesprofile.Uploader.Common
                 Task.Run(UploadLoop).Forget();
             }
         }
+        private void StartBattleLobbyWatcherEvent()
+        {
+            if (PreMatchPage || TwitchExtension) {
+                _live_monitor.TempBattleLobbyCreated += async (_, e) => {
+
+                    _live_monitor.StopBattleLobbyWatcher();
+                    _liveProcessor = new LiveProcessor(PreMatchPage, TwitchExtension, hpTwitchAPIKey, hpAPIEmail, twitchNickname, hpAPIUserID);
+
+                    await EnsureFileAvailable(e.Data);
+                    var tmpPath = Path.GetTempFileName();
+                    await SafeCopy(e.Data, tmpPath, true);
+                    await _liveProcessor.StartProcessing(tmpPath);
+
+                    if (TwitchExtension) {
+                        StartStormSaveWatcherEvent();
+                    }
+                };
+
+                _live_monitor.StartBattleLobby();
+            }
+        }
+
+        private void StartStormSaveWatcherEvent()
+        {
+            if (TwitchExtension) {
+                _live_monitor.StormSaveCreated += async (_, e) => {
+                    Thread.Sleep(1000);
+                    await EnsureFileAvailable(e.Data);
+                    var tmpPath = Path.GetTempFileName();
+                    await SafeCopy(e.Data, tmpPath, true);
+                    await _liveProcessor.UpdateData(tmpPath);
+                };
+                _live_monitor.StartStormSave();
+            }
+        }
 
         public void Stop()
         {
             _monitor.Stop();
             processingQueue.CompleteAdding();
-        }
-
-        private async Task runPreMatch(Replay replayData)
-        {
-            HttpClient client = new HttpClient();
-            var values = new Dictionary<string, string>
-            {
-            { "data", JsonConvert.SerializeObject(replayData.Players) },
-            };
-            
-            var content = new FormUrlEncodedContent(values);
-
-            var response = await client.PostAsync("https://www.heroesprofile.com/PreMatch/", content);
-
-            var responseString = await response.Content.ReadAsStringAsync();
-
-
-            prematch_id = Convert.ToInt32(responseString);
-
-            System.Diagnostics.Process.Start("https://www.heroesprofile.com/PreMatch/Results/?prematchID=" + prematch_id);
-        }
-
-        private async Task updatePreMatch(Replay replayData)
-        {
-            HttpClient client = new HttpClient();
-            var values = new Dictionary<string, string>
-            {
-                { "prematch_id", prematch_id.ToString() },
-                { "game_type", replayData.GameMode.ToString() },
-                { "game_map", replayData.Map.ToString() },
-                { "data", JsonConvert.SerializeObject(replayData.Players) },
-            };
-
-            var content = new FormUrlEncodedContent(values);
-
-            var response = await client.PostAsync("https://www.heroesprofile.com/PreMatch/Update", content);
         }
 
         private async Task UploadLoop()
@@ -212,9 +193,11 @@ namespace Heroesprofile.Uploader.Common
 
                     // test if replay is eligible for upload (not AI, PTR, Custom, etc)
                     var replay = _analyzer.Analyze(file);
-                    if (file.UploadStatus == UploadStatus.InProgress) {
+                    if (file.UploadStatus == UploadStatus.InProgress && replay != null) {
                         // if it is, upload it
-                        await _uploader.Upload(replay, file);
+                        await _uploader.Upload(replay, file, PostMatchPage);
+                    } else {
+                        file.UploadStatus = UploadStatus.Incomplete;
                     }
                     SaveReplayList();
                     if (ShouldDelete(file, replay)) {
@@ -280,11 +263,11 @@ namespace Heroesprofile.Uploader.Common
         /// <param name="filename">Filename to test</param>
         /// <param name="timeout">Timeout in milliseconds</param>
         /// <param name="testWrite">Whether to test read or write access</param>
-        public async Task EnsureFileAvailable(string filename, int timeout, bool testWrite = true)
+        public async Task EnsureFileAvailable(string filename, bool testWrite = true)
         {
-            var timer = new Stopwatch();
-            timer.Start();
-            while (timer.ElapsedMilliseconds < timeout) {
+            var timer = Stopwatch.StartNew();
+
+            while (timer.Elapsed < _waitTime) {
                 try {
                     if (testWrite) {
                         File.OpenWrite(filename).Close();

@@ -29,10 +29,14 @@ namespace Heroesprofile.Uploader.Common
                             ShouldParseMouseEvents = false,
                             ShouldParseDetailedBattleLobby = true,
                             ShouldParseEvents = false,
-                            AllowPTR = false
+                            AllowPTR = false,
                         });
 
                 var status = GetPreStatus(replay, parseResult);
+
+                if (replay == null) {
+                    return null;
+                }
 
                 if (status != null) {
                     file.UploadStatus = status.Value;
@@ -55,6 +59,7 @@ namespace Heroesprofile.Uploader.Common
         {
             switch (parseResult) {
                 case DataParser.ReplayParseResult.ComputerPlayerFound:
+                    return UploadStatus.AiDetected;
                 case DataParser.ReplayParseResult.Incomplete:
                     return UploadStatus.Incomplete;
                 case DataParser.ReplayParseResult.TryMeMode:

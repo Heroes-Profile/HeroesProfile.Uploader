@@ -9,6 +9,7 @@
     <!-- Apply style to windows -->
     <Style BasedOn="{StaticResource WindowStyle}" TargetType="{x:Type local:MainWindow}" />
     <Style BasedOn="{StaticResource WindowStyle}" TargetType="{x:Type local:SettingsWindow}" />
+    <Style BasedOn="{StaticResource WindowStyle}" TargetType="{x:Type local:TwitchExtensionValidationWindow}" />
 
     <!-- Heroesprofile specific brushes -->
     <SolidColorBrush x:Key="UpdateAvailableTextBrush" Color="Orange" />

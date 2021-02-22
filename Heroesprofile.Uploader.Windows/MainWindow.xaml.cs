@@ -1,4 +1,7 @@
-﻿using Squirrel;
+﻿using Heroesprofile.Uploader.Windows.Properties;
+
+using Squirrel;
+
 using System;
 using System.Diagnostics;
 using System.Reflection;
@@ -14,6 +17,19 @@ namespace Heroesprofile.Uploader.Windows
         public MainWindow()
         {
             InitializeComponent();
+
+            Twitch_Extension_Checkbox.Checked += Twitch_Extension_Checkbox_Checked;
+            Twitch_Extension_Checkbox.Unchecked += Twitch_Extension_Checkbox_Unchecked;
+        }
+
+        private void Twitch_Extension_Checkbox_Checked(object sender, RoutedEventArgs e)
+        {
+            App.Manager.TwitchExtension = true;
+        }
+
+        private void Twitch_Extension_Checkbox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            App.Manager.TwitchExtension = false;
         }
 
         private void Window_StateChanged(object sender, EventArgs e)
@@ -45,7 +61,10 @@ namespace Heroesprofile.Uploader.Windows
 
         private void Settings_Click(object sender, RoutedEventArgs e)
         {
-            new SettingsWindow() { Owner = this, DataContext = this }.ShowDialog();
+            var settings = new SettingsWindow() { Owner = this, DataContext = this };
+            settings.ShowDialog();
+
+            Twitch_Extension_Checkbox.IsEnabled = Settings.Default.HPTwitchValidated;
         }
 
         private async void Restart_Click(object sender, RoutedEventArgs e)

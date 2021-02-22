@@ -1,7 +1,11 @@
 ﻿using Heroesprofile.Uploader.Common;
+
 using Microsoft.Win32;
+
 using NLog;
+
 using Squirrel;
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -15,6 +19,7 @@ using System.Windows;
 using System.Windows.Data;
 using System.Windows.Forms;
 using System.Windows.Threading;
+
 using Application = System.Windows.Application;
 using MessageBox = System.Windows.MessageBox;
 
@@ -59,6 +64,7 @@ namespace Heroesprofile.Uploader.Windows
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(UpdateAvailable)));
             }
         }
+
         public static Version Version { get { return Assembly.GetExecutingAssembly().GetName().Version; } }
         public string VersionString
         {
@@ -102,18 +108,22 @@ namespace Heroesprofile.Uploader.Windows
                 RestoreSettings();
             }
             SetupTrayIcon();
-            Manager = new Manager(new ReplayStorage($@"{SettingsDir}\replays_v4.xml"));
+            Manager = new Manager(new ReplayStorage($@"{SettingsDir}\replays_v5.xml"));
             // Enable collection modification from any thread
             BindingOperations.EnableCollectionSynchronization(Manager.Files, _lock);
 
-            Manager.UploadToHotslogs = Settings.UploadToHotslogs;
             Manager.PreMatchPage = Settings.PreMatchPage;
+            Manager.PostMatchPage = Settings.PostMatchPage;
+            Manager.TwitchExtension = Settings.HPTwitchExtension;
+            Manager.hpTwitchAPIKey = Settings.HPKey;
+            Manager.hpAPIEmail = Settings.HPAPIEmail;
+            Manager.twitchNickname = Settings.TwitchNickname;
+            Manager.hpAPIUserID = Settings.HPAPIUserID;
             Manager.DeleteAfterUpload = Settings.DeleteAfterUpload;
+
             ApplyTheme(Settings.Theme);
+
             Settings.PropertyChanged += (o, ev) => {
-                if (ev.PropertyName == nameof(Settings.UploadToHotslogs)) {
-                    Manager.UploadToHotslogs = Settings.UploadToHotslogs;
-                }
                 if (ev.PropertyName == nameof(Settings.DeleteAfterUpload)) {
                     Manager.DeleteAfterUpload = Settings.DeleteAfterUpload;
                 }
@@ -124,7 +134,17 @@ namespace Heroesprofile.Uploader.Windows
                 if (ev.PropertyName == nameof(Settings.PreMatchPage)) {
                     Manager.PreMatchPage = Settings.PreMatchPage;
                 }
+
+                if (ev.PropertyName == nameof(Settings.PostMatchPage)) {
+                    Manager.PostMatchPage = Settings.PostMatchPage;
+                }
+
+                if (ev.PropertyName == nameof(Settings.HPTwitchExtension)) {
+                    Manager.TwitchExtension = Settings.HPTwitchExtension;
+                }
             };
+
+            Settings.HPTwitchValidated = TwitchSettingsValidator.Validate();
 
             if (e.Args.Contains("--autorun") && Settings.MinimizeToTray) {
                 TrayIcon.Visible = true;
@@ -132,7 +152,7 @@ namespace Heroesprofile.Uploader.Windows
                 mainWindow = new MainWindow();
                 mainWindow.Show();
             }
-            Manager.Start(new Monitor(), new PreMatchMonitor(), new Analyzer(), new Common.Uploader());
+            Manager.Start(new Monitor(), new LiveMonitor(), new Analyzer(), new Common.Uploader(), new LiveProcessor(Manager.PreMatchPage, Manager.TwitchExtension, Manager.hpTwitchAPIKey, Manager.hpAPIEmail, Manager.twitchNickname, Manager.hpAPIUserID));
 
 #pragma warning disable 162
             if (!NoSquirrel) {
@@ -250,7 +270,7 @@ namespace Heroesprofile.Uploader.Windows
                     Settings.Upgrade();
 
                     if (string.IsNullOrEmpty(Settings.ApplicationVersion)) { // < v1.7
-                    
+
                     } else {
                         var previous = Version.Parse(Settings.ApplicationVersion);
 

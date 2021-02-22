@@ -36,7 +36,7 @@
         <ListBox Grid.Row="1" ItemsSource="{Binding App.Manager.Files}" HorizontalContentAlignment="Stretch">
             <ListBox.ItemTemplate>
                 <DataTemplate>
-                    <DockPanel LastChildFill="False">
+                    <DockPanel LastChildFill="True">
                         <TextBlock DockPanel.Dock="Right" Text="{Binding UploadStatus, Converter={StaticResource statusConverter}}" Foreground="{Binding UploadStatus, Converter={StaticResource statusColorConverter}}" />
                         <TextBlock Text="{Binding Filename, Converter={StaticResource filenameConverter}}" DockPanel.Dock="Left" />
                         <TextBlock Text="&#x2718;" Foreground="{StaticResource FileDeletedIconBrush}" DockPanel.Dock="Left" Visibility="{Binding Deleted, Converter={StaticResource visibilityConverter}}" 
@@ -46,7 +46,7 @@
             </ListBox.ItemTemplate>
         </ListBox>
         <DockPanel Grid.Column="1" Grid.Row="1" Margin="12, 0, 0, 0" LastChildFill="False">
-            <StackPanel DockPanel.Dock="Top" helpers:MarginSetter.Margin="0, 2" Margin="0, 8, 0, 0">
+            <StackPanel DockPanel.Dock="Top" helpers:MarginSetter.Margin="0, 2" Margin="0, 8, 0, 0" Height="165">
                 <TextBlock Text="{Binding App.Manager.Status}" FontWeight="Bold" Margin="0, 0, 0, 6" />
                 <TextBlock Text="{Binding App.Manager.Aggregates[None], StringFormat=Not processed: {0}}" Visibility="{Binding App.Manager.Aggregates, Converter={StaticResource intVisibilityConverter}, ConverterParameter={x:Static heroesprofile:UploadStatus.None}}" />
                 <TextBlock Text="{Binding App.Manager.Aggregates[Success], StringFormat=Success: {0}}" Visibility="{Binding App.Manager.Aggregates, Converter={StaticResource intVisibilityConverter}, ConverterParameter={x:Static heroesprofile:UploadStatus.Success}}" />
@@ -61,7 +61,9 @@
             <StackPanel DockPanel.Dock="Bottom" helpers:MarginSetter.Margin="0, 8, 8, 0">
                 <CheckBox IsChecked="{Binding App.StartWithWindows}" Content="Start with windows" Height="23" />
                 <CheckBox IsChecked="{Binding App.Settings.MinimizeToTray}" Content="Minimize to tray" Height="23"  />
-                <CheckBox IsChecked="False" Content="Prematch Page" Height="23"  Margin="0,0,8,0" IsEnabled="False"  />
+                <CheckBox IsChecked="{Binding App.Settings.PreMatchPage}" Content="Prematch Page" Height="23"  Margin="0,0,8,0" IsEnabled="True"  />
+                <CheckBox IsChecked="{Binding App.Settings.PostMatchPage}" Content="Postmatch Page" Height="23"  Margin="0,0,8,0" IsEnabled="True"  />
+                <CheckBox x:Name="Twitch_Extension_Checkbox" IsChecked="{Binding App.Settings.HPTwitchExtension}" Content="Twitch Extension" Height="23"  Margin="0,0,8,0" IsEnabled="{Binding App.Settings.HPTwitchValidated}"  />
                 <Button HorizontalAlignment="Stretch" Content="Show log" Click="ShowLog_Click" Margin="0, 8, 0, 0" />
                 <Button HorizontalAlignment="Stretch" Content="Settings" Click="Settings_Click" Margin="0, 8, 0, 0" />
             </StackPanel>

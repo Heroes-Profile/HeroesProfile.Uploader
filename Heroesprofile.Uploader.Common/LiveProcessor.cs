@@ -95,128 +95,147 @@ namespace Heroesprofile.Uploader.Common
         private async Task runPreMatch(Replay replayData)
         {
 
-            HttpClient client = new HttpClient();
-            var values = new Dictionary<string, string>
-            {
-            { "data", JsonConvert.SerializeObject(replayData.Players) },
-            };
+            try {
 
-            var content = new FormUrlEncodedContent(values);
+                HttpClient client = new HttpClient();
+                var values = new Dictionary<string, string>
+                {
+                    { "data", JsonConvert.SerializeObject(replayData.Players) },
+                };
 
-            var response = await client.PostAsync($"{heresprofile}PreMatch/", content);
+                var content = new FormUrlEncodedContent(values);
 
-            var responseString = await response.Content.ReadAsStringAsync();
+                var response = await client.PostAsync($"{heresprofile}PreMatch/", content);
 
-            if (Int32.TryParse(responseString, out int value)) {
-                Process.Start($"{heresprofile}{preMatchURI}{value}");
-            } else {
-                _log.Error($"Integer value not returned for postmatch replayID.  Response string: {responseString}");
+                var responseString = await response.Content.ReadAsStringAsync();
+
+                if (Int32.TryParse(responseString, out int value)) {
+                    Process.Start($"{heresprofile}{preMatchURI}{value}");
+                } else {
+                    _log.Error($"Integer value not returned for postmatch replayID.  Response string: {responseString}");
+                }
+            }catch {
+                _log.Error($"Prematch failed");
             }
         }
 
         private async Task runTwitchExtensionStart(Replay replayData)
         {
-            await getNewReplayID();
-            await savePlayerData(replayData);
-            await notifyTwitchOfTalentChange();
+            try {
+                await getNewReplayID();
+                await savePlayerData(replayData);
+                await notifyTwitchOfTalentChange();
+            }
+            catch {
+                _log.Error($"Prematch failed");
+            }
+
         }
 
 
 
         private async Task runTwitchExtensionUpdate(string stormSavePath)
         {
-            if (latest_replayID != 0) {
-                var replay = new Replay();
-                MpqHeader.ParseHeader(replay, stormSavePath);
-
-            
-
-
-                using (var archive = new Foole.Mpq.MpqArchive(stormSavePath)) {
-                    archive.AddListfileFilenames();
+            try {
+                if (latest_replayID != 0) {
+                    var replay = new Replay();
+                    MpqHeader.ParseHeader(replay, stormSavePath);
 
 
-                    MpqDetails.Parse(replay, DataParser.GetMpqFile(archive, "save.details"), true);
-
-                    if (archive.FileExists("replay.attributes.events")) {
-                        MpqAttributeEvents.Parse(replay, DataParser.GetMpqFile(archive, "replay.attributes.events"));
-                    }
-
-                    //Get Game Mode               
-                    if (archive.FileExists("save.initData") && !gameModeUpdated) {
-                        MpqInitData.Parse(replay, DataParser.GetMpqFile(archive, "save.initData"));
-                    }
 
 
-                    //Uneeded
-                    //if (archive.FileExists("replay.game.events")) {
-                    //    MpqGameEvents.Parse(DataParser.GetMpqFile(archive, "replay.game.events"), replay.Players, replay.ReplayBuild, replay.ReplayVersionMajor, false);
-                    //}
-
-                    //Uneeded
-                    //if (archive.FileExists("replay.message.events")) {
-                    //    MpqMessageEvents.Parse(replay, DataParser.GetMpqFile(archive, "replay.message.events"));
-                    //}
-
-                    if (archive.FileExists("replay.tracker.events")) {
-                        replay.TrackerEvents = MpqTrackerEvents.Parse(DataParser.GetMpqFile(archive, "replay.tracker.events"));
-                    }
-
-                    //Statistics.Parse(replay);
+                    using (var archive = new Foole.Mpq.MpqArchive(stormSavePath)) {
+                        archive.AddListfileFilenames();
 
 
-                    for (int i = 0; i < replay.Players.Length; i++) {
-                        if (replay.Players[i].Name == replayData.Players[i].Name) {
-                            replay.Players[i].BattleTag = replayData.Players[i].BattleTag;
+                        MpqDetails.Parse(replay, DataParser.GetMpqFile(archive, "save.details"), true);
+
+                        if (archive.FileExists("replay.attributes.events")) {
+                            MpqAttributeEvents.Parse(replay, DataParser.GetMpqFile(archive, "replay.attributes.events"));
                         }
-                    }
+
+                        //Get Game Mode               
+                        if (archive.FileExists("save.initData") && !gameModeUpdated) {
+                            MpqInitData.Parse(replay, DataParser.GetMpqFile(archive, "save.initData"));
+                        }
 
 
+                        //Uneeded
+                        //if (archive.FileExists("replay.game.events")) {
+                        //    MpqGameEvents.Parse(DataParser.GetMpqFile(archive, "replay.game.events"), replay.Players, replay.ReplayBuild, replay.ReplayVersionMajor, false);
+                        //}
 
-                    if (replay.TrackerEvents != null) {
+                        //Uneeded
+                        //if (archive.FileExists("replay.message.events")) {
+                        //    MpqMessageEvents.Parse(replay, DataParser.GetMpqFile(archive, "replay.message.events"));
+                        //}
 
-                        for (int i = latest_trackever_event; i < replay.TrackerEvents.Count; i++) {
-                            if (replay.TrackerEvents[i].Data.dictionary[0].blobText == "TalentChosen") {
-                                Talent talent = new Talent();
+                        if (archive.FileExists("replay.tracker.events")) {
+                            replay.TrackerEvents = MpqTrackerEvents.Parse(DataParser.GetMpqFile(archive, "replay.tracker.events"));
+                        }
 
-                                talent.TalentName = replay.TrackerEvents[i].Data.dictionary[1].optionalData.array[0].dictionary[1].blobText;
-                                long playerID = replay.TrackerEvents[i].Data.dictionary[2].optionalData.array[0].dictionary[1].vInt.Value;
-                                talent.TimeSpanSelected = replay.TrackerEvents[i].TimeSpan;
-                                if (!playerIDTalentIndexDictionary.ContainsKey(Convert.ToInt32(playerID - 1)))
-                                    playerIDTalentIndexDictionary[Convert.ToInt32(playerID - 1)] = 0;
+                        //Statistics.Parse(replay);
 
-                                if (!gameModeUpdated) {
-                                    await updateReplayData(replay);
-                                    await updatePlayerData(replay);
-                                    gameModeUpdated = true;
-                                }
-                                if (!foundTalents.ContainsKey(replay.Players[playerID - 1].Name+ talent.TalentName)) {
-                                    foundTalents.Add(replay.Players[playerID - 1].Name+talent.TalentName, replay.Players[playerID - 1]+talent.TalentName);
-                                    await saveTalentData(replay, replay.Players[playerID - 1], talent);
-                                    talentUpdate = true;
-                                }
-                          
-                                latest_trackever_event = i;
 
+                        for (int i = 0; i < replay.Players.Length; i++) {
+                            if (replay.Players[i].Name == replayData.Players[i].Name) {
+                                replay.Players[i].BattleTag = replayData.Players[i].BattleTag;
                             }
                         }
-                        
-                        if (talentUpdate) {
-                            await notifyTwitchOfTalentChange();
-                            talentUpdate = false;
+
+
+
+                        if (replay.TrackerEvents != null) {
+
+                            for (int i = latest_trackever_event; i < replay.TrackerEvents.Count; i++) {
+                                if (replay.TrackerEvents[i].Data.dictionary[0].blobText == "TalentChosen") {
+                                    Talent talent = new Talent();
+
+                                    talent.TalentName = replay.TrackerEvents[i].Data.dictionary[1].optionalData.array[0].dictionary[1].blobText;
+                                    long playerID = replay.TrackerEvents[i].Data.dictionary[2].optionalData.array[0].dictionary[1].vInt.Value;
+                                    talent.TimeSpanSelected = replay.TrackerEvents[i].TimeSpan;
+                                    if (!playerIDTalentIndexDictionary.ContainsKey(Convert.ToInt32(playerID - 1)))
+                                        playerIDTalentIndexDictionary[Convert.ToInt32(playerID - 1)] = 0;
+
+                                    if (!gameModeUpdated) {
+                                        await updateReplayData(replay);
+                                        await updatePlayerData(replay);
+                                        gameModeUpdated = true;
+                                    }
+                                    if (!foundTalents.ContainsKey(replay.Players[playerID - 1].Name + talent.TalentName)) {
+                                        foundTalents.Add(replay.Players[playerID - 1].Name + talent.TalentName, replay.Players[playerID - 1] + talent.TalentName);
+                                        await saveTalentData(replay, replay.Players[playerID - 1], talent);
+                                        talentUpdate = true;
+                                    }
+
+                                    latest_trackever_event = i;
+
+                                }
+                            }
+
+                            if (talentUpdate) {
+                                await notifyTwitchOfTalentChange();
+                                talentUpdate = false;
+                            }
+
+
                         }
-                        
-                        
-                    }
 
-                    if (!gameModeUpdated) {
-                        await updateReplayData(replay);
-                        await updatePlayerData(replay);
-                        gameModeUpdated = true;
-                    }
+                        if (!gameModeUpdated) {
+                            await updateReplayData(replay);
+                            await updatePlayerData(replay);
+                            gameModeUpdated = true;
+                        }
 
+                    }
                 }
+
             }
+            catch {
+                _log.Error($"Update failed");
+            }
+
+
         }
 
         

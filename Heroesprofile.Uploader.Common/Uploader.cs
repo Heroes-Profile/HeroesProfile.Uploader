@@ -94,7 +94,7 @@ namespace Heroesprofile.Uploader.Common
                     }
                 }
                 catch {
-
+                    _log.Error($"Postmatch failed");
                 }
 
 

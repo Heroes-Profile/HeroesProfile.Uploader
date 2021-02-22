@@ -8,4 +8,4 @@
 
 5: CD to Installer directory
 
-6: Squirrel --releasify=Heroesprofile.Uploader.1.0.5.nupkg --no-msi --setupIcon=uploader_icon_light.ico
+6: Squirrel --releasify=Heroesprofile.Uploader.2.0.0.nupkg --no-msi --setupIcon=uploader_icon_light.ico

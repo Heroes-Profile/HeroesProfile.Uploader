@@ -177,13 +177,16 @@ namespace Heroesprofile.Uploader.Common
                         //Statistics.Parse(replay);
 
 
+                        //This will not work correctly if two players have the same Name, but it is the only solution I have come up with that also works with Observers.  Observers being in a game is more likely than 2 players with the same name.
+
                         for (int i = 0; i < replay.Players.Length; i++) {
-                            if (replay.Players[i].Name == replayData.Players[i].Name) {
-                                replay.Players[i].BattleTag = replayData.Players[i].BattleTag;
+                            for (int j = 0; j < replayData.Players.Length; j++) {
+                                if (replay.Players[i].Name == replayData.Players[j].Name) {
+                                    replay.Players[i].BattleTag = replayData.Players[j].BattleTag;
+                                    break;
+                                }
                             }
                         }
-
-
 
                         if (replay.TrackerEvents != null) {
 

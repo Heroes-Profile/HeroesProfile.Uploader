@@ -127,7 +127,7 @@ namespace Heroesprofile.Uploader.Common
                 await notifyTwitchOfTalentChange();
             }
             catch {
-                _log.Error($"Prematch failed");
+                _log.Error($"Twitch Extension Prematch failed");
             }
 
         }

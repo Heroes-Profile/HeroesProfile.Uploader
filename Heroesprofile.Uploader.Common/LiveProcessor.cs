@@ -48,7 +48,7 @@ namespace Heroesprofile.Uploader.Common
         private static readonly string savePlayersUrl = @"twitch/extension/save/player";
         private static readonly string updatePlayerDataUrl = @"twitch/extension/update/player";
         private static readonly string saveTalentsUrl = @"twitch/extension/save/talent";
-        private static readonly string notifyUrl = @"twitch/extension/notify/talent/update";
+        private static readonly string notifyUrl = @"twitch/extension/notify";
 
         private bool gameModeUpdated = false;
         private int latest_replayID = 0;
@@ -78,9 +78,11 @@ namespace Heroesprofile.Uploader.Common
                 await runPreMatch(replayData);
             }
 
+            /*
             if (TwitchExtension) {
                 await runTwitchExtensionStart(replayData);
             }
+            */
         }
 
         public async Task UpdateData(string stormSavePath)
@@ -136,6 +138,7 @@ namespace Heroesprofile.Uploader.Common
 
         private async Task runTwitchExtensionUpdate(string stormSavePath)
         {
+            /*
             try {
                 if (latest_replayID != 0) {
                     var replay = new Replay();
@@ -238,7 +241,7 @@ namespace Heroesprofile.Uploader.Common
                 _log.Error($"Update failed");
             }
 
-
+            */
         }
 
         

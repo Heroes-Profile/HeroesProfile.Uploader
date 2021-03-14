@@ -110,12 +110,15 @@ namespace Heroesprofile.Uploader.Common
             _monitor.ReplayAdded += async (_, e) => {
                 await EnsureFileAvailable(e.Data);
                 if (PreMatchPage || TwitchExtension) {
+
+                    /*
                     if (TwitchExtension) {
                         await EnsureFileAvailable(e.Data);
                         var tmpPath = Path.GetTempFileName();
                         await SafeCopy(e.Data, tmpPath, true);
                         await _liveProcessor.saveMissingTalentData(tmpPath);
                     }
+                    */
                     _live_monitor.StopBattleLobbyWatcher();
                     _live_monitor.StopStormSaveWatcher();
 
@@ -154,9 +157,11 @@ namespace Heroesprofile.Uploader.Common
                     await SafeCopy(e.Data, tmpPath, true);
                     await _liveProcessor.StartProcessing(tmpPath);
 
+                    /*
                     if (TwitchExtension) {
                         StartStormSaveWatcherEvent();
                     }
+                    */
                 };
 
                 _live_monitor.StartBattleLobby();

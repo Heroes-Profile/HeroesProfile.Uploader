@@ -43,7 +43,7 @@ namespace Heroesprofile.Uploader.Windows
 
             }
             catch (WebException ex) {
-                _log.Warn("Twitch validation failure: " + ex);
+                _log.Warn("Twitch validation failure: " + ex.ToString());
             }
 
             return false;

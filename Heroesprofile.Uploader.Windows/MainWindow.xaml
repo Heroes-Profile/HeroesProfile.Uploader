@@ -63,7 +63,7 @@
                 <CheckBox IsChecked="{Binding App.Settings.MinimizeToTray}" Content="Minimize to tray" Height="23"  />
                 <CheckBox IsChecked="{Binding App.Settings.PreMatchPage}" Content="Prematch Page" Height="23"  Margin="0,0,8,0" IsEnabled="True"  />
                 <CheckBox IsChecked="{Binding App.Settings.PostMatchPage}" Content="Postmatch Page" Height="23"  Margin="0,0,8,0" IsEnabled="True"  />
-                <CheckBox x:Name="Twitch_Extension_Checkbox" IsChecked="False" Content="Twitch Extension" Height="23"  Margin="0,0,8,0" IsEnabled="{Binding App.Settings.HPTwitchValidated}" Visibility="Hidden" />
+                <CheckBox x:Name="Twitch_Extension_Checkbox" IsChecked="{Binding App.Settings.HPTwitchExtension}" Content="Twitch Extension" Height="23"  Margin="0,0,8,0" IsEnabled="{Binding App.Settings.HPTwitchValidated}"/>
                 <Button HorizontalAlignment="Stretch" Content="Show log" Click="ShowLog_Click" Margin="0, 8, 0, 0" />
                 <Button HorizontalAlignment="Stretch" Content="Settings" Click="Settings_Click" Margin="0, 8, 0, 0" />
             </StackPanel>

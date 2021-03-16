@@ -64,7 +64,7 @@ namespace Heroesprofile.Uploader.Common
                 using (var client = new WebClient()) {
                     //var bytes = await client.UploadFileTaskAsync($"{HeroesProfileApiEndpoint}/upload?fingerprint={fingerprint}&data={replay_json}", file);
 
-                    var bytes = await client.UploadFileTaskAsync($"{HeroesProfileApiEndpoint}/upload?fingerprint={fingerprint}", file);
+                    var bytes = await client.UploadFileTaskAsync($"{HeroesProfileApiEndpoint}/upload/heroesprofile/desktop/uploader?fingerprint={fingerprint}", file);
                     response = Encoding.UTF8.GetString(bytes);
                 }
 

@@ -70,10 +70,9 @@ namespace Heroesprofile.Uploader.Common
 
                     using (var client = new WebClient()) {
 
-                        client.UploadDataCompleted += (sender, e) => {
+                        client.UploadDataCompleted += (sender, e) => { 
                             if (e.Cancelled) {
                                 uploadSuccess = false;
-                                Task.Delay(5);
                             }
 
                             if (e.Error != null) {
@@ -86,7 +85,6 @@ namespace Heroesprofile.Uploader.Common
                                         //Task.Delay(Convert.ToInt32(webEx.Response.Headers[HttpResponseHeader.RetryAfter].ToString()));
                                     }
                                 }
-                                Task.Delay(5);
                                 uploadSuccess = false;
                             }
 
@@ -98,10 +96,13 @@ namespace Heroesprofile.Uploader.Common
 
                         var bytes = await client.UploadFileTaskAsync($"{HeroesProfileApiEndpoint}/upload/heroesprofile/desktop/uploader?fingerprint={fingerprint}", file);
                         response = Encoding.UTF8.GetString(bytes);
-        
+
+                        if (!uploadSuccess) {
+                            await Task.Delay(5);
+                        }
                     }
                 } while (!uploadSuccess && (timer.ElapsedMilliseconds < 60000));
-
+                timer.Stop();
 
 
                 //Try upload to HotsApi as well
@@ -173,8 +174,7 @@ namespace Heroesprofile.Uploader.Common
                 }
                 await Task.Delay(1000);
             }
-            
-
+            timer.Stop();
         }
         /// <summary>
         /// Check replay fingerprint against database to detect duplicate

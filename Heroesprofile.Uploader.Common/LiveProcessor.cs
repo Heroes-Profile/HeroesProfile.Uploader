@@ -294,6 +294,7 @@ namespace Heroesprofile.Uploader.Common
             };
             var content = new FormUrlEncodedContent(values);
             var response = await client.PostAsync($"{heresprofileAPI}{updateReplayDataUrl}", content);
+
             //_log.Info("Updating Game Mode Data for Live Extension:" + response);
 
             try {

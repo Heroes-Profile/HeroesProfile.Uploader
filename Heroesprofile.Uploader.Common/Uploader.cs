@@ -61,12 +61,47 @@ namespace Heroesprofile.Uploader.Common
         {
             try {
                 string response;
-                using (var client = new WebClient()) {
-                    //var bytes = await client.UploadFileTaskAsync($"{HeroesProfileApiEndpoint}/upload?fingerprint={fingerprint}&data={replay_json}", file);
 
-                    var bytes = await client.UploadFileTaskAsync($"{HeroesProfileApiEndpoint}/upload/heroesprofile/desktop/uploader?fingerprint={fingerprint}", file);
-                    response = Encoding.UTF8.GetString(bytes);
-                }
+
+                var timer = new Stopwatch();
+                timer.Start();
+                bool uploadSuccess = false;
+                do {
+
+                    using (var client = new WebClient()) {
+
+                        client.UploadDataCompleted += (sender, e) => {
+                            if (e.Cancelled) {
+                                uploadSuccess = false;
+                                Task.Delay(5);
+                            }
+
+                            if (e.Error != null) {
+                                var webEx = e.Error as WebException;
+
+                                if (webEx != null) {
+
+
+                                    if (webEx.Status == WebExceptionStatus.ProtocolError) {
+                                        //Task.Delay(Convert.ToInt32(webEx.Response.Headers[HttpResponseHeader.RetryAfter].ToString()));
+                                    }
+                                }
+                                Task.Delay(5);
+                                uploadSuccess = false;
+                            }
+
+                            if (e.Result != null) {
+                                var resultBytes = e.Result;
+                                uploadSuccess = true;
+                            }
+                        };
+
+                        var bytes = await client.UploadFileTaskAsync($"{HeroesProfileApiEndpoint}/upload/heroesprofile/desktop/uploader?fingerprint={fingerprint}", file);
+                        response = Encoding.UTF8.GetString(bytes);
+        
+                    }
+                } while (!uploadSuccess && (timer.ElapsedMilliseconds < 60000));
+
 
 
                 //Try upload to HotsApi as well

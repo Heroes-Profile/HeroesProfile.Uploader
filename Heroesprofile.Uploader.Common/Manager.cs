@@ -18,7 +18,7 @@ namespace Heroesprofile.Uploader.Common
         /// <summary>
         /// Upload thead count
         /// </summary>
-        public const int MaxThreads = 2;
+        public const int MaxThreads = 1;
         //public const int MaxThreads = 1;
 
         /// <summary>

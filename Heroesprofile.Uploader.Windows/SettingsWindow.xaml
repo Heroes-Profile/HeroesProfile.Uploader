@@ -41,9 +41,9 @@
                 </ComboBox.Items>
             </ComboBox>
             <StackPanel Margin="0, 40, 0, 0">
-                <Button x:Name="Twitch_Extension_Validation_Button" HorizontalAlignment="Stretch" Content="Twitch Extension Validation" Margin="0, 8, 0, 0" Click="Twitch_Extension_Validation_Button_Click" Visibility="Hidden" />
+                <Button x:Name="Twitch_Extension_Validation_Button" HorizontalAlignment="Stretch" Content="Twitch Extension Validation" Margin="0, 8, 0, 0" Click="Twitch_Extension_Validation_Button_Click"/>
 
-                <TextBlock Text="HP Twitch Extension Info" FontWeight="Bold" Margin="0, 10, 1, 0" Visibility="Hidden" />
+                <TextBlock Text="HP Twitch Extension Info" FontWeight="Bold" Margin="0, 10, 1, 0"/>
                 <Label x:Name="hp_api_email_label" Content="{Binding App.Settings.HPAPIEmail, Mode=TwoWay}" HorizontalAlignment="Center" Margin="5,5,50,0" VerticalAlignment="Top"/>
                 <Label x:Name="twitch_knickname_label" Content="{Binding App.Settings.TwitchNickname, Mode=TwoWay}"  Margin="5,5,50,0"  VerticalAlignment="Top"/>
 
@@ -53,11 +53,11 @@
                         <ColumnDefinition Width="auto" />
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
-                        <Label x:Name="hp_api_key_label" Content="HP Twitch API Key"  Margin="5,5,10,0"  VerticalAlignment="Top" Visibility="Hidden"/>
+                        <Label x:Name="hp_api_key_label" Content="HP Twitch API Key"  Margin="5,5,10,0"  VerticalAlignment="Top" />
                     </StackPanel>
 
                     <StackPanel Grid.Column="1">
-                        <Button x:Name="Show_HP_Api_Key_Button" HorizontalAlignment="Stretch" Content="Show" Margin="0, 8, 0, 0" Click="Show_HP_Api_Key_Button_Click" Visibility="Hidden"/>
+                        <Button x:Name="Show_HP_Api_Key_Button" HorizontalAlignment="Stretch" Content="Show" Margin="0, 8, 0, 0" Click="Show_HP_Api_Key_Button_Click"/>
                     </StackPanel>
 
                 </Grid>

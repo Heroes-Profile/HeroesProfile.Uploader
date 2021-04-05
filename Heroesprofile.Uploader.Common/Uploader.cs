@@ -68,7 +68,6 @@ namespace Heroesprofile.Uploader.Common
                     response = Encoding.UTF8.GetString(bytes);
                 }
 
-
                 //Try upload to HotsApi as well
                 string hotsapiResponse;
                 try {
@@ -138,8 +137,7 @@ namespace Heroesprofile.Uploader.Common
                 }
                 await Task.Delay(1000);
             }
-            
-
+            timer.Stop();
         }
         /// <summary>
         /// Check replay fingerprint against database to detect duplicate

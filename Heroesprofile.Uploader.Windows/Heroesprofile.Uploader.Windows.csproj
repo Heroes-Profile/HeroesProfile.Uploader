@@ -84,7 +84,7 @@
     <PackageReference Include="NLog.Config" Version="4.5.11" />
     <PackageReference Include="NLog.Schema" Version="4.5.11" />
     <PackageReference Include="NuGet.CommandLine" Version="4.3.0" />
-    <PackageReference Include="SharpCompress" Version="0.17.1" />
+    <PackageReference Include="SharpCompress" Version="0.29.0" />
     <PackageReference Include="Splat" Version="1.6.2" />
     <PackageReference Include="squirrel.windows" Version="1.9.1" />
   </ItemGroup>

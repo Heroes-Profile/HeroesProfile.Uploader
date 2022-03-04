@@ -18,8 +18,6 @@ namespace Heroesprofile.Uploader.Windows
         {
             InitializeComponent();
 
-            Twitch_Extension_Checkbox.Checked += Twitch_Extension_Checkbox_Checked;
-            Twitch_Extension_Checkbox.Unchecked += Twitch_Extension_Checkbox_Unchecked;
         }
 
         private void Twitch_Extension_Checkbox_Checked(object sender, RoutedEventArgs e)
@@ -64,7 +62,6 @@ namespace Heroesprofile.Uploader.Windows
             var settings = new SettingsWindow() { Owner = this, DataContext = this };
             settings.ShowDialog();
 
-            Twitch_Extension_Checkbox.IsEnabled = Settings.Default.HPTwitchValidated;
         }
 
         private async void Restart_Click(object sender, RoutedEventArgs e)

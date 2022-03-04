@@ -206,7 +206,7 @@ namespace Heroesprofile.Uploader.Common
                     }
                     SaveReplayList();
                     if (ShouldDelete(file, replay)) {
-                        DeleteReplay(file);
+                        //DeleteReplay(file);
                     }
                 }
                 catch (Exception ex) {

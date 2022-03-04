@@ -18,20 +18,7 @@
             <ColumnDefinition Width="auto" />
             <ColumnDefinition Width="auto" />
         </Grid.ColumnDefinitions>
-        <StackPanel Grid.Column="0" Margin="20" helpers:MarginSetter.Margin="0, 8, 0, 0">
-            <TextBlock Text="Delete replays after upload:" FontWeight="Bold" Margin="0, 0, 1, 0" />
-            <TextBlock HorizontalAlignment="Left" FontSize="10" TextWrapping="Wrap" MaxWidth="150" Margin="0, 0, 1, 0"
-                       Text="Warning! This feature is not yet extensively tested, use at your own risk and make a backup of all important replays" />
-            <CheckBox Content="PTR" IsChecked="{Binding App.Settings.DeleteAfterUpload, Converter={StaticResource flags}, ConverterParameter={x:Static common:DeleteFiles.PTR}, Mode=TwoWay}" />
-            <CheckBox Content="AI" IsChecked="{Binding App.Settings.DeleteAfterUpload, Converter={StaticResource flags}, ConverterParameter={x:Static common:DeleteFiles.Ai}, Mode=TwoWay}" />
-            <CheckBox Content="Custom" IsChecked="{Binding App.Settings.DeleteAfterUpload, Converter={StaticResource flags}, ConverterParameter={x:Static common:DeleteFiles.Custom}, Mode=TwoWay}" />
-            <CheckBox Content="Brawl" IsChecked="{Binding App.Settings.DeleteAfterUpload, Converter={StaticResource flags}, ConverterParameter={x:Static common:DeleteFiles.Brawl}, Mode=TwoWay}" />
-            <CheckBox Content="Quick match" IsChecked="{Binding App.Settings.DeleteAfterUpload, Converter={StaticResource flags}, ConverterParameter={x:Static common:DeleteFiles.QuickMatch}, Mode=TwoWay}" />
-            <CheckBox Content="Unranked draft" IsChecked="{Binding App.Settings.DeleteAfterUpload, Converter={StaticResource flags}, ConverterParameter={x:Static common:DeleteFiles.UnrankedDraft}, Mode=TwoWay}" />
-            <CheckBox Content="Hero League" IsChecked="{Binding App.Settings.DeleteAfterUpload, Converter={StaticResource flags}, ConverterParameter={x:Static common:DeleteFiles.HeroLeague}, Mode=TwoWay}" />
-            <CheckBox Content="Team League" IsChecked="{Binding App.Settings.DeleteAfterUpload, Converter={StaticResource flags}, ConverterParameter={x:Static common:DeleteFiles.TeamLeague}, Mode=TwoWay}" />
-            <CheckBox Content="Storm League" IsChecked="{Binding App.Settings.DeleteAfterUpload, Converter={StaticResource flags}, ConverterParameter={x:Static common:DeleteFiles.StormLeague}, Mode=TwoWay}" />
-        </StackPanel>
+        <StackPanel Grid.Column="0" Margin="20" helpers:MarginSetter.Margin="0, 8, 0, 0"/>
         <StackPanel Grid.Column="1" Margin="20" helpers:MarginSetter.Margin="0, 8, 0, 0" MinWidth="150">
             <TextBlock Text="Theme:" FontWeight="Bold" Margin="0, 0, 1, 0" />
             <ComboBox SelectedValue="{Binding App.Settings.Theme, Mode=TwoWay}" SelectedValuePath="Tag">
@@ -41,24 +28,16 @@
                 </ComboBox.Items>
             </ComboBox>
             <StackPanel Margin="0, 40, 0, 0">
-                <Button x:Name="Twitch_Extension_Validation_Button" HorizontalAlignment="Stretch" Content="Twitch Extension Validation" Margin="0, 8, 0, 0" Click="Twitch_Extension_Validation_Button_Click"/>
-
-                <TextBlock Text="HP Twitch Extension Info" FontWeight="Bold" Margin="0, 10, 1, 0"/>
                 <Label x:Name="hp_api_email_label" Content="{Binding App.Settings.HPAPIEmail, Mode=TwoWay}" HorizontalAlignment="Center" Margin="5,5,50,0" VerticalAlignment="Top"/>
-                <Label x:Name="twitch_knickname_label" Content="{Binding App.Settings.TwitchNickname, Mode=TwoWay}"  Margin="5,5,50,0"  VerticalAlignment="Top"/>
 
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="auto" />
                     </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0">
-                        <Label x:Name="hp_api_key_label" Content="HP Twitch API Key"  Margin="5,5,10,0"  VerticalAlignment="Top" />
-                    </StackPanel>
+                    <StackPanel Grid.Column="0"/>
 
-                    <StackPanel Grid.Column="1">
-                        <Button x:Name="Show_HP_Api_Key_Button" HorizontalAlignment="Stretch" Content="Show" Margin="0, 8, 0, 0" Click="Show_HP_Api_Key_Button_Click"/>
-                    </StackPanel>
+                    <StackPanel Grid.Column="1"/>
 
                 </Grid>
 

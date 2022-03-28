@@ -114,11 +114,7 @@ namespace Heroesprofile.Uploader.Windows
 
             Manager.PreMatchPage = Settings.PreMatchPage;
             Manager.PostMatchPage = Settings.PostMatchPage;
-            Manager.TwitchExtension = Settings.HPTwitchExtension;
-            Manager.hpTwitchAPIKey = Settings.HPKey;
-            Manager.hpAPIEmail = Settings.HPAPIEmail;
-            Manager.twitchNickname = Settings.TwitchNickname;
-            Manager.hpAPIUserID = Settings.HPAPIUserID;
+    
             Manager.DeleteAfterUpload = Settings.DeleteAfterUpload;
 
             ApplyTheme(Settings.Theme);
@@ -140,7 +136,6 @@ namespace Heroesprofile.Uploader.Windows
                 }
 
                 if (ev.PropertyName == nameof(Settings.HPTwitchExtension)) {
-                    Manager.TwitchExtension = Settings.HPTwitchExtension;
                 }
             };
 
@@ -152,7 +147,7 @@ namespace Heroesprofile.Uploader.Windows
                 mainWindow = new MainWindow();
                 mainWindow.Show();
             }
-            Manager.Start(new Monitor(), new LiveMonitor(), new Analyzer(), new Common.Uploader(), new LiveProcessor(Manager.PreMatchPage, Manager.TwitchExtension, Manager.hpTwitchAPIKey, Manager.hpAPIEmail, Manager.twitchNickname, Manager.hpAPIUserID));
+            Manager.Start(new Monitor(), new LiveMonitor(), new Analyzer(), new Common.Uploader(), new LiveProcessor(Manager.PreMatchPage));
 
 #pragma warning disable 162
             if (!NoSquirrel) {

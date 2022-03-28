@@ -19,7 +19,6 @@ namespace Heroesprofile.Uploader.Windows
     /// </summary>
     public partial class SettingsWindow : Window
     {
-        private bool showHideButton = true;
         public SettingsWindow()
         {
             InitializeComponent();

@@ -22,12 +22,10 @@ namespace Heroesprofile.Uploader.Windows
 
         private void Twitch_Extension_Checkbox_Checked(object sender, RoutedEventArgs e)
         {
-            App.Manager.TwitchExtension = true;
         }
 
         private void Twitch_Extension_Checkbox_Unchecked(object sender, RoutedEventArgs e)
         {
-            App.Manager.TwitchExtension = false;
         }
 
         private void Window_StateChanged(object sender, EventArgs e)

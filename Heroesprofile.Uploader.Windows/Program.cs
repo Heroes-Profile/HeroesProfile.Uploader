@@ -35,13 +35,6 @@ namespace Heroesprofile.Uploader.Windows
                 Directory.CreateDirectory(App.SettingsDir);
             }
 
-            // Move files from old locations
-            if (File.Exists($@"{App.AppDir}\..\replays_v4.xml") && !File.Exists($@"{App.SettingsDir}\replays_v4.xml")) {
-                File.Move($@"{App.AppDir}\..\replays.replays_v4", $@"{App.SettingsDir}\replays_v4.xml");
-            }
-            if (File.Exists($@"{App.AppDir}\..\last.config") && !File.Exists($@"{App.SettingsDir}\last.config")) {
-                File.Move($@"{App.AppDir}\..\last.config", $@"{App.SettingsDir}\last.config");
-            }
 
             SingleInstanceManager manager = new SingleInstanceManager();
             manager.Run(args);

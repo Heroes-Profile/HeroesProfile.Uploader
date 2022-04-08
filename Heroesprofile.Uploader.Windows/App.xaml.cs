@@ -135,11 +135,8 @@ namespace Heroesprofile.Uploader.Windows
                     Manager.PostMatchPage = Settings.PostMatchPage;
                 }
 
-                if (ev.PropertyName == nameof(Settings.HPTwitchExtension)) {
-                }
             };
 
-            Settings.HPTwitchValidated = TwitchSettingsValidator.Validate();
 
             if (e.Args.Contains("--autorun") && Settings.MinimizeToTray) {
                 TrayIcon.Visible = true;

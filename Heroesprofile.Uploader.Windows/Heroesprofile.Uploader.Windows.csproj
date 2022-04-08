@@ -114,13 +114,9 @@
       <SubType>Designer</SubType>
     </Page>
     <Compile Include="Program.cs" />
-    <Compile Include="TwitchExtensionValidationWindow.xaml.cs">
-      <DependentUpon>TwitchExtensionValidationWindow.xaml</DependentUpon>
-    </Compile>
     <Compile Include="SettingsWindow.xaml.cs">
       <DependentUpon>SettingsWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="TwitchSettingsValidator.cs" />
     <Compile Include="UIHelpers\FilenameConverter.cs" />
     <Compile Include="UIHelpers\FlagsConverter.cs" />
     <Compile Include="UIHelpers\GenericValueConverter.cs" />
@@ -140,10 +136,6 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="TwitchExtensionValidationWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
     <Page Include="SettingsWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

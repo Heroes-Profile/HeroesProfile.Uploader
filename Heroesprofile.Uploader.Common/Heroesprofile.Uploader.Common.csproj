@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="Nito.AsyncEx.Coordination" Version="5.0.0-pre-05" />
     <PackageReference Include="NLog" Version="4.5.11" />
   </ItemGroup>

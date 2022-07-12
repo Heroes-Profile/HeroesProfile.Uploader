@@ -108,7 +108,7 @@ namespace Heroesprofile.Uploader.Windows
                 RestoreSettings();
             }
             SetupTrayIcon();
-            Manager = new Manager(new ReplayStorage($@"{SettingsDir}\replays_v7.xml"));
+            Manager = new Manager(new ReplayStorage($@"{SettingsDir}\replays_v8.xml"));
             // Enable collection modification from any thread
             BindingOperations.EnableCollectionSynchronization(Manager.Files, _lock);
 

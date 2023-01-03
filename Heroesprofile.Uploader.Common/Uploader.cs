@@ -16,19 +16,18 @@ namespace Heroesprofile.Uploader.Common
     {
         private static readonly Logger _log = LogManager.GetCurrentClassLogger();
 #if DEBUG
-        const string HeroesProfileApiEndpoint = "https://api.heroesprofile.com/api";
-        const string HeroesProfileMatchParsed = "https://api.heroesprofile.com/openApi/Replay/Parsed/?replayID=";
-        const string HeroesProfileMatchSummary = "https://www.heroesprofile.com/Match/Single/?replayID=";
-        const string HotsAPIApiEndpoint = "http://hotsapi.local/api/v1";
+        const string HeroesProfileApiEndpoint = "http://127.0.0.1:8000/api";
+        const string HeroesProfileMatchParsed = "http://127.0.0.1:8000/openApi/Replay/Parsed/?replayID=";
+        const string HeroesProfileMatchSummary = "http://localhost/Match/Single/?replayID=";
+
+
 
 #else
         const string HeroesProfileApiEndpoint = "https://api.heroesprofile.com/api";
         const string HeroesProfileMatchParsed = "https://api.heroesprofile.com/openApi/Replay/Parsed/?replayID=";
         const string HeroesProfileMatchSummary = "https://www.heroesprofile.com/Match/Single/?replayID=";
-        const string HotsAPIApiEndpoint = "https://hotsapi.net/api/v1";
 #endif
 
-        public bool UploadToHotslogs { get; set; }
         /// <summary>
         /// New instance of replay uploader
         /// </summary>
@@ -62,23 +61,10 @@ namespace Heroesprofile.Uploader.Common
             try {
                 string response;
                 using (var client = new WebClient()) {
-                    //var bytes = await client.UploadFileTaskAsync($"{HeroesProfileApiEndpoint}/upload?fingerprint={fingerprint}&data={replay_json}", file);
-
-                    var bytes = await client.UploadFileTaskAsync($"{HeroesProfileApiEndpoint}/upload?fingerprint={fingerprint}", file);
+                    var bytes = await client.UploadFileTaskAsync($"{HeroesProfileApiEndpoint}/upload/heroesprofile/desktop/?fingerprint={fingerprint}", file);
                     response = Encoding.UTF8.GetString(bytes);
                 }
 
-                //Try upload to HotsApi as well
-                string hotsapiResponse;
-                try {
-                    using (var client = new WebClient()) {
-                        var bytes = await client.UploadFileTaskAsync($"{HotsAPIApiEndpoint}/upload?uploadToHotslogs={UploadToHotslogs}", file);
-                        hotsapiResponse = Encoding.UTF8.GetString(bytes);
-                    }
-                }
-                catch {
-
-                }
                 dynamic json = JObject.Parse(response);
 
                 try {
@@ -195,35 +181,7 @@ namespace Heroesprofile.Uploader.Common
         }
 
         /// <summary>
-        /// Get minimum HotS client build supported by HotsApi
-        /// </summary>
-        public async Task<int> GetMinimumBuild()
-        {
-            //We likely want to track which replays arn't supported by HotsApi so that we don't send them to HotsApi, 
-            //but I would like to change this so that it doesn't prevent replays uploading to our own storage, as we can support any replay build
-
-
-            try {
-                using (var client = new WebClient()) {
-                    var response = await client.DownloadStringTaskAsync($"{HeroesProfileApiEndpoint}/replays/hotsapi-min-build");
-                    if (!int.TryParse(response, out int build)) {
-                        _log.Warn($"Error parsing minimum build: {response}");
-                        return 0;
-                    }
-                    return 0;
-                }
-            }
-            catch (WebException ex) {
-                if (await CheckApiThrottling(ex.Response)) {
-                    return await GetMinimumBuild();
-                }
-                _log.Warn(ex, $"Error getting minimum build");
-                return 0;
-            }
-        }
-
-        /// <summary>
-        /// Check if Hotsapi request limit is reached and wait if it is
+        /// Check if Heroes Profile API request limit is reached and wait if it is
         /// </summary>
         /// <param name="response">Server response to examine</param>
         private async Task<bool> CheckApiThrottling(WebResponse response)

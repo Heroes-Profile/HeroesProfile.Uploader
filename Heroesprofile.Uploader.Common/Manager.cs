@@ -120,8 +120,6 @@ namespace Heroesprofile.Uploader.Common
             _monitor.Start();
             StartBattleLobbyWatcherEvent();
 
-            _analyzer.MinimumBuild = await _uploader.GetMinimumBuild();
-
             for (int i = 0; i < MaxThreads; i++) {
                 Task.Run(UploadLoop).Forget();
             }

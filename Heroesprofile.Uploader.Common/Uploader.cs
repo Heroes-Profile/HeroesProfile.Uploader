@@ -65,15 +65,10 @@ namespace Heroesprofile.Uploader.Common
                     response = Encoding.UTF8.GetString(bytes);
                 }
 
-                dynamic json = JObject.Parse(response);
+                UploadResult result = UploadResult.FromJson(response);
 
                 try {
-                    int replayID = 0;
-
-                    if (json.replayID != null) {
-                        replayID = json.replayID;
-                    }
-
+                    int replayID = result.ReplayId;
                     if (File.GetLastWriteTime(file) >= DateTime.Now.Subtract(TimeSpan.FromMinutes(60)) && PostMatchPage && replayID != 0) {
                         await postMatchAnalysis(replayID);
                     }
@@ -83,12 +78,12 @@ namespace Heroesprofile.Uploader.Common
                 }
 
 
-                if ((bool)json.success) {
-                    if (Enum.TryParse<UploadStatus>((string)json.status, out UploadStatus status)) {
+                if (!string.IsNullOrEmpty(result.Status)) {
+                    if (Enum.TryParse<UploadStatus>((string)result.Status, out UploadStatus status)) {
                         _log.Debug($"Uploaded file '{file}': {status}");
                         return status;
                     } else {
-                        _log.Error($"Unknown upload status '{file}': {json.status}");
+                        _log.Error($"Unknown upload status '{file}': {result.Status}");
                         return UploadStatus.UploadError;
                     }
                 } else {

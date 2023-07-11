@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Heroes.ReplayParser;
 using System.IO;
 using System.Diagnostics;
+using System.Reflection;
 
 namespace Heroesprofile.Uploader.Common
 {
@@ -58,10 +59,14 @@ namespace Heroesprofile.Uploader.Common
         /// <returns>Upload result</returns>
         public async Task<UploadStatus> Upload(Replay replay_results, string fingerprint, string file, bool PostMatchPage)
         {
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            AssemblyName assemblyName = assembly.GetName();
+            Version assemblyVersion = assemblyName.Version;
+
             try {
                 string response;
                 using (var client = new WebClient()) {
-                    var bytes = await client.UploadFileTaskAsync($"{HeroesProfileApiEndpoint}/upload/heroesprofile/desktop/?fingerprint={fingerprint}", file);
+                    var bytes = await client.UploadFileTaskAsync($"{HeroesProfileApiEndpoint}/upload/heroesprofile/desktop/?fingerprint={fingerprint}&version={assemblyVersion}", file);
                     response = Encoding.UTF8.GetString(bytes);
                 }
 

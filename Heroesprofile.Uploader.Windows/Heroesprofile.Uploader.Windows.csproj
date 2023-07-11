@@ -86,7 +86,9 @@
     <PackageReference Include="NuGet.CommandLine" Version="4.3.0" />
     <PackageReference Include="SharpCompress" Version="0.17.1" />
     <PackageReference Include="Splat" Version="1.6.2" />
-    <PackageReference Include="squirrel.windows" Version="1.9.1" />
+    <PackageReference Include="squirrel.windows">
+      <Version>1.7.8</Version>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.VisualBasic" />
@@ -222,7 +224,7 @@
     <NuGetCommandLine Include="$(UserProfile)\.nuget\packages\NuGet.CommandLine\4.3.0\tools\nuget.exe">
       <InProject>False</InProject>
     </NuGetCommandLine>
-    <Squirrel Include="$(UserProfile)\.nuget\packages\Squirrel.Windows\1.7.8\tools\squirrel.exe">
+    <Squirrel Include="$(UserProfile)\.nuget\packages\Squirrel.Windows\1.9.1\tools\squirrel.exe">
       <InProject>False</InProject>
     </Squirrel>
   </ItemGroup>

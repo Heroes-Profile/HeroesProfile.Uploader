@@ -66,7 +66,7 @@ namespace Heroesprofile.Uploader.Common
             try {
                 string response;
                 using (var client = new WebClient()) {
-                    var bytes = await client.UploadFileTaskAsync($"{HeroesProfileApiEndpoint}/upload/heroesprofile/desktop/?fingerprint={fingerprint}&version={assemblyVersion}", file);
+                    var bytes = await client.UploadFileTaskAsync($"{HeroesProfileApiEndpoint}/upload/heroesprofile/desktop?fingerprint={fingerprint}&version={assemblyVersion}", file);
                     response = Encoding.UTF8.GetString(bytes);
                 }
 

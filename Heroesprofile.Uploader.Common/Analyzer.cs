@@ -34,6 +34,11 @@ namespace Heroesprofile.Uploader.Common
 
                 var status = GetPreStatus(replay, parseResult);
 
+                if (status == UploadStatus.NotSupported) {
+                    file.UploadStatus = UploadStatus.NotSupported;
+                    return null;
+                }
+
                 if (replay == null) {
                     return null;
                 }
@@ -70,6 +75,9 @@ namespace Heroesprofile.Uploader.Common
 
                 case DataParser.ReplayParseResult.PreAlphaWipe:
                     return UploadStatus.TooOld;
+
+                case DataParser.ReplayParseResult.NotSupported:
+                    return UploadStatus.NotSupported;
 
             }
 

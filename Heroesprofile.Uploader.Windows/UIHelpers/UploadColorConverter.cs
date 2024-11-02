@@ -21,6 +21,7 @@ namespace Heroesprofile.Uploader.Windows.UIHelpers
                 case UploadStatus.CustomGame:
                 case UploadStatus.PtrRegion:
                 case UploadStatus.TooOld:
+                case UploadStatus.NotSupported:
                     return GetBrush("StatusUploadNeutralBrush");
 
                 case UploadStatus.None:

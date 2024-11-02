@@ -100,7 +100,9 @@ namespace Heroesprofile.Uploader.Common
 
             var replays = ScanReplays();
             Files.AddRange(replays);
+
             replays.Where(x => x.UploadStatus == UploadStatus.None).Map(x => processingQueue.Add(x));
+
 
             _monitor.ReplayAdded += async (_, e) => {
                 await EnsureFileAvailable(e.Data);
@@ -164,6 +166,8 @@ namespace Heroesprofile.Uploader.Common
                     if (file.UploadStatus == UploadStatus.InProgress && replay != null) {
                         // if it is, upload it
                         await _uploader.Upload(replay, file, PostMatchPage);
+                    } else if (file.UploadStatus == UploadStatus.NotSupported) {
+                        // Status already set
                     } else {
                         file.UploadStatus = UploadStatus.Incomplete;
                     }

@@ -15,6 +15,7 @@ namespace Heroesprofile.Uploader.Common
         CustomGame,
         PtrRegion,
         Incomplete,
+        NotSupported,
         TooOld,
     }
 }

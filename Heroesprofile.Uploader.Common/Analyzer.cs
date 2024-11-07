@@ -34,12 +34,12 @@ namespace Heroesprofile.Uploader.Common
 
                 var status = GetPreStatus(replay, parseResult);
 
-                if (replay == null) {
-                    return null;
-                }
-
                 if (status != null) {
                     file.UploadStatus = status.Value;
+                }
+
+                if (replay == null) {
+                    return null;
                 }
 
                 if (parseResult != DataParser.ReplayParseResult.Success) {

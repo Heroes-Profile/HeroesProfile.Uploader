@@ -164,8 +164,6 @@ namespace Heroesprofile.Uploader.Common
                     if (file.UploadStatus == UploadStatus.InProgress && replay != null) {
                         // if it is, upload it
                         await _uploader.Upload(replay, file, PostMatchPage);
-                    } else {
-                        file.UploadStatus = UploadStatus.Incomplete;
                     }
                     SaveReplayList();
                     if (ShouldDelete(file, replay)) {

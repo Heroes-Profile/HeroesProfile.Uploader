@@ -1,43 +1,52 @@
 ﻿using Microsoft.VisualBasic.ApplicationServices;
+using NLog.Config;
+using NLog.Targets;
+using NLog;
 using Squirrel;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System;
+using System.Windows.Forms;
 
 namespace Heroesprofile.Uploader.Windows
 {
     internal static class Program
     {
+        private static Logger _log = LogManager.GetCurrentClassLogger();
+
         [STAThread]
         public static void Main(string[] args)
         {
-#pragma warning disable 162
-            if (!App.NoSquirrel) {
-                // Note, in most of these scenarios, the app exits after this method completes!
-                // ReSharper disable HeuristicUnreachableCode
-                SquirrelAwareApp.HandleEvents(
-                    onInitialInstall: v => App.DummyUpdateManager.CreateShortcutForThisExe(),
-                    onAppUpdate: v => App.DummyUpdateManager.CreateShortcutForThisExe(),
-                    onAppUninstall: v => {
-                        App.DummyUpdateManager.RemoveShortcutForThisExe();
-                        if (Directory.Exists(App.SettingsDir)) {
-                            Directory.Delete(App.SettingsDir, true);
-                        }
-                    });
-                // ReSharper restore HeuristicUnreachableCode
+            try {
+                _log.Debug("Main started");
+                // Squirrel + directory setup...
+                if (!App.NoSquirrel) {
+                    SquirrelAwareApp.HandleEvents(
+                        onInitialInstall: v => App.DummyUpdateManager.CreateShortcutForThisExe(),
+                        onAppUpdate: v => App.DummyUpdateManager.CreateShortcutForThisExe(),
+                        onAppUninstall: v => {
+                            App.DummyUpdateManager.RemoveShortcutForThisExe();
+                            if (Directory.Exists(App.SettingsDir)) {
+                                Directory.Delete(App.SettingsDir, true);
+                            }
+                        });
+                }
+
+                if (!Directory.Exists(App.SettingsDir)) {
+                    Directory.CreateDirectory(App.SettingsDir);
+                }
+
+                SingleInstanceManager manager = new SingleInstanceManager();
+                manager.Run(args);
             }
-#pragma warning restore 162
+            catch (Exception ex) {
+                _log.Error(ex, "An error occurred in Program.Main");
 
-            if (!Directory.Exists(App.SettingsDir)) {
-                Directory.CreateDirectory(App.SettingsDir);
+                // Show a MessageBox to notify the user to review the log
+                MessageBox.Show("An error occurred. Please review the log for more details.",
+                                "Error",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Error);
             }
-
-
-            SingleInstanceManager manager = new SingleInstanceManager();
-            manager.Run(args);
         }
     }
 

@@ -79,7 +79,7 @@
     <PackageReference Include="MSBuildTasks">
       <Version>1.5.0.235</Version>
     </PackageReference>
-    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
     <PackageReference Include="NLog" Version="4.5.11" />
     <PackageReference Include="NLog.Config" Version="4.5.11" />
     <PackageReference Include="NLog.Schema" Version="4.5.11" />

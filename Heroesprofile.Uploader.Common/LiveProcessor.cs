@@ -33,7 +33,15 @@ namespace Heroesprofile.Uploader.Common
         HttpClient client = new HttpClient();
 
 
+#if DEBUG
+        private static readonly string heresprofileAPI = @"http://127.0.0.1:8000/openApi/";
+        private static readonly string heresprofile = @"http://127.0.0.1:8000/";
+
+#else
+        private static readonly string heresprofileAPI = @"https://www.api.heroesprofile.com/openApi/";
         private static readonly string heresprofile = @"https://www.heroesprofile.com/";
+
+#endif
 
 
         private static readonly string preMatchURI = @"PreMatch/Results/?prematchID=";
@@ -76,7 +84,7 @@ namespace Heroesprofile.Uploader.Common
 
                 var content = new FormUrlEncodedContent(values);
 
-                var response = await client.PostAsync($"{heresprofile}PreMatch/", content);
+                var response = await client.PostAsync($"{heresprofileAPI}PreMatch/", content);
 
                 var responseString = await response.Content.ReadAsStringAsync();
 

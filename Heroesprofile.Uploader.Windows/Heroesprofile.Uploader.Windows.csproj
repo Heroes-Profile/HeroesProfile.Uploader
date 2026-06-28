@@ -256,7 +256,7 @@
       <Output TaskParameter="Assemblies" ItemName="assemblyInfo" />
     </GetAssemblyIdentity>
     <Exec Command="&quot;@(NuGetCommandLine->'%(FullPath)')&quot; pack $(TargetName).nuspec -Version $([System.Version]::Parse(%(assemblyInfo.Version)).ToString(3)) -OutputDirectory $(OutDir) -BasePath $(OutDir)" />
-    <Exec Command="&quot;@(Squirrel->'%(FullPath)')&quot; --framework-version=net462 --no-msi --releasify $(OutDir)$(TargetName).$([System.Version]::Parse(%(assemblyInfo.Version)).ToString(3)).nupkg --releaseDir=../Releases --setupIcon=Resources\uploader_icon_light.ico" />
+    <Exec Command="&quot;@(Squirrel->'%(FullPath)')&quot; --releasify=$(OutDir)$(TargetName).$([System.Version]::Parse(%(assemblyInfo.Version)).ToString(3)).nupkg --no-msi --setupIcon=uploader_icon_light.ico --releaseDir=../Releases" />
     <Move SourceFiles="../Releases/Setup.exe" DestinationFiles="../Releases/HeroesProfileUploaderSetup.exe" />
     <Message Importance="High" Text="Successfully created setup package" />
   </Target>

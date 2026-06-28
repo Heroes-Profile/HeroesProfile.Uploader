@@ -216,7 +216,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Heroesprofile.Uploader.Common\Heroesprofile.Uploader.Common.csproj">
       <Project>{DC695BCC-4403-4B20-B4F5-EB80683E5967}</Project>
-      <Name>Hotsapi.Uploader.Common</Name>
+      <Name>Heroesprofile.Uploader.Common</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
@@ -246,7 +246,7 @@
     <ItemGroup>
       <ZipFiles Include="$(OutDir)\*.*" Exclude="**/*.nupkg;**/*.vshost.*;**/*.xml;**/*.pdb;**/*.snk*;**/Squirrel.dll;**/NuGet.Squirrel.dll;**/Splat.dll;**/DeltaCompressionDotNet.*;**/Mono.*" />
     </ItemGroup>
-    <Zip Files="@(ZipFiles)" WorkingDirectory="$(OutDir)" ZipFileName="../Releases/HotsApi.zip" ZipLevel="9" />
+    <Zip Files="@(ZipFiles)" WorkingDirectory="$(OutDir)" ZipFileName="../Releases/HeroesProfile.zip" ZipLevel="9" />
   </Target>
   <Target Name="BuildInstaller" Condition=" '$(Configuration)' == 'Installer'">
     <!-- Add some nice errors for the next person that comes along -->
@@ -257,7 +257,7 @@
     </GetAssemblyIdentity>
     <Exec Command="&quot;@(NuGetCommandLine->'%(FullPath)')&quot; pack $(TargetName).nuspec -Version $([System.Version]::Parse(%(assemblyInfo.Version)).ToString(3)) -OutputDirectory $(OutDir) -BasePath $(OutDir)" />
     <Exec Command="&quot;@(Squirrel->'%(FullPath)')&quot; --framework-version=net462 --no-msi --releasify $(OutDir)$(TargetName).$([System.Version]::Parse(%(assemblyInfo.Version)).ToString(3)).nupkg --releaseDir=../Releases --setupIcon=Resources\uploader_icon_light.ico" />
-    <Move SourceFiles="../Releases/Setup.exe" DestinationFiles="../Releases/HotsApiUploaderSetup.exe" />
+    <Move SourceFiles="../Releases/Setup.exe" DestinationFiles="../Releases/HeroesProfileUploaderSetup.exe" />
     <Message Importance="High" Text="Successfully created setup package" />
   </Target>
 </Project>

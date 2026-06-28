@@ -234,8 +234,8 @@ namespace Heroesprofile.Uploader.Windows
                     BackupSettings();
                 }
             }
-            catch (Exception e) {
-                _log.Warn(e, "Error checking for updates");
+            catch (Exception) {
+                // Silently ignore update check failures (e.g. no network connectivity)
             }
         }
 

@@ -94,8 +94,8 @@ namespace Heroesprofile.Uploader.Common
                 } else {
                     _log.Error($"Integer value not returned for postmatch replayID.  Response string: {responseString}");
                 }
-            }catch {
-                _log.Error($"Prematch failed");
+            } catch (Exception ex) {
+                _log.Error(ex, "Prematch failed");
             }
         }
     }

@@ -137,8 +137,7 @@ namespace Heroesprofile.Uploader.Common
                     await SafeCopy(e.Data, tmpPath, true);
                     await _liveProcessor.StartProcessing(tmpPath);
 
-                
-               
+                    _live_monitor.StartBattleLobby();
                 };
 
                 _live_monitor.StartBattleLobby();

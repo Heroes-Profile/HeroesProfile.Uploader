@@ -74,12 +74,12 @@ namespace Heroesprofile.Uploader.Common
 
                 try {
                     int replayID = result.ReplayId;
-                    if (File.GetLastWriteTime(file) >= DateTime.Now.Subtract(TimeSpan.FromMinutes(60)) && PostMatchPage && replayID != 0) {
+                    if (File.GetLastWriteTime(file) >= DateTime.Now.Subtract(TimeSpan.FromSeconds(60)) && PostMatchPage && replayID != 0) {
                         await postMatchAnalysis(replayID);
                     }
                 }
-                catch {
-                    _log.Error($"Postmatch failed");
+                catch (Exception ex) {
+                    _log.Error(ex, "Postmatch failed");
                 }
 
 

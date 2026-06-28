@@ -218,7 +218,7 @@ namespace Heroesprofile.Uploader.Windows
             };
         }
 
-        private async void CheckForUpdates()
+        public async void CheckForUpdates()
         {
             if (Debug || !Settings.AutoUpdate) {
                 return;

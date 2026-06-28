@@ -55,6 +55,11 @@ namespace Heroesprofile.Uploader.Windows
             Process.Start("explorer.exe", $@"{App.SettingsDir}\logs");
         }
 
+        private void CheckForUpdate_Click(object sender, RoutedEventArgs e)
+        {
+            App.CheckForUpdates();
+        }
+
         private void Settings_Click(object sender, RoutedEventArgs e)
         {
             var settings = new SettingsWindow() { Owner = this, DataContext = this };

@@ -104,8 +104,14 @@ namespace Heroesprofile.Uploader.Windows
             ShutdownMode = ShutdownMode.OnExplicitShutdown;
             SetExceptionHandlers();
             _log.Info($"App {VersionString} started");
-            if (Settings.UpgradeRequired) {
-                RestoreSettings();
+            try {
+                if (Settings.UpgradeRequired) {
+                    RestoreSettings();
+                }
+            }
+            catch (ConfigurationErrorsException ex) {
+                _log.Error(ex, "Corrupt user.config detected on startup — resetting settings to defaults");
+                ResetCorruptSettings();
             }
             SetupTrayIcon();
             Manager = new Manager(new ReplayStorage($@"{SettingsDir}\replays_v8.xml"));
@@ -277,6 +283,23 @@ namespace Heroesprofile.Uploader.Windows
             Settings.ApplicationVersion = Version.ToString();
             Settings.UpgradeRequired = false;
             Settings.Save();
+        }
+
+        private static void ResetCorruptSettings()
+        {
+            try {
+                string configPath = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.PerUserRoamingAndLocal).FilePath;
+                if (File.Exists(configPath)) {
+                    File.Delete(configPath);
+                }
+                Settings.Reset();
+                Settings.ApplicationVersion = Version.ToString();
+                Settings.UpgradeRequired = false;
+                Settings.Save();
+            }
+            catch (Exception ex) {
+                _log.Error(ex, "Failed to reset corrupt settings");
+            }
         }
 
         /// <summary>

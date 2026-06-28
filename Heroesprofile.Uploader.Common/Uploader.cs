@@ -122,8 +122,8 @@ namespace Heroesprofile.Uploader.Common
                         return;
                     }
                 }
-                catch (WebException ex) when ((ex.Response as HttpWebResponse)?.StatusCode == HttpStatusCode.TooManyRequests) {
-                    await Task.Delay(2000);
+                catch (WebException ex) when (ex.Response != null) {
+                    await CheckApiThrottling(ex.Response);
                 }
                 await Task.Delay(1000);
             }

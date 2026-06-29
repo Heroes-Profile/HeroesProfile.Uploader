@@ -105,10 +105,10 @@ namespace Heroesprofile.Uploader.Common
             _monitor.ReplayAdded += async (_, e) => {
                 await EnsureFileAvailable(e.Data);
                 if (PreMatchPage) {
-         
                     _live_monitor.StopBattleLobbyWatcher();
                     _live_monitor.StopStormSaveWatcher();
                     _live_monitor = new LiveMonitor();
+                    StartBattleLobbyWatcherEvent();
                 }
 
                 var replay = new ReplayFile(e.Data);

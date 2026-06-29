@@ -74,7 +74,9 @@ namespace Heroesprofile.Uploader.Common
 
                 try {
                     int replayID = result.ReplayId;
-                    if (File.GetLastWriteTime(file) >= DateTime.Now.Subtract(TimeSpan.FromSeconds(60)) && PostMatchPage && replayID != 0) {
+                    var fileAge = DateTime.Now - File.GetLastWriteTime(file);
+                    _log.Debug($"Postmatch check: replayID={replayID}, PostMatchPage={PostMatchPage}, fileAge={fileAge.TotalSeconds:F1}s");
+                    if (fileAge <= TimeSpan.FromSeconds(60) && PostMatchPage && replayID != 0) {
                         await postMatchAnalysis(replayID);
                     }
                 }

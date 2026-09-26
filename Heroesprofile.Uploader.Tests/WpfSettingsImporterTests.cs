@@ -27,7 +27,7 @@ public class WpfSettingsImporterTests
         var xml = UserConfig(
             ("UpgradeRequired", "False"),
             ("AutoUpdate", "False"),
-            ("UpdateRepository", "someone/fork"),
+            ("UpdateRepository", "https://github.com/someone/fork"), // the WPF app stored a full URL
             ("WindowTop", "120"),
             ("WindowLeft", "80"),
             ("MinimizeToTray", "True"),

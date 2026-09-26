@@ -1,7 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- A windowed program, so Windows doesn't open a console window next to the GUI (on Linux and
+         macOS this makes no difference). The command-line modes reattach to the terminal they were
+         started from - see Program.AttachToParentConsole. -->
+    <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Heroesprofile.Uploader.Desktop</RootNamespace>
     <AssemblyName>heroesprofile-uploader</AssemblyName>

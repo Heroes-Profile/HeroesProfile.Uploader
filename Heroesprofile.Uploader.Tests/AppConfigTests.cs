@@ -30,4 +30,16 @@ public class AppConfigTests
         Assert.Contains("\"ReplayPath\": \"/home/me/prefix\"", json);
         Assert.DoesNotContain("\"Prefix\"", json);
     }
+
+    [Theory]
+    [InlineData("https://github.com/Heroes-Profile/HeroesProfile.Uploader", "Heroes-Profile/HeroesProfile.Uploader")] // how the WPF app stored it
+    [InlineData("https://github.com/someone/fork/", "someone/fork")]
+    [InlineData("github.com/someone/fork.git", "someone/fork")]
+    [InlineData("someone/fork", "someone/fork")]
+    [InlineData("", AppConfig.DefaultUpdateRepository)]
+    [InlineData("not a repository", AppConfig.DefaultUpdateRepository)]
+    public void Update_repository_is_always_owner_slash_repo(string stored, string expected)
+    {
+        Assert.Equal(expected, AppConfig.FromJson($$"""{ "UpdateRepository": "{{stored}}" }""").UpdateRepository);
+    }
 }

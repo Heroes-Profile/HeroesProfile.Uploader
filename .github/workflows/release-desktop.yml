@@ -195,7 +195,17 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE: ${{ inputs.release || 'draft' }}
         run: |
-          flags=(--merge --tag "v$VERSION" --releaseName "Desktop $VERSION")
+          # One draft at a time: remove earlier beta drafts (tag vX.Y.Z-beta.N) before uploading this
+          # build. Only drafts - published releases (prereleases included) are never touched, and drafts
+          # have no git tag yet.
+          gh release list --limit 100 --json tagName,isDraft --jq '.[] | select(.isDraft and (.tagName | startswith("v")) and (.tagName | contains("-beta."))) | .tagName' |
+          while read -r draft; do
+            echo "Removing earlier draft $draft"
+            gh release delete "$draft" --yes
+          done
+
+          # Named like every earlier release: just the tag, e.g. v3.0.0-beta.2.
+          flags=(--merge --tag "v$VERSION" --releaseName "v$VERSION")
           if [ "$RELEASE" = "prerelease" ]; then flags+=(--publish --pre); fi
           for channel in win linux osx-arm64 osx-x64; do
             dotnet vpk upload github --repoUrl "https://github.com/${{ github.repository }}" --token "$GH_TOKEN" \
@@ -218,7 +228,7 @@ jobs:
           RELEASE: ${{ inputs.release || 'draft' }}
         run: |
           {
-            echo "## Desktop $VERSION ($RELEASE, unsigned)"
+            echo "## v$VERSION ($RELEASE, unsigned)"
             echo
             echo "Release: https://github.com/${{ github.repository }}/releases/tag/v$VERSION"
             echo

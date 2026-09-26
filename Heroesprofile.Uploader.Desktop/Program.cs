@@ -18,6 +18,10 @@ namespace Heroesprofile.Uploader.Desktop
             // The first non-flag argument is the subcommand; no args (or just "--minimized") means "launch the GUI".
             var command = FindCommand(args);
 
+            if (command != null || args.Contains("--help") || args.Contains("-h") || args.Contains("--version")) {
+                AttachToParentConsole();
+            }
+
             // Velopack first, before anything else reads the arguments: it handles its install/update/
             // uninstall hooks here (and exits for those), and applies an update an earlier run downloaded,
             // restarting into the new version. Not for the headless `run`: under systemd that restart
@@ -108,6 +112,23 @@ namespace Heroesprofile.Uploader.Desktop
                 return 1;
             }
         }
+
+        /// <summary>
+        /// On Windows the app is a windowed program (no console window of its own), so the command-line
+        /// modes borrow the terminal they were started from for their output. Nothing to do elsewhere,
+        /// or when there's no terminal to attach to (started from Explorer or the Task Scheduler).
+        /// </summary>
+        private static void AttachToParentConsole()
+        {
+            if (OperatingSystem.IsWindows()) {
+                AttachConsole(AttachParentProcess);
+            }
+        }
+
+        private const int AttachParentProcess = -1;
+
+        [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+        private static extern bool AttachConsole(int processId);
 
         /// <summary>
         /// Velopack's uninstall hook (Windows): remove the Run key, so nothing starts the removed app at

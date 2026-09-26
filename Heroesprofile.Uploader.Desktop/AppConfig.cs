@@ -101,11 +101,37 @@ namespace Heroesprofile.Uploader.Desktop
         /// <summary>NLog level name: Trace/Debug/Info/Warn/Error/Fatal. Defaults to "Info".</summary>
         public string LogLevel { get; set; } = "Info";
 
+        public const string DefaultUpdateRepository = "Heroes-Profile/HeroesProfile.Uploader";
+
+        private string _updateRepository = DefaultUpdateRepository;
+
         /// <summary>
-        /// GitHub "owner/repo" that "Check for update" looks at - same idea as the Windows app's
-        /// UpdateRepository setting. Point it at a fork to follow test builds.
+        /// GitHub "owner/repo" that updates come from - same idea as the Windows app's UpdateRepository
+        /// setting. Point it at a fork to follow test builds. The WPF app stored it as a full URL
+        /// ("https://github.com/owner/repo"), so that form (as imported, or typed in) is accepted too and
+        /// trimmed down to "owner/repo"; empty means the default.
         /// </summary>
-        public string UpdateRepository { get; set; } = "Heroes-Profile/HeroesProfile.Uploader";
+        public string UpdateRepository
+        {
+            get => _updateRepository;
+            set => _updateRepository = NormalizeRepository(value);
+        }
+
+        internal static string NormalizeRepository(string value)
+        {
+            var repo = (value ?? "").Trim();
+            foreach (var prefix in new[] { "https://github.com/", "http://github.com/", "https://www.github.com/", "github.com/" }) {
+                if (repo.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) {
+                    repo = repo.Substring(prefix.Length);
+                    break;
+                }
+            }
+            repo = repo.Trim('/');
+            if (repo.EndsWith(".git", StringComparison.OrdinalIgnoreCase)) {
+                repo = repo.Substring(0, repo.Length - ".git".Length);
+            }
+            return repo.Split('/').Length == 2 && !repo.Contains(' ') ? repo : DefaultUpdateRepository;
+        }
 
         /// <summary>Check for updates on startup/hourly (GUI) or startup/every 24h (`run`) and stage them automatically.</summary>
         public bool AutoUpdate { get; set; } = true;

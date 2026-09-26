@@ -24,6 +24,12 @@ on:
         default: draft
         type: choice
         options: [draft, prerelease]
+  # TEMPORARY - remove before merging to master. GitHub only offers "Run workflow" for workflows that
+  # exist on the default branch, so this lets it run from this branch meanwhile: only when this file
+  # changes, and always as a draft (a push has no inputs, so `release` is empty).
+  push:
+    branches: [OSAgnosticUpdate]
+    paths: [.github/workflows/release-desktop.yml]
 
 permissions:
   contents: read
@@ -187,7 +193,7 @@ jobs:
       - name: Upload to GitHub
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE: ${{ inputs.release }}
+          RELEASE: ${{ inputs.release || 'draft' }}
         run: |
           flags=(--merge --tag "v$VERSION" --releaseName "Desktop $VERSION")
           if [ "$RELEASE" = "prerelease" ]; then flags+=(--publish --pre); fi
@@ -209,7 +215,7 @@ jobs:
 
       - name: Summary
         env:
-          RELEASE: ${{ inputs.release }}
+          RELEASE: ${{ inputs.release || 'draft' }}
         run: |
           {
             echo "## Desktop $VERSION ($RELEASE, unsigned)"

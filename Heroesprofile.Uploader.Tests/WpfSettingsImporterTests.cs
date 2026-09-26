@@ -5,6 +5,7 @@ using Xunit;
 
 namespace Heroesprofile.Uploader.Tests;
 
+[Collection(StoredTwitchKey.Collection)]
 public class WpfSettingsImporterTests
 {
     // The shape of the WPF app's last.config / user.config (setting names from Settings.settings).

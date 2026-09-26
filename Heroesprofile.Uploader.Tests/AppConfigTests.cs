@@ -3,6 +3,7 @@ using Xunit;
 
 namespace Heroesprofile.Uploader.Tests;
 
+[Collection(StoredTwitchKey.Collection)]
 public class AppConfigTests
 {
     [Fact]

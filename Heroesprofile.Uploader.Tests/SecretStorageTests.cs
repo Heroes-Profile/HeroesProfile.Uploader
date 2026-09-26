@@ -6,6 +6,7 @@ using Xunit;
 namespace Heroesprofile.Uploader.Tests;
 
 /// <summary>The Twitch key in config.json, on the real platform of whichever OS runs the tests.</summary>
+[Collection(StoredTwitchKey.Collection)]
 public class SecretStorageTests
 {
     private const string Key = "twitch-uploader-key-1234";

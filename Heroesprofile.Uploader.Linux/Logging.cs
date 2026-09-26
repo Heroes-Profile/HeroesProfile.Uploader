@@ -32,13 +32,14 @@ namespace Heroesprofile.Uploader.Linux
             var logDir = Path.Combine(AppConfig.DataDir, "logs");
             Directory.CreateDirectory(logDir);
 
+            // ArchiveFileName keeps NLog's "move the active file aside, then recreate it" archiving, so
+            // the current log is always log.txt (what "Show log" opens). Without it NLog 6 rolls on to
+            // new numbered files instead.
             var file = new FileTarget("logfile") {
                 FileName = Path.Combine(logDir, "log.txt"),
                 ArchiveFileName = Path.Combine(logDir, "log.{#}.txt"),
                 ArchiveAboveSize = 10_000_000,
-                ArchiveNumbering = ArchiveNumberingMode.Rolling,
                 MaxArchiveFiles = 3,
-                ConcurrentWrites = false,
                 Layout = "[${longdate}] ${uppercase:${level}}: ${message} ${exception:format=tostring}",
             };
             config.AddRule(fileLevel ?? LogLevel.Debug, LogLevel.Fatal, file);

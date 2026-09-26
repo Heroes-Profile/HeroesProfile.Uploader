@@ -102,7 +102,7 @@ namespace Heroesprofile.Uploader.Common
                     return UploadStatus.UploadError;
                 }
 
-          
+
             }
             catch (WebException ex) {
                 if (await CheckApiThrottling(ex.Response)) {
@@ -183,8 +183,8 @@ namespace Heroesprofile.Uploader.Common
                 using (var client = new WebClient()) {
                     response = await client.DownloadStringTaskAsync($"{HeroesProfileApiEndpoint}/replays/fingerprints/{fingerprint}");
                 }
-                dynamic json = JObject.Parse(response);
-                return (bool)json.exists;
+                var json = JObject.Parse(response);
+                return (bool)json["exists"];
             }
             catch (WebException ex) {
                 if (await CheckApiThrottling(ex.Response)) {
@@ -206,8 +206,8 @@ namespace Heroesprofile.Uploader.Common
                 using (var client = new WebClient()) {
                     response = await client.UploadStringTaskAsync($"{HeroesProfileApiEndpoint}/replays/fingerprints", String.Join("\n", fingerprints));
                 }
-                dynamic json = JObject.Parse(response);
-                return (json.exists as JArray).Select(x => x.ToString()).ToArray();
+                var json = JObject.Parse(response);
+                return (json["exists"] as JArray).Select(x => x.ToString()).ToArray();
             }
             catch (WebException ex) {
                 if (await CheckApiThrottling(ex.Response)) {

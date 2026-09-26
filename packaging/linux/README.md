@@ -155,5 +155,7 @@ dotnet publish Heroesprofile.Uploader.Linux -c Release -r linux-x64 --self-conta
 packaging/linux/build-appimage.sh <path to the published heroesprofile-uploader> HeroesProfileUploader-linux-x86_64.AppImage
 ```
 
-Needs the .NET 8 SDK. `Directory.Build.props` switches off the replay parser's GitVersionTask on
-non-Windows builds, where its MSBuild task can't load.
+Needs the .NET 10 SDK (`global.json` pins the version). `Directory.Build.props` switches off the
+replay parser's GitVersionTask for `dotnet` builds, where its MSBuild task can't load. Add
+`-p:RestoreLockedMode=false` if a publish complains that `packages.lock.json` doesn't match (NU1004):
+a platform-specific publish restores extra runtime packages the lock files don't list.

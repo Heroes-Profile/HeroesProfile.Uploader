@@ -1,0 +1,38 @@
+<Project>
+
+  <!--
+    Central package versions for our SDK-style projects (Common, Linux/Desktop, Tests) - see
+    ManagePackageVersionsCentrally in Directory.Build.props. Project files only name packages; bump a
+    version here and every project picks it up. Dependabot updates this file.
+    The legacy WPF project and the Heroes.ReplayParser submodule keep their own inline versions.
+  -->
+
+  <ItemGroup Label="Common">
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageVersion Include="Nito.AsyncEx.Coordination" Version="5.1.2" />
+    <PackageVersion Include="NLog" Version="6.2.1" />
+  </ItemGroup>
+
+  <ItemGroup Label="Desktop app">
+    <PackageVersion Include="Avalonia" Version="11.3.22" />
+    <PackageVersion Include="Avalonia.Desktop" Version="11.3.22" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+  </ItemGroup>
+
+  <ItemGroup Label="Tests">
+    <PackageVersion Include="xunit.v3" Version="4.0.1" />
+  </ItemGroup>
+
+  <ItemGroup Label="Known, reviewed advisories">
+    <!--
+      DotNetZip (transitive, from the Heroes.ReplayParser submodule) - directory traversal when
+      *extracting zip archives*. No patched DotNetZip release exists. The parser only uses DotNetZip's
+      BZip2InputStream and ZlibStream to decompress MPQ blocks in memory (Foole.Mpq/MpqStream.cs) and
+      never extracts a zip archive, so the vulnerable code path is unreachable. Follow-up: replace
+      DotNetZip in the submodule, then remove this suppression.
+    -->
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-xhg6-9j5j-w4vf" />
+  </ItemGroup>
+
+</Project>

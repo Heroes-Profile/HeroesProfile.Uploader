@@ -1,0 +1,45 @@
+# Beta test checklist
+
+For testers trying the new app before it replaces the current one. Install it using
+[INSTALL.md](INSTALL.md). On macOS, [macos/TESTING.md](macos/TESTING.md) has extra Mac-specific steps.
+
+Please report anything that doesn't work, with your OS and your log file (**Show log** opens the logs
+folder).
+
+## Every OS
+
+**First start**
+- [ ] It finds your replays by itself (Windows, macOS), or after you pick your Wine/Proton prefix in
+      **Settings** (Linux). Your replays appear in the list.
+- [ ] Windows, coming from the current uploader: your settings came over (the match page boxes, theme,
+      webhook, Twitch key), and nothing is uploaded a second time.
+
+**Uploading**
+- [ ] Play a game. After it ends, the new replay appears and changes to **Success**.
+- [ ] With **Prematch Page** ticked, the pre-match page opens during the loading screen.
+- [ ] With **Postmatch Page** ticked, the post-match page opens after the game.
+- [ ] Webhook (optional): set one in Settings. Your Discord/Slack channel gets a message for the match.
+- [ ] Twitch extension (optional): paste your key, click **Check key**, tick **Twitch Extension**. Your
+      viewers see your lobby and talents.
+
+**Settings and window**
+- [ ] Switching the theme (Light / Dark / Follow system) changes the window straight away.
+- [ ] Close the app and open it again. It opens where you left it, with your settings kept.
+- [ ] With **Minimize to tray** (or **Minimize to menu bar** on Mac) ticked, minimizing hides it to the
+      tray / menu bar icon, and clicking that icon brings it back.
+- [ ] **Start with windows** / **Start on login**: log out and back in. It starts minimized.
+- [ ] Opening it a second time just brings the running one to the front; it doesn't start a second copy.
+
+**Updates**
+- [ ] When a newer beta is published, a banner appears within an hour: "An update is downloaded…".
+      **Restart now** brings it back on the new version (the title bar shows the version).
+- [ ] Or ignore the banner and restart it later. It comes back on the new version.
+
+## Known beta limitations
+
+- **Unsigned builds:** your OS warns the first time you open one (see [INSTALL.md](INSTALL.md)). That
+  goes away once the app is signed.
+- **Don't run it alongside the current Windows uploader:** they share the same upload history. The new
+  app warns you if the old one is running.
+- **Linux tarball:** the headless `.tar.gz` version doesn't update itself; it logs when a newer
+  release is out.

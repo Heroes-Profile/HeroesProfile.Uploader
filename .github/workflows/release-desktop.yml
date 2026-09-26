@@ -1,0 +1,220 @@
+name: Release (Desktop)
+
+# Builds the cross-platform Desktop app for every OS with Velopack (`vpk pack`) and uploads it all as
+# one GitHub release: Windows installer, macOS .pkg/.app (Apple Silicon and Intel), Linux AppImage,
+# plus a Linux tarball for headless/systemd use. Installed copies update themselves from these
+# releases (Heroesprofile.Uploader.Desktop/Updates/AppUpdater.cs).
+#
+# Manual only, and a DRAFT unless you choose otherwise: drafts are invisible to update clients, so a
+# test build can't reach anyone by accident. Choose "prerelease" only for builds testers should get.
+# Nothing is signed yet (see the cross-platform plan, Phase 7).
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version, e.g. 3.0.0-beta.3. Empty: HeroesProfileVersion (Directory.Build.props) + "-beta.<run number>"'
+        required: false
+        default: ''
+      release:
+        description: >-
+          draft: only maintainers can see it. prerelease: testers get it (installed copies with beta
+          updates on update to it). Note the Windows output also carries a Squirrel-format RELEASES file,
+          so old WPF installs with "Allow beta updates" on could be offered a prerelease too.
+        required: true
+        default: draft
+        type: choice
+        options: [draft, prerelease]
+
+permissions:
+  contents: read
+
+env:
+  # Velopack app id - installs and updates key on it, so never change it. It's also the old WPF app's
+  # Squirrel package id, so new Windows installs land in the same %LOCALAPPDATA%\Heroesprofile.Uploader.
+  PACK_ID: Heroesprofile.Uploader
+  PACK_TITLE: Heroes Profile Uploader
+  MAIN_EXE: heroesprofile-uploader
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Resolve version
+        id: version
+        env:
+          REQUESTED: ${{ inputs.version }}
+        run: |
+          if [ -n "$REQUESTED" ]; then
+            version="${REQUESTED#v}"
+          else
+            base=$(sed -nE 's/.*<HeroesProfileVersion>([0-9]+\.[0-9]+\.[0-9]+)<\/HeroesProfileVersion>.*/\1/p' Directory.Build.props)
+            [ -n "$base" ] || { echo "No three-part HeroesProfileVersion in Directory.Build.props" >&2; exit 1; }
+            version="$base-beta.${{ github.run_number }}"
+          fi
+          echo "Version: $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+            channel: win
+          - os: ubuntu-latest
+            rid: linux-x64
+            channel: linux
+          - os: macos-latest
+            rid: osx-arm64
+            channel: osx-arm64
+          - os: macos-latest
+            rid: osx-x64
+            channel: osx-x64
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Restore vpk
+        run: dotnet tool restore
+
+      # A RID-specific publish restores a different graph than the lock files describe (runtime packs),
+      # so locked mode is off here; versions still come from Directory.Packages.props.
+      - name: Publish
+        run: >
+          dotnet publish Heroesprofile.Uploader.Desktop -c Release -r ${{ matrix.rid }} --self-contained
+          -p:Version=$VERSION -p:DebugType=none -p:RestoreLockedMode=false -o publish
+
+      - name: Icon
+        id: icon
+        run: |
+          case "${{ matrix.rid }}" in
+            win-*)   echo "path=Heroesprofile.Uploader.Desktop/Gui/Assets/app-icon.ico" >> "$GITHUB_OUTPUT" ;;
+            linux-*) echo "path=Heroesprofile.Uploader.Desktop/Gui/Assets/app-icon.png" >> "$GITHUB_OUTPUT" ;;
+            osx-*)
+              # macOS wants an .icns; build one from the PNG (padded square first, so it isn't stretched).
+              mkdir -p icon.iconset
+              sips --padToHeightWidth 486 486 Heroesprofile.Uploader.Desktop/Gui/Assets/app-icon.png --out square.png
+              for s in 16 32 128 256 512; do
+                sips -z $s $s square.png --out "icon.iconset/icon_${s}x${s}.png"
+                sips -z $((s * 2)) $((s * 2)) square.png --out "icon.iconset/icon_${s}x${s}@2x.png"
+              done
+              iconutil -c icns icon.iconset -o app.icns
+              echo "path=app.icns" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      # The previous release's packages let vpk build a small delta update instead of a full one.
+      - name: Fetch the previous release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          dotnet vpk download github --repoUrl "https://github.com/${{ github.repository }}"
+          --channel ${{ matrix.channel }} --pre --token "$GH_TOKEN" -o releases
+          || echo "No previous release for ${{ matrix.channel }} - full package only."
+
+      - name: Pack
+        run: |
+          args=(--packId "$PACK_ID" --packVersion "$VERSION" --packTitle "$PACK_TITLE" --packAuthors "Heroes Profile"
+                --packDir publish --runtime ${{ matrix.rid }} --icon "${{ steps.icon.outputs.path }}" -o releases)
+          case "${{ matrix.rid }}" in
+            # Windows stays on vpk's default channel ("win").
+            win-*) args+=(--mainExe "$MAIN_EXE.exe") ;;
+            osx-*) args+=(--mainExe "$MAIN_EXE" --channel ${{ matrix.channel }} --bundleId com.heroesprofile.uploader) ;;
+            *)     args+=(--mainExe "$MAIN_EXE" --channel ${{ matrix.channel }}) ;;
+          esac
+          dotnet vpk pack "${args[@]}"
+          ls -la releases
+
+      # Headless/systemd Linux users run the plain single-file binary (packaging/linux/README.md).
+      - name: Linux tarball
+        if: startsWith(matrix.rid, 'linux-')
+        run: |
+          dotnet publish Heroesprofile.Uploader.Desktop -c Release -r linux-x64 --self-contained \
+            -p:PublishSingleFile=true -p:Version=$VERSION -p:DebugType=none -p:RestoreLockedMode=false -o single
+          mkdir -p dist/HeroesProfileUploader extra
+          cp single/$MAIN_EXE packaging/linux/README.md packaging/linux/heroesprofile-uploader.service dist/HeroesProfileUploader/
+          tar -czf extra/HeroesProfileUploader-linux-x64.tar.gz -C dist HeroesProfileUploader
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-${{ matrix.channel }}
+          path: |
+            releases
+            extra
+          retention-days: 14
+
+  upload:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Restore vpk
+        run: dotnet tool restore
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: release-*
+
+      # One job uploads everything, one channel at a time into the same release (--merge), so the
+      # per-OS builds never race each other to create it.
+      - name: Upload to GitHub
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE: ${{ inputs.release }}
+        run: |
+          flags=(--merge --tag "v$VERSION" --releaseName "Desktop $VERSION")
+          if [ "$RELEASE" = "prerelease" ]; then flags+=(--publish --pre); fi
+          for channel in win linux osx-arm64 osx-x64; do
+            dotnet vpk upload github --repoUrl "https://github.com/${{ github.repository }}" --token "$GH_TOKEN" \
+              --channel "$channel" -o "release-$channel/releases" "${flags[@]}"
+          done
+          # SHA256SUMS lets Linux installs of the earlier, PR #53 build find this release: that build's own
+          # updater only takes releases with one, and verifies the AppImage/tarball against it before
+          # swapping it in - which moves those users onto the Velopack AppImage.
+          cp release-linux/extra/HeroesProfileUploader-linux-x64.tar.gz .
+          cp release-linux/releases/*.AppImage .
+          sha256sum *.AppImage HeroesProfileUploader-linux-x64.tar.gz > SHA256SUMS
+          cat SHA256SUMS
+          # The website links to .../releases/latest/download/HeroesProfileUploaderSetup.exe (the WPF
+          # app's installer name); a copy under that name keeps those links working.
+          cp release-win/releases/*-win-Setup.exe HeroesProfileUploaderSetup.exe
+          gh release upload "v$VERSION" HeroesProfileUploader-linux-x64.tar.gz SHA256SUMS HeroesProfileUploaderSetup.exe --clobber
+
+      - name: Summary
+        env:
+          RELEASE: ${{ inputs.release }}
+        run: |
+          {
+            echo "## Desktop $VERSION ($RELEASE, unsigned)"
+            echo
+            echo "Release: https://github.com/${{ github.repository }}/releases/tag/v$VERSION"
+            echo
+            echo "Install instructions for testers: packaging/INSTALL.md"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -2,24 +2,27 @@
 
 Uploads your Heroes of the Storm replays to [Heroes Profile](https://www.heroesprofile.com) from Linux.
 HotS keeps running under Wine/Proton (Lutris, Steam, Bottles, plain Wine); the uploader runs natively
-and reads the replays from that Wine prefix. It uses the same upload code as the Windows app.
+and reads the replays from that Wine prefix. It's the same app as on Windows and macOS (see
+[INSTALL.md](../INSTALL.md) for those).
 
 ## Quick start
 
-1. Download `HeroesProfileUploader-linux-x86_64.AppImage` from the
+1. Download the **`.AppImage`** from the
    [latest release](https://github.com/Heroes-Profile/HeroesProfile.Uploader/releases/latest).
    Nothing else to install: no .NET, no extra libraries. Works on any current x86_64 distro.
+   Move it somewhere permanent first (for example `~/Applications`): it updates itself where it is.
 2. Make it executable and start it. Either right-click → Properties → Permissions → "Allow executing
    file as program" and double-click it, or:
 
    ```sh
-   chmod +x HeroesProfileUploader-linux-x86_64.AppImage
-   ./HeroesProfileUploader-linux-x86_64.AppImage
+   chmod +x Heroesprofile.Uploader*.AppImage
+   ./Heroesprofile.Uploader*.AppImage
    ```
 
-3. It asks for your Wine/Proton prefix. Pick the folder that contains `drive_c`.
-4. Tick **Show in app menu**. This copies the app to `~/.local/bin/heroesprofile-uploader` and adds
-   it to your app menu, so you can delete the downloaded file.
+3. It tells you it can't find your replays yet. Click **Open Settings**, then **Browse...** and pick
+   your Wine/Proton prefix: the folder that contains `drive_c`.
+4. Tick **Show in app menu** to add it to your app launcher. The menu entry runs the AppImage where
+   you put it, so it keeps working through updates.
 
 That's it. It uploads any replays you haven't uploaded yet, then uploads each new game as soon as it
 finishes, for as long as the uploader is running.
@@ -51,12 +54,13 @@ Pick **one**. Running both at the same time makes them compete over the same rep
 What you get from the quick start: a window with your replay list and upload stats.
 
 - **Start on login**: starts the uploader automatically, minimized, when you log in.
-- **Minimize to tray**: closing or minimizing the window keeps it running in the tray.
+- **Minimize to tray**: minimizing the window keeps it running in the tray (closing it quits).
   On GNOME you need the AppIndicator extension to see the tray icon; KDE, Cinnamon, XFCE and most
   other desktops have a tray already.
-- **Pause** stops new uploads until you resume.
+- **Pause uploading**, in the tray icon's menu, stops new uploads until you resume.
 - **Updates** install themselves: the app checks every hour, downloads the new version, and shows
-  a banner. Click **Restart now** or just restart it later. You can turn this off in Settings.
+  a banner. Click **Restart now** or just restart it later. To turn this off, set
+  `"AutoUpdate": false` in the config file.
 
 ### 2. Background service (no window)
 
@@ -68,14 +72,18 @@ First set up the prefix, either by running the desktop app once, or by creating
 `~/.config/heroesprofile/config.json` yourself:
 
 ```json
-{ "prefix": "/path/to/your/prefix" }
+{ "ReplayPath": "/path/to/your/prefix" }
 ```
 
-Then install the app to `~/.local/bin` (skip this if you already ticked **Show in app menu**) and
-enable the service:
+(Config files from older versions that say `"prefix"` still work.)
+
+The service uses the plain program rather than the AppImage. Download
+`HeroesProfileUploader-linux-x64.tar.gz` from the same release, unpack it, install the program to
+`~/.local/bin`, and enable the service:
 
 ```sh
-./HeroesProfileUploader-linux-x86_64.AppImage install
+tar -xzf HeroesProfileUploader-linux-x64.tar.gz
+./HeroesProfileUploader/heroesprofile-uploader install
 mkdir -p ~/.config/systemd/user
 cat > ~/.config/systemd/user/heroesprofile-uploader.service <<'UNIT'
 [Unit]
@@ -105,11 +113,11 @@ systemctl --user disable heroesprofile-uploader       # don't start on login any
 ```
 
 **The service doesn't update itself.** Only the desktop app does. When a new version is out, the
-service writes a warning to its log (`journalctl`). To update, download the new version and:
+service writes a warning to its log (`journalctl`). To update, download and unpack the new tarball and:
 
 ```sh
 systemctl --user stop heroesprofile-uploader
-./HeroesProfileUploader-linux-x86_64.AppImage install
+./HeroesProfileUploader/heroesprofile-uploader install
 systemctl --user start heroesprofile-uploader
 ```
 
@@ -128,12 +136,13 @@ heroesprofile-uploader run --prefix /path/to/prefix   # use a different prefix t
 | Settings | `~/.config/heroesprofile/config.json` |
 | Log | `~/.local/share/heroesprofile/logs/log.txt` (the app's **Show log** button opens it) |
 | Upload history | `~/.local/share/heroesprofile/` |
-| Installed app | `~/.local/bin/heroesprofile-uploader` |
+| Installed program (service/tarball only) | `~/.local/bin/heroesprofile-uploader` |
 
 ## Uninstall
 
-Untick **Show in app menu** (or run `heroesprofile-uploader uninstall`). This removes the app, the menu
-entry and the start-on-login entry. If you set up the service, also run
+Untick **Show in app menu** and **Start on login**, then delete the AppImage. For the tarball
+install, run `heroesprofile-uploader uninstall` instead; it removes the program, the menu entry and
+the start-on-login entry. If you set up the service, also run
 `systemctl --user disable --now heroesprofile-uploader` and delete
 `~/.config/systemd/user/heroesprofile-uploader.service`. To remove your settings and history too,
 delete `~/.config/heroesprofile`, `~/.local/share/heroesprofile` and `~/.net/heroesprofile-uploader`
@@ -150,9 +159,19 @@ delete `~/.config/heroesprofile`, `~/.local/share/heroesprofile` and `~/.net/her
 
 ## Building from source
 
+The AppImage (how `.github/workflows/release-desktop.yml` builds it):
+
+```sh
+dotnet tool restore
+dotnet publish Heroesprofile.Uploader.Desktop -c Release -r linux-x64 --self-contained -o publish
+dotnet vpk pack --packId Heroesprofile.Uploader --packVersion 3.0.0 --packDir publish --runtime linux-x64 \
+  --channel linux --mainExe heroesprofile-uploader --icon Heroesprofile.Uploader.Desktop/Gui/Assets/app-icon.png -o releases
+```
+
+The plain program for the tarball:
+
 ```sh
 dotnet publish Heroesprofile.Uploader.Desktop -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true
-packaging/linux/build-appimage.sh <path to the published heroesprofile-uploader> HeroesProfileUploader-linux-x86_64.AppImage
 ```
 
 Needs the .NET 10 SDK (`global.json` pins the version). `Directory.Build.props` switches off the

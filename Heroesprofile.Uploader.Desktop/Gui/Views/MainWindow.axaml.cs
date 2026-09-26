@@ -1,28 +1,62 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Platform.Storage;
 using Heroesprofile.Uploader.Desktop.Gui.ViewModels;
-using System.Linq;
+using Heroesprofile.Uploader.Desktop.Migration;
+using System;
 
 namespace Heroesprofile.Uploader.Desktop.Gui.Views
 {
     /// <summary>
     /// The main window. Business logic lives in <see cref="MainWindowViewModel"/> - this only handles
-    /// things that genuinely need a Window: the folder picker, the Settings dialog's owner, and
-    /// "minimize/close to tray" (Window lifecycle events aren't something a plain view model can hook).
+    /// what needs a Window: remembering its placement, the Settings dialog, the missing-folder message,
+    /// and the WPF app's tray behaviour (minimizing hides it to the tray when "Minimize to tray" is on;
+    /// closing it quits).
     /// </summary>
     public partial class MainWindow : Window
     {
-        private bool _reallyQuitting;
-
         private MainWindowViewModel ViewModel => (MainWindowViewModel)DataContext;
 
         public MainWindow()
         {
             InitializeComponent();
-            Closing += OnClosing;
+            DataContextChanged += (_, __) => RestorePlacement();
             PropertyChanged += OnWindowPropertyChanged;
+            Opened += OnOpened;
+            Closing += (_, __) => SavePlacement();
+        }
+
+        /// <summary>Puts the window back where the user left it, unless that's no longer on any screen.</summary>
+        private void RestorePlacement()
+        {
+            if (ViewModel == null) {
+                return;
+            }
+            var config = ViewModel.Config;
+            Width = Math.Max(config.WindowWidth, MinWidth);
+            Height = Math.Max(config.WindowHeight, MinHeight);
+
+            var position = new PixelPoint(config.WindowLeft, config.WindowTop);
+            if (Screens.ScreenFromPoint(position) != null) {
+                WindowStartupLocation = WindowStartupLocation.Manual;
+                Position = position;
+            } else {
+                WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            }
+        }
+
+        private void SavePlacement()
+        {
+            if (ViewModel == null || WindowState != WindowState.Normal || !IsVisible) {
+                return;
+            }
+            var config = ViewModel.Config;
+            config.WindowLeft = Position.X;
+            config.WindowTop = Position.Y;
+            config.WindowWidth = Width;
+            config.WindowHeight = Height;
+            ViewModel.SaveConfig();
         }
 
         private void OnWindowPropertyChanged(object sender, AvaloniaPropertyChangedEventArgs e)
@@ -32,42 +66,48 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
             }
         }
 
-        private async void BrowsePrefix_Click(object sender, RoutedEventArgs e)
+        private async void OnOpened(object sender, EventArgs e)
         {
-            var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions {
-                Title = "Select the Wine/Proton prefix (or the Heroes of the Storm \"Accounts\" folder)",
-                AllowMultiple = false,
-            });
-            if (folders.FirstOrDefault()?.TryGetLocalPath() is string path) {
-                await ViewModel.UseNewPrefixAsync(path);
+            if (ViewModel?.WaitingForLegacyApp == true) {
+                var answer = await MessageDialog.ShowAsync(this, "Old uploader running", LegacyApp.RunningWarning, "Quit", "Run anyway");
+                if (answer != "Run anyway") {
+                    Close();
+                    return;
+                }
+                ViewModel.ContinueNextToLegacyApp();
+            }
+
+            // WPF's WarnIfReplayFolderMissing: without a replay folder nothing gets uploaded, so say so
+            // once, up front, and point at the setting.
+            if (ViewModel?.ReplayFolderError is string error) {
+                var choice = await MessageDialog.ShowAsync(this, "Replay folder not found",
+                    $"{error}\n\nOpen Settings and select the Heroes of the Storm \"Accounts\" folder" +
+                    (OperatingSystem.IsLinux() ? " (or the Wine/Proton prefix it's in)" : "") + ".",
+                    "Open Settings", "Later");
+                if (choice == "Open Settings") {
+                    await OpenSettingsAsync();
+                }
             }
         }
 
-        private async void RestartNow_Click(object sender, RoutedEventArgs e)
+        private void Logo_PointerReleased(object sender, PointerReleasedEventArgs e)
         {
-            // Minimized-to-tray right now (hidden, not just iconified) - relaunch the same way so the
-            // new process doesn't suddenly pop a window the user had tucked away.
-            await ViewModel.RestartNowAsync(minimized: !IsVisible);
+            ViewModel.OpenWebsiteCommand.Execute(null);
         }
 
-        private async void OpenSettings_Click(object sender, RoutedEventArgs e)
+        private async void OpenSettings_Click(object sender, RoutedEventArgs e) => await OpenSettingsAsync();
+
+        private async System.Threading.Tasks.Task OpenSettingsAsync()
         {
-            var settingsVm = new SettingsWindowViewModel(ViewModel.Config);
-            var dialog = new SettingsWindow { DataContext = settingsVm };
+            var dialog = new SettingsWindow { DataContext = new SettingsWindowViewModel(ViewModel) };
             await dialog.ShowDialog(this);
-            if (dialog.Result) {
-                ViewModel.ApplySettings(settingsVm);
-            }
         }
 
-        private void OnClosing(object sender, WindowClosingEventArgs e)
+        private void RestartNow_Click(object sender, RoutedEventArgs e)
         {
-            if (_reallyQuitting || ViewModel?.Config.MinimizeToTray != true) {
-                return;
-            }
-            // "Minimize to tray" - closing the window hides it instead of exiting, same as minimizing.
-            e.Cancel = true;
-            Hide();
+            // Minimized to the tray right now (hidden, not just iconified) - relaunch the same way so the
+            // new process doesn't suddenly pop a window the user had tucked away.
+            ViewModel.RestartNow(minimized: !IsVisible);
         }
 
         /// <summary>Un-hides the window - the tray icon's "Open" item, or clicking the tray icon itself.</summary>
@@ -80,10 +120,9 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
             Activate();
         }
 
-        /// <summary>The tray icon's "Quit" item - bypasses the hide-on-close behaviour above.</summary>
+        /// <summary>The tray icon's "Quit" item.</summary>
         public void QuitForReal()
         {
-            _reallyQuitting = true;
             Close();
         }
     }

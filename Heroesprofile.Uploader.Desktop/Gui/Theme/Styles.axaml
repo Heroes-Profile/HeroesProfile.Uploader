@@ -1,149 +1,55 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <!--
-    Class-based restyling of FluentTheme controls to a flat look (thin borders, no
-    elevation/shadow, small flat buttons) using the tokens from Colors.axaml. Rather than fight
-    FluentTheme's internal pointerover/pressed brush resources control-by-control, base-state
-    Background/BorderBrush/Foreground are set directly (these flow through FluentTheme's own
-    TemplateBinding-based templates) - hover/pressed states keep FluentTheme's own subtle tinting,
-    which is close enough and low-risk.
+    Shared styles for every window (included once from App.axaml, so a new window picks them up with
+    no registration). They bring the Simple theme's controls to the WPF app's sizes: WPF's
+    MainWindow/SettingsWindow set checkboxes 23px high and buttons with 10,2 padding, and the font
+    follows the theme (Segoe UI; 9pt light, 10pt MetroDark dark). Other OSes fall back to their own
+    UI font at the same size.
   -->
 
   <Style Selector="Window">
-    <Setter Property="Background" Value="{DynamicResource AppBackgroundBrush}" />
-    <Setter Property="Foreground" Value="{DynamicResource AppTextBrush}" />
-    <Setter Property="FontFamily" Value="Segoe UI,Ubuntu,Cantarell,sans-serif" />
-    <Setter Property="FontSize" Value="13" />
-  </Style>
-
-  <!-- .btn -->
-  <Style Selector="Button.btn">
-    <Setter Property="FontSize" Value="11.5" />
-    <Setter Property="Padding" Value="10,6" />
-    <Setter Property="CornerRadius" Value="4" />
-    <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
-    <Setter Property="Background" Value="{DynamicResource AppBackgroundPanelBrush}" />
-    <Setter Property="Foreground" Value="{DynamicResource AppTextBrush}" />
-    <Setter Property="Cursor" Value="Hand" />
-    <Setter Property="HorizontalContentAlignment" Value="Center" />
-  </Style>
-
-  <!-- .btn-accent -->
-  <Style Selector="Button.btn-accent">
-    <Setter Property="Background" Value="{DynamicResource AppAccentBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource AppAccentBrush}" />
-    <Setter Property="Foreground" Value="{DynamicResource AppAccentInkBrush}" />
-    <Setter Property="FontWeight" Value="Medium" />
-  </Style>
-
-  <!-- .icon-btn - the header's small pause/resume glyph button -->
-  <Style Selector="Button.icon-btn">
-    <Setter Property="Width" Value="24" />
-    <Setter Property="Height" Value="24" />
-    <Setter Property="Padding" Value="0" />
-    <Setter Property="CornerRadius" Value="4" />
-    <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
-    <Setter Property="Background" Value="Transparent" />
-    <Setter Property="Foreground" Value="{DynamicResource AppTextSecondaryBrush}" />
-    <Setter Property="FontSize" Value="12" />
-    <Setter Property="Cursor" Value="Hand" />
-    <Setter Property="HorizontalContentAlignment" Value="Center" />
-    <Setter Property="VerticalContentAlignment" Value="Center" />
-  </Style>
-
-  <!-- .seg - segmented-control option (Settings' theme picker) -->
-  <Style Selector="Button.seg">
-    <Setter Property="FontSize" Value="12" />
-    <Setter Property="Padding" Value="10,5" />
-    <Setter Property="CornerRadius" Value="4" />
-    <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
-    <Setter Property="Background" Value="{DynamicResource AppBackgroundPanelBrush}" />
-    <Setter Property="Foreground" Value="{DynamicResource AppTextSecondaryBrush}" />
-    <Setter Property="Cursor" Value="Hand" />
-    <Setter Property="HorizontalContentAlignment" Value="Center" />
-  </Style>
-  <!-- Active segment of a segmented control (theme picker) uses the app accent. -->
-  <Style Selector="Button.seg.active">
-    <Setter Property="Background" Value="{DynamicResource AppAccentBgBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource AppAccentBrush}" />
-    <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}" />
-  </Style>
-
-  <!-- .path-input / .text-input -->
-  <Style Selector="TextBox">
-    <Setter Property="FontSize" Value="11.5" />
-    <Setter Property="Padding" Value="8,6" />
-    <Setter Property="CornerRadius" Value="4" />
-    <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
-    <Setter Property="Background" Value="{DynamicResource AppBackgroundPanelBrush}" />
-    <Setter Property="Foreground" Value="{DynamicResource AppTextBrush}" />
-    <Setter Property="CaretBrush" Value="{DynamicResource AppTextBrush}" />
-    <Setter Property="SelectionBrush" Value="{DynamicResource AppAccentBgBrush}" />
-  </Style>
-
-  <Style Selector="ComboBox">
-    <Setter Property="FontSize" Value="11.5" />
-    <Setter Property="Padding" Value="8,6" />
-    <Setter Property="CornerRadius" Value="4" />
-    <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
-    <Setter Property="Background" Value="{DynamicResource AppBackgroundPanelBrush}" />
-    <Setter Property="Foreground" Value="{DynamicResource AppTextBrush}" />
-    <Setter Property="HorizontalAlignment" Value="Stretch" />
-  </Style>
-  <Style Selector="ComboBoxItem">
-    <Setter Property="Foreground" Value="{DynamicResource AppTextBrush}" />
-    <Setter Property="Background" Value="{DynamicResource AppBackgroundPanelBrush}" />
+    <Setter Property="FontFamily" Value="Segoe UI, $Default" />
+    <Setter Property="FontSize" Value="{DynamicResource AppFontSize}" />
   </Style>
 
   <Style Selector="CheckBox">
-    <Setter Property="FontSize" Value="11.5" />
-    <Setter Property="Foreground" Value="{DynamicResource AppTextBrush}" />
-    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="MinHeight" Value="23" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
   </Style>
 
-  <!-- Flat, unselectable-looking replay list - it's a status feed, not a picker. -->
-  <Style Selector="ListBox">
-    <Setter Property="Background" Value="Transparent" />
+  <Style Selector="Button">
+    <Setter Property="Padding" Value="10,2" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+  </Style>
+
+  <!-- Text laid out like WPF's Hyperlink: the update banner's "Restart now." -->
+  <Style Selector="Button.link">
     <Setter Property="Padding" Value="0" />
-  </Style>
-  <Style Selector="ListBoxItem">
-    <Setter Property="Padding" Value="0" />
-    <Setter Property="MinHeight" Value="0" />
-    <Setter Property="CornerRadius" Value="0" />
-    <Setter Property="Background" Value="Transparent" />
-  </Style>
-  <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource AppRowHoverBrush}" />
-  </Style>
-  <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="Transparent" />
-  </Style>
-
-  <Style Selector="ScrollViewer">
-    <Setter Property="Background" Value="Transparent" />
-  </Style>
-
-  <!-- .link-btn - the update-available notice, styled as inline text rather than a boxed button -->
-  <Style Selector="Button.link-btn">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="Padding" Value="0" />
-    <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}" />
-    <Setter Property="FontSize" Value="11" />
     <Setter Property="Cursor" Value="Hand" />
-    <Setter Property="HorizontalAlignment" Value="Left" />
-    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="Foreground" Value="{DynamicResource ThemeAccentBrush}" />
   </Style>
-  <!-- Fluent paints a grey box behind a hovered/pressed button; keep links looking like text -->
-  <Style Selector="Button.link-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+  <Style Selector="Button.link /template/ ContentPresenter">
     <Setter Property="Background" Value="Transparent" />
   </Style>
-  <Style Selector="Button.link-btn:pressed /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="Transparent" />
+  <Style Selector="Button.link TextBlock">
+    <Setter Property="TextDecorations" Value="Underline" />
+  </Style>
+
+  <!-- WPF list rows are tight: one line of text, a couple of pixels of padding. -->
+  <Style Selector="ListBoxItem">
+    <Setter Property="Padding" Value="2,1" />
+  </Style>
+
+  <!-- Smaller help text under a setting, dimmed like WPF's DimmedTextBrush blocks -->
+  <Style Selector="TextBlock.hint">
+    <Setter Property="FontSize" Value="10" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="Foreground" Value="{DynamicResource DimmedTextBrush}" />
+  </Style>
+  <Style Selector="TextBlock.heading">
+    <Setter Property="FontWeight" Value="Bold" />
   </Style>
 </Styles>

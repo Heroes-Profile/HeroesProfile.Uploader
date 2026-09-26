@@ -16,5 +16,7 @@ namespace Heroesprofile.Uploader.Common
         PtrRegion,
         Incomplete,
         TooOld,
+        // Added after the others so the numbers of existing values don't change.
+        Brawl,
     }
 }

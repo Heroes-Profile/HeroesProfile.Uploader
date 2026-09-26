@@ -1,0 +1,12 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Heroesprofile.Uploader.Desktop.Gui.Views.MessageDialog"
+        Icon="/Gui/Assets/app-icon.png"
+        SizeToContent="WidthAndHeight" CanResize="False"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+  <!-- A plain message box, standing in for WPF's MessageBox.Show. -->
+  <StackPanel Margin="20" Spacing="16" MaxWidth="420">
+    <TextBlock x:Name="MessageText" TextWrapping="Wrap" />
+    <StackPanel x:Name="ButtonPanel" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" />
+  </StackPanel>
+</Window>

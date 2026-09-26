@@ -1,4 +1,6 @@
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Heroesprofile.Uploader.Desktop.Gui.ViewModels;
 using System.Linq;
@@ -6,48 +8,45 @@ using System.Linq;
 namespace Heroesprofile.Uploader.Desktop.Gui.Views
 {
     /// <summary>
-    /// Prefix/theme/webhook/Twitch/log-level dialog. Mirrors the Windows SettingsWindow: Save
-    /// commits, Cancel discards - neither is blocked by ShowDialog, so <see cref="Result"/> is what
-    /// MainWindow checks afterwards, same shape as the Windows app's DialogResult use.
+    /// Replay folder, theme, Twitch key and webhook - see <see cref="SettingsWindowViewModel"/>. Like the
+    /// WPF SettingsWindow there are no Save/Cancel buttons: changes apply as they're made and are saved
+    /// on close, which an invalid webhook url blocks.
     /// </summary>
     public partial class SettingsWindow : Window
     {
-        public bool Result { get; private set; }
-
         private SettingsWindowViewModel ViewModel => (SettingsWindowViewModel)DataContext;
 
         public SettingsWindow()
         {
             InitializeComponent();
+            KeyDown += OnKeyDown;
+            Closing += OnClosing;
         }
 
-        private async void BrowsePrefix_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
+        private void OnKeyDown(object sender, KeyEventArgs e)
+        {
+            // WPF's hidden switch for the beta updates option
+            if (e.Key == Key.Z && e.KeyModifiers == KeyModifiers.Control) {
+                ViewModel.RevealPreReleases();
+            }
+        }
+
+        private void OnClosing(object sender, WindowClosingEventArgs e)
+        {
+            if (!ViewModel.TryClose()) {
+                e.Cancel = true;
+            }
+        }
+
+        private async void BrowseReplayPath_Click(object sender, RoutedEventArgs e)
         {
             var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions {
-                Title = "Select the Wine/Proton prefix (or the Heroes of the Storm \"Accounts\" folder)",
+                Title = MainWindowViewModel.BrowseTitle,
                 AllowMultiple = false,
             });
-            var folder = folders.FirstOrDefault();
-            if (folder?.TryGetLocalPath() is string path) {
-                ViewModel.PrefixPath = path;
+            if (folders.FirstOrDefault()?.TryGetLocalPath() is string path) {
+                ViewModel.SetReplayPath(path);
             }
-        }
-
-        private void Cancel_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
-        {
-            Result = false;
-            Close();
-        }
-
-        private void Save_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
-        {
-            // Same rule as the Windows app's Window_Closing: don't let a broken webhook url get saved.
-            if (!ViewModel.IsWebhookValid) {
-                ViewModel.WebhookStatusText = "Invalid url. Must start with http:// or https://";
-                return;
-            }
-            Result = true;
-            Close();
         }
     }
 }

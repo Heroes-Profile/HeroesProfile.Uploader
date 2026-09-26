@@ -1,36 +1,102 @@
+using Heroesprofile.Uploader.Common;
+using Heroesprofile.Uploader.Desktop.Migration;
+using Heroesprofile.Uploader.Desktop.Platform;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using NLog;
 using System;
 using System.IO;
 
 namespace Heroesprofile.Uploader.Desktop
 {
     /// <summary>
-    /// User settings, loaded from $XDG_CONFIG_HOME/heroesprofile/config.json (falls back to
-    /// ~/.config/heroesprofile/config.json). Only "prefix" is required - the pre/post match pages
-    /// default off, since a headless systemd setup has no desktop for xdg-open to hand a URL to.
-    /// GUI-only settings (theme, tray/login behaviour, log level, Twitch) live here too, so the CLI
-    /// (`run`/`scan`) and the GUI read and write the same file.
+    /// User settings, in config.json under the platform's config folder (see <see cref="IPlatform.ConfigDir"/>).
+    /// The pre/post match pages default off, since a headless systemd setup has no desktop to hand a
+    /// URL to. GUI-only settings (theme, tray/login behaviour, log level, Twitch) live here too, so the
+    /// CLI (`run`/`scan`) and the GUI read and write the same file.
     /// </summary>
     public class AppConfig
     {
-        public string Prefix { get; set; }
+        private static readonly Logger _log = LogManager.GetCurrentClassLogger();
+
+        /// <summary>
+        /// Where the replays are. Linux: a Wine/Proton prefix, a Steam compatdata/&lt;appid&gt; folder,
+        /// or the Heroes of the Storm "Accounts" folder itself. Windows/macOS: the Accounts folder, with
+        /// empty meaning the game's default location. See <see cref="ReplayFolderSetup"/>.
+        /// </summary>
+        public string ReplayPath { get; set; }
+
+        /// <summary>
+        /// Read-only alias for config.json files written by the Linux-only app, which called this
+        /// setting "Prefix". Never written back; an explicit ReplayPath wins.
+        /// </summary>
+        [JsonProperty("Prefix")]
+        private string LegacyPrefix
+        {
+            set {
+                if (string.IsNullOrWhiteSpace(ReplayPath)) {
+                    ReplayPath = value;
+                }
+            }
+        }
+
         public bool PreMatchPage { get; set; }
         public bool PostMatchPage { get; set; }
         public string WebhookUrl { get; set; }
 
-        /// <summary>"Dark", "Light", or "System" (follow the desktop theme). Defaults to "System".</summary>
-        public string Theme { get; set; } = "System";
+        public const string LightTheme = "Default";
+        public const string DarkTheme = "MetroDark";
+        public const string SystemTheme = "System";
+
+        private string _theme = DarkTheme;
+
+        /// <summary>
+        /// <see cref="LightTheme"/>, <see cref="DarkTheme"/> or <see cref="SystemTheme"/> (follow the
+        /// desktop). The first two are the WPF app's own stored values, so its setting imports as-is;
+        /// dark is the default there too. "Light"/"Dark", written by the Linux-only app, still load.
+        /// </summary>
+        public string Theme
+        {
+            get => _theme;
+            set => _theme = value switch {
+                "Light" or LightTheme => LightTheme,
+                SystemTheme => SystemTheme,
+                _ => DarkTheme,
+            };
+        }
+
         public bool TwitchExtension { get; set; }
 
         /// <summary>
-        /// Twitch uploader key, stored in plain text. There's no Linux equivalent of the Windows
-        /// build's DPAPI-encrypted setting, and config.json is already a private, 0600-ish file under
-        /// $XDG_CONFIG_HOME - same trust boundary as an SSH key or .netrc.
+        /// Twitch uploader key, in plain text in memory only. What's written to config.json is
+        /// <see cref="IPlatform.ProtectSecret"/>'s version: DPAPI-encrypted for the current user on
+        /// Windows (as the WPF app stored it), as-is in the 0600 config file elsewhere.
         /// </summary>
+        [JsonIgnore]
         public string TwitchUploaderKey { get; set; }
+
+        [JsonProperty(nameof(TwitchUploaderKey))]
+        private string StoredTwitchUploaderKey
+        {
+            get => Platforms.Current.ProtectSecret(TwitchUploaderKey);
+            set => TwitchUploaderKey = Platforms.Current.UnprotectSecret(value);
+        }
+
+        /// <summary>
+        /// Which replays to delete once they're handled (none by default). The WPF app had this setting
+        /// without anything in its UI to change it; it's imported and honoured the same way here.
+        /// </summary>
+        [JsonConverter(typeof(StringEnumConverter))]
+        public DeleteFiles DeleteAfterUpload { get; set; }
 
         public bool MinimizeToTray { get; set; }
         public bool StartOnLogin { get; set; }
+
+        // Main window placement, remembered between runs. Same defaults as the WPF app.
+        public int WindowLeft { get; set; } = 400;
+        public int WindowTop { get; set; } = 400;
+        public double WindowWidth { get; set; } = 700;
+        public double WindowHeight { get; set; } = 600;
 
         /// <summary>NLog level name: Trace/Debug/Info/Warn/Error/Fatal. Defaults to "Info".</summary>
         public string LogLevel { get; set; } = "Info";
@@ -47,22 +113,8 @@ namespace Heroesprofile.Uploader.Desktop
         /// <summary>Also consider prerelease GitHub releases (test builds) when checking for updates.</summary>
         public bool AllowPreReleases { get; set; }
 
-        private static string XdgHome(string envVar, string fallbackLeaf)
-        {
-            var value = Environment.GetEnvironmentVariable(envVar);
-            return !string.IsNullOrWhiteSpace(value)
-                ? value
-                : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), fallbackLeaf);
-        }
-
-        /// <summary>$XDG_CONFIG_HOME, or ~/.config</summary>
-        private static string ConfigHome => XdgHome("XDG_CONFIG_HOME", ".config");
-
-        /// <summary>$XDG_DATA_HOME, or ~/.local/share</summary>
-        private static string DataHome => XdgHome("XDG_DATA_HOME", Path.Combine(".local", "share"));
-
-        public static string ConfigPath => Path.Combine(ConfigHome, "heroesprofile", "config.json");
-        public static string DataDir => Path.Combine(DataHome, "heroesprofile");
+        public static string ConfigPath => Path.Combine(Platforms.Current.ConfigDir, "config.json");
+        public static string DataDir => Platforms.Current.DataDir;
 
         /// <summary>
         /// Loads the config file, or an empty (all-default) config if it doesn't exist yet - "no prefix
@@ -75,12 +127,38 @@ namespace Heroesprofile.Uploader.Desktop
             }
 
             try {
-                return JsonConvert.DeserializeObject<AppConfig>(File.ReadAllText(ConfigPath)) ?? new AppConfig();
+                return FromJson(File.ReadAllText(ConfigPath));
             }
             catch (Exception ex) {
                 throw new ConfigError($"Could not read config file {ConfigPath}: {ex.Message}");
             }
         }
+
+        /// <summary>
+        /// <see cref="Load"/>, except that on the very first run on Windows - no config.json yet - the
+        /// WPF app's settings are imported and (with <paramref name="save"/>) saved as the starting config.
+        /// </summary>
+        public static AppConfig LoadOrImport(bool save = true)
+        {
+            if (!File.Exists(ConfigPath) && OperatingSystem.IsWindows() &&
+                WpfSettingsImporter.TryImport(out var imported, out var source)) {
+                _log.Info($"No config.json yet - imported the Windows app's settings from {source}");
+                try {
+                    if (save) {
+                        imported.Save();
+                    }
+                }
+                catch (Exception ex) {
+                    _log.Error(ex, "Could not save the imported settings");
+                }
+                return imported;
+            }
+            return Load();
+        }
+
+        internal static AppConfig FromJson(string json) => JsonConvert.DeserializeObject<AppConfig>(json) ?? new AppConfig();
+
+        internal string ToJson() => JsonConvert.SerializeObject(this, Formatting.Indented);
 
         /// <summary>
         /// Writes this config back to <see cref="ConfigPath"/>, creating its folder if needed. Contains
@@ -93,10 +171,13 @@ namespace Heroesprofile.Uploader.Desktop
             var dir = Path.GetDirectoryName(ConfigPath);
             Directory.CreateDirectory(dir);
 
-            var json = JsonConvert.SerializeObject(this, Formatting.Indented);
-            // UnixCreateMode/SetUnixFileMode are Linux/Unix-only APIs (CA1416) - fine, this whole
-            // project only ever runs on Linux.
-#pragma warning disable CA1416
+            var json = ToJson();
+            if (OperatingSystem.IsWindows()) {
+                // %APPDATA% is already private to the user.
+                File.WriteAllText(ConfigPath, json);
+                return;
+            }
+
             using (var stream = new FileStream(ConfigPath, new FileStreamOptions {
                 Mode = FileMode.Create,
                 Access = FileAccess.Write,
@@ -109,7 +190,6 @@ namespace Heroesprofile.Uploader.Desktop
             // UnixCreateMode only takes effect when the file is actually created - a file that already
             // existed (e.g. 0644 from before this code existed) keeps its old mode across FileMode.Create.
             File.SetUnixFileMode(ConfigPath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
-#pragma warning restore CA1416
         }
     }
 }

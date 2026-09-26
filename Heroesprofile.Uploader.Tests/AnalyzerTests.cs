@@ -18,6 +18,17 @@ public class AnalyzerTests
     }
 
     [Theory]
+    [InlineData(GameMode.Brawl, UploadStatus.Brawl)]       // not uploaded, like AI games
+    [InlineData(GameMode.QuickMatch, null)]                // uploaded
+    [InlineData(GameMode.StormLeague, null)]               // uploaded
+    public void Brawls_are_not_uploaded(GameMode gameMode, UploadStatus? expected)
+    {
+        var replay = new Replay { GameMode = gameMode, ReplayBuild = 97650 };
+
+        Assert.Equal(expected, new Analyzer().GetPreStatus(replay, DataParser.ReplayParseResult.Success));
+    }
+
+    [Theory]
     [InlineData(DataParser.ReplayParseResult.UnexpectedResult)]
     [InlineData(DataParser.ReplayParseResult.Exception)]
     [InlineData(DataParser.ReplayParseResult.FileNotFound)]

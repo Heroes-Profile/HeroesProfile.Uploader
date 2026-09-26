@@ -1,62 +1,59 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Heroesprofile.Uploader.Common;
-using System;
-using System.Globalization;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
 {
     /// <summary>
-    /// Display wrapper around a single <see cref="ReplayFile"/> for the (virtualized) replay list.
-    /// Filenames are "yyyy-MM-dd HH.mm.ss &lt;Map&gt;.StormReplay" - see Manager/LiveMonitor, which
-    /// write replays out under exactly that name.
+    /// One row of the replay list, shown the WPF way: file name on the left, a ✘ if the uploader
+    /// deleted the file, and the status on the right in its status colour.
     /// </summary>
     public partial class ReplayRowViewModel : ObservableObject
     {
-        private const string TimeFormat = "yyyy-MM-dd HH.mm.ss";
-
         public ReplayFile File { get; }
-        public string TimeText { get; }
-        public string MapText { get; }
+
+        /// <summary>WPF's FilenameConverter: just the file name, no folder.</summary>
+        public string FileName { get; }
 
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(StatusText), nameof(IsSuccess), nameof(IsInProgress), nameof(IsNeutral), nameof(IsFailed))]
         private UploadStatus uploadStatus;
 
-        public string StatusLabel => StatusPresentation.Label(UploadStatus);
+        [ObservableProperty]
+        private bool deleted;
 
         public ReplayRowViewModel(ReplayFile file)
         {
             File = file;
+            FileName = Path.GetFileName(file.Filename ?? "");
             uploadStatus = file.UploadStatus;
-
-            var name = Path.GetFileNameWithoutExtension(file.Filename ?? "");
-            if (name.Length > TimeFormat.Length &&
-                DateTime.TryParseExact(name.Substring(0, TimeFormat.Length), TimeFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed)) {
-                TimeText = parsed.ToString(TimeFormat);
-                MapText = name.Substring(TimeFormat.Length).Trim();
-            } else {
-                // Doesn't match the expected pattern (renamed file, odd import) - fall back to
-                // whatever we do know rather than showing a blank row.
-                TimeText = file.Created.ToString(TimeFormat);
-                MapText = name;
-            }
+            deleted = file.Deleted;
         }
 
-        /// <summary>Called by the Manager.Files adapter when the wrapped file's own status changes.</summary>
+        /// <summary>
+        /// WPF's UploadStatusConverter: the enum name split into words ("UploadError" -> "Upload error"),
+        /// and nothing at all for a replay that hasn't been looked at yet.
+        /// </summary>
+        public string StatusText => FormatStatus(UploadStatus);
+
+        public static string FormatStatus(UploadStatus status) => status == UploadStatus.None
+            ? ""
+            : Regex.Replace(status.ToString(), "([a-z])([A-Z])", m => $"{m.Groups[1].Value} {m.Groups[2].Value.ToLowerInvariant()}");
+
+        // WPF's UploadColorConverter buckets - each picks a StatusUpload*Brush via a style class, so
+        // the colour follows theme switches without any manual refresh.
+        public bool IsSuccess => UploadStatus == UploadStatus.Success;
+        public bool IsInProgress => UploadStatus == UploadStatus.InProgress;
+        public bool IsNeutral => UploadStatus is UploadStatus.Duplicate or UploadStatus.AiDetected or UploadStatus.CustomGame
+            or UploadStatus.PtrRegion or UploadStatus.TooOld or UploadStatus.Brawl;
+        public bool IsFailed => !IsSuccess && !IsInProgress && !IsNeutral;
+
+        /// <summary>Called by <see cref="ReplayListBridge"/> when the wrapped file's status or Deleted flag changes.</summary>
         public void RefreshFromFile()
         {
             UploadStatus = File.UploadStatus;
-        }
-
-        partial void OnUploadStatusChanged(UploadStatus value)
-        {
-            OnPropertyChanged(nameof(StatusLabel));
-        }
-
-        /// <summary>Forces the UploadStatus-bound badge colour bindings to re-run after a theme switch.</summary>
-        public void TouchForThemeRefresh()
-        {
-            OnPropertyChanged(nameof(UploadStatus));
+            Deleted = File.Deleted;
         }
     }
 }

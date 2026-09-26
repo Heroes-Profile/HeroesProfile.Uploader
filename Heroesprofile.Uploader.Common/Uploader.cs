@@ -1,9 +1,11 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using Heroes.ReplayParser;
@@ -33,12 +35,26 @@ namespace Heroesprofile.Uploader.Common
         const string HeroesProfileMatchSummary = "https://www.heroesprofile.com/Match/Single/?replayID=";
 #endif
 
+        // One client for the app's lifetime, as HttpClient is meant to be used (a new one per request
+        // can run out of sockets). Same 100s timeout WebClient had.
+        private static readonly HttpClient _sharedClient = new HttpClient();
+
+        private readonly HttpClient _client;
+        private readonly TimeSpan _throttleDelay;
+
         /// <summary>
         /// New instance of replay uploader
         /// </summary>
-        public Uploader()
+        public Uploader() : this(_sharedClient, TimeSpan.FromSeconds(10))
         {
+        }
 
+        /// <param name="client">Where requests go - tests pass one with a fake handler.</param>
+        /// <param name="throttleDelay">How long to wait before retrying when the API says "too many requests" (429).</param>
+        internal Uploader(HttpClient client, TimeSpan throttleDelay)
+        {
+            _client = client;
+            _throttleDelay = throttleDelay;
         }
 
         /// <summary>
@@ -69,9 +85,22 @@ namespace Heroesprofile.Uploader.Common
 
             try {
                 string response;
-                using (var client = new WebClient()) {
-                    var bytes = await client.UploadFileTaskAsync($"{HeroesProfileApiEndpoint}/upload/heroesprofile/desktop?fingerprint={fingerprint}&version={assemblyVersion}", file);
-                    response = Encoding.UTF8.GetString(bytes);
+                // A multipart/form-data POST with the replay as its "file" part - what WebClient.UploadFile sent.
+                using (var stream = File.OpenRead(file))
+                using (var fileContent = new StreamContent(stream))
+                using (var form = new MultipartFormDataContent()) {
+                    fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+                    form.Add(fileContent, "file", Path.GetFileName(file));
+                    using (var reply = await _client.PostAsync($"{HeroesProfileApiEndpoint}/upload/heroesprofile/desktop?fingerprint={fingerprint}&version={assemblyVersion}", form)) {
+                        if (!reply.IsSuccessStatusCode) {
+                            if (await WaitIfThrottled(reply.StatusCode)) {
+                                return await Upload(replay_results, fingerprint, file, PostMatchPage);
+                            }
+                            _log.Warn($"Error uploading file '{file}': HTTP {(int)reply.StatusCode} {Describe(await reply.Content.ReadAsStringAsync())}");
+                            return UploadStatus.UploadError;
+                        }
+                        response = await reply.Content.ReadAsStringAsync();
+                    }
                 }
 
                 UploadResult result = UploadResult.FromJson(response);
@@ -104,10 +133,7 @@ namespace Heroesprofile.Uploader.Common
 
 
             }
-            catch (WebException ex) {
-                if (await CheckApiThrottling(ex.Response)) {
-                    return await Upload(replay_results, fingerprint, file, PostMatchPage);
-                }
+            catch (Exception ex) when (IsNetworkFailure(ex)) {
                 _log.Warn(ex, $"Error uploading file '{file}'");
                 return UploadStatus.UploadError;
             }
@@ -123,34 +149,35 @@ namespace Heroesprofile.Uploader.Common
             while (timer.ElapsedMilliseconds < 15000) {
                 checks++;
                 try {
-                    string response;
-                    using (var client = new WebClient()) {
-                        response = await client.DownloadStringTaskAsync(parsedUrl);
-                    }
-                    lastResponse = Describe(response);
-                    if (response?.Trim() == "true") {
-                        timer.Stop();
-                        var pageUrl = $"{HeroesProfileMatchSummary}{replayID}";
-                        _log.Debug($"Replay {replayID} parsed after {timer.ElapsedMilliseconds}ms, opening postmatch page {pageUrl}");
-                        try {
-                            // UseShellExecute is needed to open a URL rather than try to execute it as a file -
-                            // it's the .NET Framework default but not on .NET Core, where it also maps to xdg-open on Linux
-                            Process.Start(new ProcessStartInfo(pageUrl) { UseShellExecute = true });
+                    using (var reply = await _client.GetAsync(parsedUrl)) {
+                        if (reply.IsSuccessStatusCode) {
+                            var response = await reply.Content.ReadAsStringAsync();
+                            lastResponse = Describe(response);
+                            if (response?.Trim() == "true") {
+                                timer.Stop();
+                                var pageUrl = $"{HeroesProfileMatchSummary}{replayID}";
+                                _log.Debug($"Replay {replayID} parsed after {timer.ElapsedMilliseconds}ms, opening postmatch page {pageUrl}");
+                                try {
+                                    // UseShellExecute is needed to open a URL rather than try to execute it as a file
+                                    // (it also maps to xdg-open on Linux and `open` on macOS)
+                                    Process.Start(new ProcessStartInfo(pageUrl) { UseShellExecute = true });
+                                }
+                                catch (Exception ex) {
+                                    _log.Error(ex, $"Failed to open postmatch page {pageUrl}");
+                                }
+                                WebhookNotifier.Notify("postmatch", pageUrl);
+                                return;
+                            }
+                        } else {
+                            lastResponse = $"HTTP {(int)reply.StatusCode}";
+                            _log.Warn($"Parsed check for replay {replayID} failed ({lastResponse})");
+                            await WaitIfThrottled(reply.StatusCode);
                         }
-                        catch (Exception ex) {
-                            _log.Error(ex, $"Failed to open postmatch page {pageUrl}");
-                        }
-                        WebhookNotifier.Notify("postmatch", pageUrl);
-                        return;
                     }
                 }
-                catch (WebException ex) {
-                    var status = (ex.Response as HttpWebResponse)?.StatusCode;
-                    lastResponse = status != null ? $"HTTP {(int)status}" : $"{ex.Status}";
+                catch (Exception ex) when (IsNetworkFailure(ex)) {
+                    lastResponse = ex is HttpRequestException http ? $"{http.HttpRequestError}" : "Timeout";
                     _log.Warn(ex, $"Parsed check for replay {replayID} failed ({lastResponse})");
-                    if (ex.Response != null) {
-                        await CheckApiThrottling(ex.Response);
-                    }
                 }
                 await Task.Delay(1000);
             }
@@ -179,17 +206,19 @@ namespace Heroesprofile.Uploader.Common
         private async Task<bool> CheckDuplicate(string fingerprint)
         {
             try {
-                string response;
-                using (var client = new WebClient()) {
-                    response = await client.DownloadStringTaskAsync($"{HeroesProfileApiEndpoint}/replays/fingerprints/{fingerprint}");
+                using (var reply = await _client.GetAsync($"{HeroesProfileApiEndpoint}/replays/fingerprints/{fingerprint}")) {
+                    if (!reply.IsSuccessStatusCode) {
+                        if (await WaitIfThrottled(reply.StatusCode)) {
+                            return await CheckDuplicate(fingerprint);
+                        }
+                        _log.Warn($"Error checking fingerprint '{fingerprint}': HTTP {(int)reply.StatusCode}");
+                        return false;
+                    }
+                    var json = JObject.Parse(await reply.Content.ReadAsStringAsync());
+                    return (bool)json["exists"];
                 }
-                var json = JObject.Parse(response);
-                return (bool)json["exists"];
             }
-            catch (WebException ex) {
-                if (await CheckApiThrottling(ex.Response)) {
-                    return await CheckDuplicate(fingerprint);
-                }
+            catch (Exception ex) when (IsNetworkFailure(ex)) {
                 _log.Warn(ex, $"Error checking fingerprint '{fingerprint}'");
                 return false;
             }
@@ -202,17 +231,20 @@ namespace Heroesprofile.Uploader.Common
         private async Task<string[]> CheckDuplicate(IEnumerable<string> fingerprints)
         {
             try {
-                string response;
-                using (var client = new WebClient()) {
-                    response = await client.UploadStringTaskAsync($"{HeroesProfileApiEndpoint}/replays/fingerprints", String.Join("\n", fingerprints));
+                using (var body = new StringContent(String.Join("\n", fingerprints), Encoding.UTF8))
+                using (var reply = await _client.PostAsync($"{HeroesProfileApiEndpoint}/replays/fingerprints", body)) {
+                    if (!reply.IsSuccessStatusCode) {
+                        if (await WaitIfThrottled(reply.StatusCode)) {
+                            return await CheckDuplicate(fingerprints);
+                        }
+                        _log.Warn($"Error checking fingerprint array: HTTP {(int)reply.StatusCode}");
+                        return Array.Empty<string>();
+                    }
+                    var json = JObject.Parse(await reply.Content.ReadAsStringAsync());
+                    return (json["exists"] as JArray).Select(x => x.ToString()).ToArray();
                 }
-                var json = JObject.Parse(response);
-                return (json["exists"] as JArray).Select(x => x.ToString()).ToArray();
             }
-            catch (WebException ex) {
-                if (await CheckApiThrottling(ex.Response)) {
-                    return await CheckDuplicate(fingerprints);
-                }
+            catch (Exception ex) when (IsNetworkFailure(ex)) {
                 _log.Warn(ex, $"Error checking fingerprint array");
                 return Array.Empty<string>();
             }
@@ -230,16 +262,24 @@ namespace Heroesprofile.Uploader.Common
         /// <summary>
         /// Check if Heroes Profile API request limit is reached and wait if it is
         /// </summary>
-        /// <param name="response">Server response to examine</param>
-        private async Task<bool> CheckApiThrottling(WebResponse response)
+        /// <param name="status">Status code of the server's response</param>
+        /// <returns>true if it was a "too many requests" response and the caller should retry</returns>
+        private async Task<bool> WaitIfThrottled(HttpStatusCode status)
         {
-            if (response != null && (int)(response as HttpWebResponse).StatusCode == 429) {
+            if (status == HttpStatusCode.TooManyRequests) {
                 _log.Warn($"Too many requests, waiting");
-                await Task.Delay(10000);
+                await Task.Delay(_throttleDelay);
                 return true;
             } else {
                 return false;
             }
         }
+
+        /// <summary>
+        /// The failures WebClient reported as a WebException without a response: no connection, DNS,
+        /// TLS, a dropped connection - and a request that timed out.
+        /// </summary>
+        private static bool IsNetworkFailure(Exception ex) =>
+            ex is HttpRequestException || (ex is TaskCanceledException && ex.InnerException is TimeoutException);
     }
 }

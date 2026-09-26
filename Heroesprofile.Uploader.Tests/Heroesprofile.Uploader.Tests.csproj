@@ -18,9 +18,4 @@
     <ProjectReference Include="..\Heroesprofile.Uploader.Desktop\Heroesprofile.Uploader.Desktop.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- The legacy WPF app's logging config, checked against the NLog version it now ships with. -->
-    <None Include="..\Heroesprofile.Uploader.Windows\NLog.config" Link="TestData\Wpf.NLog.config" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
-
 </Project>

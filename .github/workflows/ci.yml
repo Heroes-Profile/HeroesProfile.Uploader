@@ -78,3 +78,36 @@ jobs:
           mkdir -p "$prefix/drive_c/users/ci/Documents/Heroes of the Storm/Accounts"
           ./publish/heroesprofile-uploader scan --dry-run --prefix "$prefix"
           test -s "$HOME/.local/share/heroesprofile/logs/log.txt"
+
+  # The same check for macOS: the real self-contained Apple Silicon binary, run on a Mac.
+  macos-smoke:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Publish
+        run: >
+          dotnet publish Heroesprofile.Uploader.Desktop -c Release -r osx-arm64 --self-contained
+          -p:PublishSingleFile=true -p:DebugType=none -p:RestoreLockedMode=false -o publish
+
+      - name: Run it
+        run: |
+          ./publish/heroesprofile-uploader --version
+          # On macOS --prefix is the Accounts folder itself (no Wine prefix to search).
+          accounts=$(mktemp -d)
+          ./publish/heroesprofile-uploader scan --dry-run --prefix "$accounts"
+          test -s "$HOME/Library/Application Support/Heroesprofile/logs/log.txt"
+
+      # Unsigned test build for Mac testers (see packaging/macos/TESTING.md) - not a release.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: heroesprofile-uploader-macos-arm64-unsigned
+          path: publish/heroesprofile-uploader
+          retention-days: 14

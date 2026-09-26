@@ -33,6 +33,8 @@ namespace Heroesprofile.Uploader.Desktop.Gui
 
         public override void OnFrameworkInitializationCompleted()
         {
+            Dispatcher.UIThread.UnhandledException += (_, e) => _log.Error(e.Exception, "Unhandled UI exception");
+
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) {
                 _viewModel = new MainWindowViewModel();
                 RequestedThemeVariant = ThemeVariantFor(_viewModel.Config.Theme);
@@ -60,6 +62,16 @@ namespace Heroesprofile.Uploader.Desktop.Gui
                 };
 
                 desktop.Exit += (_, __) => _viewModel.Manager?.Stop();
+
+                // macOS: clicking the Dock icon while the window is hidden (minimized to the menu bar)
+                // brings it back, as users expect of a Mac app.
+                if (TryGetFeature(typeof(IActivatableLifetime)) is IActivatableLifetime activatable) {
+                    activatable.Activated += (_, e) => {
+                        if (e.Kind == ActivationKind.Reopen) {
+                            _window.RestoreFromTray();
+                        }
+                    };
+                }
 
                 if (Instance != null) {
                     Instance.ActivationRequested += () => Dispatcher.UIThread.Post(() => {
@@ -90,6 +102,12 @@ namespace Heroesprofile.Uploader.Desktop.Gui
             _window.RestoreFromTray();
         }
 
+        // Clicking the icon itself reopens the window, like the WPF app's NotifyIcon.
+        private void TrayIcon_Clicked(object sender, System.EventArgs e)
+        {
+            _window.RestoreFromTray();
+        }
+
         private void TrayPause_Click(object sender, System.EventArgs e)
         {
             _viewModel.TogglePauseCommand.Execute(null);
@@ -108,7 +126,7 @@ namespace Heroesprofile.Uploader.Desktop.Gui
         /// <summary>
         /// NativeMenuItem, nested inside a NativeMenu, doesn't get an x:Name-generated field the way a
         /// regular visual-tree control does - so it's found by position instead. Order matches App.axaml:
-        /// Open(0), Pause(1), Open log(2), separator(3), Quit(4).
+        /// Open(0), Pause(1), Show log(2), separator(3), Quit(4).
         /// </summary>
         private void SyncTrayPauseLabel()
         {
@@ -120,9 +138,9 @@ namespace Heroesprofile.Uploader.Desktop.Gui
         public static ThemeVariant ThemeVariantFor(string theme)
         {
             return theme switch {
-                "Dark" => ThemeVariant.Dark,
-                "Light" => ThemeVariant.Light,
-                _ => ThemeVariant.Default,
+                AppConfig.LightTheme => ThemeVariant.Light,
+                AppConfig.SystemTheme => ThemeVariant.Default,
+                _ => ThemeVariant.Dark,
             };
         }
     }

@@ -1,4 +1,6 @@
+using Heroesprofile.Uploader.Desktop.Platform;
 using System;
+using System.Runtime.Versioning;
 
 namespace Heroesprofile.Uploader.Desktop
 {
@@ -6,6 +8,7 @@ namespace Heroesprofile.Uploader.Desktop
     /// `install`/`uninstall`: adds/removes this app from the Linux app menu. Deliberately only ever
     /// touches ~/.local/{bin,share} (see <see cref="DesktopIntegration"/>) - no sudo, no system paths.
     /// </summary>
+    [SupportedOSPlatform("linux")]
     internal static class InstallCommand
     {
         public static int Install()

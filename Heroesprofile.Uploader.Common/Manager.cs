@@ -276,6 +276,38 @@ namespace Heroesprofile.Uploader.Common
         }
 
         /// <summary>
+        /// Puts every replay whose upload failed back in the queue to try again now. Restarting the app
+        /// does the same - failed uploads aren't saved to the replay list, so they come back as new - this
+        /// just saves the restart. Returns how many were queued.
+        /// </summary>
+        public int RetryFailed()
+        {
+            var failed = Snapshot().Where(x => x.UploadStatus == UploadStatus.UploadError).ToList();
+            foreach (var file in failed) {
+                file.UploadStatus = UploadStatus.None;
+                processingQueue.Add(file);
+            }
+            if (failed.Count > 0) {
+                _log.Info($"Retrying {failed.Count} failed upload(s)");
+            }
+            return failed.Count;
+        }
+
+        // Files is added to from background threads without a lock, so a plain enumeration can race an
+        // insert and throw; copying it again is cheap and safe.
+        private List<ReplayFile> Snapshot()
+        {
+            while (true) {
+                try {
+                    return Files.ToList();
+                }
+                catch (InvalidOperationException) {
+                    // Files changed mid-copy - try again.
+                }
+            }
+        }
+
+        /// <summary>
         /// Point the watchers at the currently configured replay folder and queue up any replays it holds
         /// that we haven't seen yet. Lets a folder change in settings take effect without a restart.
         /// </summary>

@@ -9,23 +9,28 @@
     during restore/build, including the submodule's, so setting it here reaches Heroes.ReplayParser
     without needing -p:DisableGitVersionTask=true on every command line. $(MSBuildRuntimeType) is
     "Core" under the dotnet CLI and "Full" under Visual Studio / msbuild.exe (where GitVersionTask.MsBuild
-    loads fine), so the WPF build is unaffected.
+    loads fine), so builds from Visual Studio are unaffected.
   -->
   <PropertyGroup>
     <DisableGitVersionTask Condition="'$(MSBuildRuntimeType)' == 'Core'">true</DisableGitVersionTask>
   </PropertyGroup>
 
   <!--
-    Shared settings for our own SDK-style projects (Common, Linux/Desktop, Tests). Two projects are
-    deliberately left out:
-      - Heroes.ReplayParser: a submodule with its own conventions and pinned package versions.
-      - Heroesprofile.Uploader.Windows: the legacy WPF/.NET Framework app, kept building unchanged
-        until it's retired (see the cross-platform plan), so it keeps its own inline package versions.
+    The app's version - the one place to bump for a release. Builds without an explicit -p:Version get
+    it (see Heroesprofile.Uploader.Desktop.csproj); release-desktop.yml reads it from here and adds a
+    "-beta.N" suffix for test builds.
+  -->
+  <PropertyGroup>
+    <HeroesProfileVersion>3.0.0</HeroesProfileVersion>
+  </PropertyGroup>
+
+  <!--
+    Shared settings for our own projects (Common, Desktop, Tests). The Heroes.ReplayParser submodule is
+    left out: it has its own conventions and pinned package versions.
   -->
   <PropertyGroup>
     <IsHeroesProfileProject>true</IsHeroesProfileProject>
     <IsHeroesProfileProject Condition="$(MSBuildProjectDirectory.Contains('Heroes.ReplayParser'))">false</IsHeroesProfileProject>
-    <IsHeroesProfileProject Condition="$(MSBuildProjectDirectory.Contains('Heroesprofile.Uploader.Windows'))">false</IsHeroesProfileProject>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsHeroesProfileProject)' == 'true'">

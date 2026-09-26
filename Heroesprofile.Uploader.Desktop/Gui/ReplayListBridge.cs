@@ -26,6 +26,7 @@ namespace Heroesprofile.Uploader.Desktop.Gui
         private static readonly HashSet<UploadStatus> TerminalStatuses = new HashSet<UploadStatus> {
             UploadStatus.Success, UploadStatus.Duplicate, UploadStatus.UploadError, UploadStatus.AiDetected,
             UploadStatus.CustomGame, UploadStatus.PtrRegion, UploadStatus.Incomplete, UploadStatus.TooOld,
+            UploadStatus.Brawl,
         };
 
         public ObservableCollection<ReplayRowViewModel> Rows { get; } = new ObservableCollection<ReplayRowViewModel>();
@@ -39,7 +40,7 @@ namespace Heroesprofile.Uploader.Desktop.Gui
             _manager = manager;
             manager.Files.CollectionChanged += (_, e) => Dispatcher.UIThread.Post(() => OnCollectionChanged(e));
             manager.Files.ItemPropertyChanged += (sender, e) => {
-                if (e.PropertyName != nameof(ReplayFile.UploadStatus)) {
+                if (e.PropertyName != nameof(ReplayFile.UploadStatus) && e.PropertyName != nameof(ReplayFile.Deleted)) {
                     return;
                 }
                 var file = (ReplayFile)sender;

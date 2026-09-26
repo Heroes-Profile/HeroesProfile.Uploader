@@ -4,7 +4,8 @@
              RequestedThemeVariant="Dark">
 
   <Application.Styles>
-    <FluentTheme />
+    <!-- Simple rather than Fluent: its plain controls are much closer to the WPF app's look. -->
+    <SimpleTheme />
     <StyleInclude Source="avares://heroesprofile-uploader/Gui/Theme/Styles.axaml" />
   </Application.Styles>
 
@@ -16,17 +17,16 @@
     </ResourceDictionary>
   </Application.Resources>
 
-  <!-- Open/Pause/Quit mirror the Windows app's NotifyIcon menu. Only shown while the main window is
-       hidden (minimized/closed to tray) - see App.axaml.cs, matching the Windows app's own
-       TrayIcon.Visible toggling in MainWindow.xaml.cs/App.xaml.cs. -->
+  <!-- Only shown while the main window is hidden (minimized to tray), like the WPF app's NotifyIcon.
+       Clicking the icon itself reopens the window, as in WPF; the menu adds pause, log and quit. -->
   <TrayIcon.Icons>
     <TrayIcons>
-      <TrayIcon ToolTipText="Heroes Profile Uploader" IsVisible="False" Icon="/Gui/Assets/app-icon.png">
+      <TrayIcon ToolTipText="Heroesprofile.com Uploader" IsVisible="False" Icon="/Gui/Assets/app-icon.png" Clicked="TrayIcon_Clicked">
         <TrayIcon.Menu>
           <NativeMenu>
             <NativeMenuItem Header="Open" Click="TrayOpen_Click" />
             <NativeMenuItem Header="Pause uploading" Click="TrayPause_Click" />
-            <NativeMenuItem Header="Open log" Click="TrayOpenLog_Click" />
+            <NativeMenuItem Header="Show log" Click="TrayOpenLog_Click" />
             <NativeMenuItemSeparator />
             <NativeMenuItem Header="Quit" Click="TrayQuit_Click" />
           </NativeMenu>

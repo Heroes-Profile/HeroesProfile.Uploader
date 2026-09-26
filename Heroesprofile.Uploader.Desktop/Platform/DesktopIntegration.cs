@@ -3,14 +3,18 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Runtime.Versioning;
 
-namespace Heroesprofile.Uploader.Desktop
+namespace Heroesprofile.Uploader.Desktop.Platform
 {
     /// <summary>
-    /// Writes/removes the Linux desktop-integration files: the ~/.local/bin copy and app-menu
-    /// .desktop entry (the `install`/`uninstall` CLI commands), and the autostart .desktop entry
-    /// (Settings' "Start on login" toggle). Shared so both paths agree on where everything lives.
+    /// Writes/removes the Linux desktop-integration files: the app-menu .desktop entry ("Show in app
+    /// menu", or the `install`/`uninstall` CLI commands) and the autostart entry ("Start on login").
+    /// Run as the AppImage, both point at the .AppImage file itself, which Velopack updates in place.
+    /// Run as the plain tarball binary, `install` copies it to ~/.local/bin first, so the menu entry
+    /// and the systemd service have a fixed place to run it from.
     /// </summary>
+    [SupportedOSPlatform("linux")]
     internal static class DesktopIntegration
     {
         private static readonly Logger _log = LogManager.GetCurrentClassLogger();
@@ -35,10 +39,30 @@ namespace Heroesprofile.Uploader.Desktop
         public static string InstalledExePath => Path.Combine(BinDir, AppId);
 
         /// <summary>
+        /// The .AppImage file this process runs from, or null when it isn't one. $APPIMAGE alone isn't
+        /// proof: child processes inherit it, so a tarball binary started from inside some *other*
+        /// AppImage (a terminal or IDE shipped as one) sees that app's path. Only trusted when this
+        /// process's executable really is inside the AppImage's mount ($APPDIR).
+        /// </summary>
+        public static string RunningAppImage
+        {
+            get {
+                var appImage = Environment.GetEnvironmentVariable("APPIMAGE");
+                var appDir = Environment.GetEnvironmentVariable("APPDIR");
+                var exe = Environment.ProcessPath;
+                if (string.IsNullOrEmpty(appImage) || string.IsNullOrEmpty(appDir) || string.IsNullOrEmpty(exe)) {
+                    return null;
+                }
+                var mount = Path.TrimEndingDirectorySeparator(Path.GetFullPath(appDir)) + Path.DirectorySeparatorChar;
+                return Path.GetFullPath(exe).StartsWith(mount, StringComparison.Ordinal) ? appImage : null;
+            }
+        }
+
+        /// <summary>
         /// Where this app can be launched from again later. Inside an AppImage, ProcessPath is the
         /// binary in a temporary mount that disappears on exit, so the .AppImage file itself is used.
         /// </summary>
-        private static string LaunchablePath => Updater.RunningAppImage ?? Environment.ProcessPath;
+        private static string LaunchablePath => RunningAppImage ?? Environment.ProcessPath;
 
         public static bool IsAppMenuEntryInstalled => File.Exists(DesktopEntryPath);
         private static string DesktopEntryPath => Path.Combine(DataHome, "applications", $"{AppId}.desktop");
@@ -65,16 +89,23 @@ namespace Heroesprofile.Uploader.Desktop
             return null;
         }
 
-        /// <summary>Copies the running executable to ~/.local/bin and adds the app-menu entry + icon.</summary>
+        /// <summary>
+        /// Adds the app-menu entry and icon. As the AppImage, the entry runs the .AppImage file (which
+        /// Velopack keeps up to date); otherwise the running binary is copied to ~/.local/bin first.
+        /// </summary>
         public static void InstallAppMenuEntry()
         {
-            var sourceExePath = Environment.ProcessPath;
-            Directory.CreateDirectory(BinDir);
-            // Already running the installed copy: just (re)write the menu entry and icon.
-            if (Path.GetFullPath(sourceExePath) != Path.GetFullPath(InstalledExePath)) {
-                PlaceInstalledCopy(sourceExePath);
-            } else {
-                CancelPendingDelete();
+            var launch = RunningAppImage;
+            if (launch == null) {
+                var sourceExePath = Environment.ProcessPath;
+                Directory.CreateDirectory(BinDir);
+                // Already running the installed copy: just (re)write the menu entry and icon.
+                if (Path.GetFullPath(sourceExePath) != Path.GetFullPath(InstalledExePath)) {
+                    PlaceInstalledCopy(sourceExePath);
+                } else {
+                    CancelPendingDelete();
+                }
+                launch = InstalledExePath;
             }
 
             Directory.CreateDirectory(Path.GetDirectoryName(IconPath));
@@ -84,7 +115,7 @@ namespace Heroesprofile.Uploader.Desktop
             }
 
             Directory.CreateDirectory(Path.GetDirectoryName(DesktopEntryPath));
-            File.WriteAllText(DesktopEntryPath, DesktopEntryContents(InstalledExePath, minimized: false));
+            File.WriteAllText(DesktopEntryPath, DesktopEntryContents(launch, minimized: false));
             _log.Info($"Wrote app menu entry {DesktopEntryPath}");
         }
 
@@ -97,13 +128,11 @@ namespace Heroesprofile.Uploader.Desktop
             SetStartOnLogin(false);
         }
 
-        /// <summary>Removes the app-menu entry, icon and ~/.local/bin copy, but not the autostart entry.</summary>
+        /// <summary>Removes the app-menu entry, icon and any ~/.local/bin copy, but not the autostart entry.</summary>
         public static void RemoveAppMenuEntry()
         {
             DeleteIfExists(DesktopEntryPath);
             DeleteIfExists(IconPath);
-            DeleteIfExists(InstalledExePath + ".new");
-            DeleteIfExists(InstalledExePath + ".new.sha256");
             if (IsRunningInstalledCopy) {
                 DeleteAfterExit(InstalledExePath);
             } else {
@@ -160,9 +189,11 @@ namespace Heroesprofile.Uploader.Desktop
                 return;
             }
 
-            // Prefer the installed copy so autostart survives the source binary moving/disappearing;
-            // fall back to wherever we're currently running from (e.g. testing before `install`).
-            var exePath = File.Exists(InstalledExePath) && _pendingDelete == null ? InstalledExePath : LaunchablePath;
+            // The AppImage if that's what's running (Velopack keeps it current); otherwise prefer the
+            // installed copy so autostart survives the source binary moving, falling back to wherever
+            // we're currently running from (e.g. testing before `install`).
+            var exePath = RunningAppImage
+                ?? (File.Exists(InstalledExePath) && _pendingDelete == null ? InstalledExePath : Environment.ProcessPath);
             Directory.CreateDirectory(Path.GetDirectoryName(AutostartEntryPath));
             File.WriteAllText(AutostartEntryPath, DesktopEntryContents(exePath, minimized: true));
             _log.Info($"Wrote autostart entry {AutostartEntryPath}");
@@ -193,17 +224,15 @@ StartupWMClass={AppId}
         }
 
         /// <summary>
-        /// If the app-menu entry is installed and this running binary is newer than the ~/.local/bin
-        /// copy it points at, re-copies it - the same thing `install` does, minus rewriting the
-        /// desktop entry/icon every time. Called at GUI and `run` startup so a user who enabled "Show
-        /// in app menu"/`install` once, then later launches a newer binary directly (a fresh AppImage,
-        /// a manually-replaced tarball binary, Updater's own staged-then-applied binary, ...), ends up
-        /// with the app-menu entry pointing at that same newer version instead of the stale copy.
-        /// No-op under `dotnet run`/`dotnet build` output - same guard as `install` itself.
+        /// Tarball installs: if the app-menu entry is installed and this running binary is newer than
+        /// the ~/.local/bin copy, re-copies it - the same thing `install` does, minus rewriting the
+        /// desktop entry. Called at GUI and `run` startup so someone who replaced the tarball binary
+        /// ends up running the new version from the menu and the systemd service too. Not needed for
+        /// the AppImage, which Velopack updates in place, nor under `dotnet run`/`dotnet build` output.
         /// </summary>
         public static void RefreshInstalledCopyIfStale()
         {
-            if (!IsAppMenuEntryInstalled || WhyNotInstallable() != null) {
+            if (!IsAppMenuEntryInstalled || RunningAppImage != null || WhyNotInstallable() != null) {
                 return;
             }
 
@@ -225,15 +254,14 @@ StartupWMClass={AppId}
 
         /// <summary>
         /// Puts a copy of <paramref name="source"/> at ~/.local/bin. If that copy is running (e.g. from
-        /// Start on login), Linux refuses to write to it ("Text file busy"), and renaming over it would
-        /// break it - single-file builds lazily load assemblies from their own path - so the new binary
-        /// is staged like a downloaded update instead, and applied the next time the installed copy starts.
+        /// Start on login or the systemd service), Linux refuses to write to it ("Text file busy"), and
+        /// renaming over it would break it - single-file builds lazily load assemblies from their own
+        /// path - so it's left alone and refreshed the next time this runs while it isn't.
         /// </summary>
         private static void PlaceInstalledCopy(string source)
         {
             if (File.Exists(InstalledExePath) && IsExecutableRunning(InstalledExePath)) {
-                Updater.StageLocalCopy(source, InstalledExePath, ReleaseVersion.Current());
-                _log.Info($"{InstalledExePath} is running - staged this version, it will be applied the next time that copy starts.");
+                _log.Info($"{InstalledExePath} is running - it will be refreshed the next time it isn't.");
                 return;
             }
 

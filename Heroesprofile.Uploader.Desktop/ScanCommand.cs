@@ -1,4 +1,5 @@
 using Heroesprofile.Uploader.Common;
+using Heroesprofile.Uploader.Desktop.Platform;
 using Newtonsoft.Json.Linq;
 using NLog;
 using System;
@@ -22,11 +23,11 @@ namespace Heroesprofile.Uploader.Desktop
         // Same read-only dupe-check endpoint Uploader.cs hits before an upload.
         private const string FingerprintEndpoint = "https://www.heroesprofile.com/api/external/v1/replays/fingerprints/";
 
-        public static async Task<int> Execute(string prefixOverride)
+        public static async Task<int> Execute(string replayPathOverride)
         {
-            var config = AppConfig.Load();
-            var prefix = PrefixSetup.ResolvePrefix(prefixOverride, config);
-            PrefixSetup.Apply(prefix);
+            // Dry run: may read the WPF app's settings, but never writes a config.json of its own.
+            var config = AppConfig.LoadOrImport(save: false);
+            ReplayFolderSetup.ApplyForCommand(Platforms.Current, replayPathOverride, config);
 
             _log.Info($"Scanning {ReplayLocation.Current} (dry run - no uploads, no storage writes)");
 

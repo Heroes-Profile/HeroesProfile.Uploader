@@ -1,177 +1,97 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:Heroesprofile.Uploader.Desktop.Gui.ViewModels"
-        xmlns:conv="clr-namespace:Heroesprofile.Uploader.Desktop.Gui.Converters"
         x:Class="Heroesprofile.Uploader.Desktop.Gui.Views.MainWindow"
-        Title="Heroes Profile Uploader"
+        x:DataType="vm:MainWindowViewModel"
+        Title="{Binding WindowTitle}"
         Icon="/Gui/Assets/app-icon.png"
-        Width="450" Height="600" MinWidth="360" MinHeight="420"
-        WindowStartupLocation="CenterScreen">
+        MinWidth="480" MinHeight="400">
+  <!-- Laid out after the WPF app's MainWindow.xaml, row for row. -->
 
-  <Window.Resources>
-    <!-- Small hexagon "logo" mark, drawn at a 20x20
-         design size and scaled by whatever Viewbox hosts it. -->
-    <StreamGeometry x:Key="LogoGeometry">M10,0 L20,5 L20,15 L10,20 L0,15 L0,5 Z</StreamGeometry>
-  </Window.Resources>
+  <Window.Styles>
+    <!-- WPF's UploadColorConverter buckets, as classes so the colours follow theme switches -->
+    <Style Selector="TextBlock.success">
+      <Setter Property="Foreground" Value="{DynamicResource StatusUploadSuccessBrush}" />
+    </Style>
+    <Style Selector="TextBlock.inProgress">
+      <Setter Property="Foreground" Value="{DynamicResource StatusUploadInProgressBrush}" />
+    </Style>
+    <Style Selector="TextBlock.neutral">
+      <Setter Property="Foreground" Value="{DynamicResource StatusUploadNeutralBrush}" />
+    </Style>
+    <Style Selector="TextBlock.failed">
+      <Setter Property="Foreground" Value="{DynamicResource StatusUploadFailedBrush}" />
+    </Style>
+  </Window.Styles>
 
-  <Panel>
+  <Grid Margin="20,0,20,20" ColumnDefinitions="*,Auto" RowDefinitions="102,*,Auto">
 
-    <!-- First run / prefix not resolved -->
-    <Grid IsVisible="{Binding IsEmptyState}" RowDefinitions="*" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="320" Spacing="10">
-        <Viewbox Width="44" Height="44" HorizontalAlignment="Center">
-          <Path Data="{StaticResource LogoGeometry}" Fill="{DynamicResource AppRowAltBrush}" Width="20" Height="20" Stretch="Uniform" />
-        </Viewbox>
-        <TextBlock Text="Point me at your Wine/Proton prefix" FontSize="14" FontWeight="Medium"
-                   HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
-        <TextBlock Text="Select the prefix with Heroes of the Storm installed and I'll find your replay folder."
-                   FontSize="11.5" Foreground="{DynamicResource AppTextSecondaryBrush}"
-                   HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
-        <Grid ColumnDefinitions="*,Auto" Margin="0,6,0,0">
-          <TextBox Grid.Column="0" Text="{Binding EmptyPrefixPath}" IsReadOnly="True" Watermark="No prefix selected" Margin="0,0,6,0" />
-          <Button Grid.Column="1" Classes="btn btn-accent" Content="Browse…" Click="BrowsePrefix_Click" />
-        </Grid>
-        <TextBlock Text="{Binding EmptyStatusText}" FontSize="11" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
-                   Foreground="{Binding EmptyStatusIsOk, Converter={x:Static conv:BoolConverters.StatusBrush}}"
-                   IsVisible="{Binding EmptyStatusText, Converter={x:Static conv:BoolConverters.NotEmpty}}" />
-      </StackPanel>
-    </Grid>
+    <!-- Logo, clicking it opens heroesprofile.com -->
+    <Image Grid.ColumnSpan="2" Margin="0,0,131,0" Source="/Gui/Assets/uploader-logo.png"
+           RenderOptions.BitmapInterpolationMode="HighQuality" Cursor="Hand"
+           PointerReleased="Logo_PointerReleased" />
 
-    <!-- Normal app content -->
-    <Grid IsVisible="{Binding !IsEmptyState}" RowDefinitions="Auto,Auto,*,Auto">
+    <ListBox Grid.Row="1" ItemsSource="{Binding Rows}">
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="vm:ReplayRowViewModel">
+          <DockPanel LastChildFill="True">
+            <TextBlock DockPanel.Dock="Right" Text="{Binding StatusText}"
+                       Classes.success="{Binding IsSuccess}" Classes.inProgress="{Binding IsInProgress}"
+                       Classes.neutral="{Binding IsNeutral}" Classes.failed="{Binding IsFailed}" />
+            <TextBlock DockPanel.Dock="Left" Text="{Binding FileName}" />
+            <TextBlock DockPanel.Dock="Left" Text="✘" Foreground="{DynamicResource FileDeletedIconBrush}"
+                       IsVisible="{Binding Deleted}"
+                       ToolTip.Tip="This replay has been deleted by uploader according to your settings" />
+          </DockPanel>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
 
-      <!-- Header: brand + status + pause, error banner, stats grid -->
-      <Border Grid.Row="0" Background="{DynamicResource AppBackgroundElevatedBrush}"
-              BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="12,10">
-        <StackPanel Spacing="8">
-          <Grid ColumnDefinitions="*,Auto">
-            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
-              <Viewbox Width="20" Height="20">
-                <Path Data="{StaticResource LogoGeometry}" Fill="{DynamicResource AppAccentBrush}" Width="20" Height="20" Stretch="Uniform" />
-              </Viewbox>
-              <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="Heroes Profile Uploader" FontSize="12" FontWeight="Medium" />
-                <TextBlock Text="{Binding OverallStatusText}" FontSize="11"
-                           Foreground="{Binding OverallStatusBrushKey, Converter={x:Static conv:StringKeyToBrushConverter.Instance}}" />
-              </StackPanel>
-            </StackPanel>
-            <Button Grid.Column="1" Classes="icon-btn" Content="{Binding PauseButtonGlyph}"
-                    ToolTip.Tip="{Binding PauseButtonTooltip}" Command="{Binding TogglePauseCommand}"
-                    VerticalAlignment="Top" />
-          </Grid>
+    <DockPanel Grid.Row="1" Grid.Column="1" Margin="12,0,0,0" LastChildFill="False">
 
-          <Border IsVisible="{Binding ShowErrorBanner}" Background="{DynamicResource StatusErrorBrush}"
-                  CornerRadius="4" Padding="8,5">
-            <TextBlock Text="{Binding ErrorBannerText}" FontSize="11" Foreground="{DynamicResource AppAccentInkBrush}" />
-          </Border>
-
-          <Border IsVisible="{Binding ShowRestartBanner}" Background="{DynamicResource AppAccentBrush}"
-                  CornerRadius="4" Padding="8,5">
-            <StackPanel Spacing="2">
-              <TextBlock Text="{Binding RestartBannerText}" FontSize="11" TextWrapping="Wrap"
-                         Foreground="{DynamicResource AppAccentInkBrush}" />
-              <Button Classes="link-btn" Click="RestartNow_Click" HorizontalAlignment="Left">
-                <TextBlock Text="Restart now." FontWeight="SemiBold" TextDecorations="Underline"
-                           Foreground="{DynamicResource AppAccentInkBrush}" />
-              </Button>
-            </StackPanel>
-          </Border>
-
-          <ItemsControl ItemsSource="{Binding StatChips}">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <UniformGrid Columns="4" />
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate DataType="vm:StatChipViewModel">
-                <Border Background="{DynamicResource AppRowAltBrush}" CornerRadius="4" Padding="5,3" Margin="2">
-                  <Grid ColumnDefinitions="Auto,*,Auto">
-                    <Ellipse Grid.Column="0" Width="6" Height="6" VerticalAlignment="Center" Margin="0,0,4,0"
-                             Fill="{Binding Status, Converter={x:Static conv:UploadStatusToBrushConverter.Foreground}}" />
-                    <TextBlock Grid.Column="1" Text="{Binding Label}" FontSize="10" Foreground="{DynamicResource AppTextSecondaryBrush}"
-                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="2" Text="{Binding Total}" FontSize="10" FontWeight="Medium" Margin="4,0,0,0" VerticalAlignment="Center" />
-                  </Grid>
-                </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </StackPanel>
-      </Border>
-
-      <!-- Toggles -->
-      <Border Grid.Row="1" Background="{DynamicResource AppBackgroundBrush}"
-              BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="12,8">
-        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="4" ColumnSpacing="10">
-          <CheckBox Grid.Row="0" Grid.Column="0" Content="Postmatch page" IsChecked="{Binding PostMatchPage}" />
-          <CheckBox Grid.Row="0" Grid.Column="1" Content="Prematch page" IsChecked="{Binding PreMatchPage}" />
-          <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Spacing="4">
-            <CheckBox Content="Twitch extension" IsChecked="{Binding TwitchExtension}" />
-            <Border Background="{DynamicResource AppRowHoverBrush}" CornerRadius="3" Padding="4,1" VerticalAlignment="Center">
-              <TextBlock Text="Beta" FontSize="9" Foreground="{DynamicResource AppTextSecondaryBrush}" />
-            </Border>
-          </StackPanel>
-          <CheckBox Grid.Row="1" Grid.Column="1" Content="Minimize to tray" IsChecked="{Binding MinimizeToTray}" />
-          <CheckBox Grid.Row="2" Grid.Column="0" Content="Start on login" IsChecked="{Binding StartOnLogin}" />
-          <CheckBox Grid.Row="2" Grid.Column="1" Content="Show in app menu" IsChecked="{Binding ShowInAppMenu}" />
-        </Grid>
-      </Border>
-
-      <!-- Replay list - virtualized (ListBox's default panel is a VirtualizingStackPanel) -->
-      <DockPanel Grid.Row="2" Background="{DynamicResource AppBackgroundBrush}">
-        <TextBlock DockPanel.Dock="Bottom" Text="{Binding ListCaption}" FontSize="10" Foreground="{DynamicResource AppTextTertiaryBrush}"
-                   Padding="12,5" />
-        <ListBox ItemsSource="{Binding Rows}">
-          <ListBox.ItemTemplate>
-            <DataTemplate DataType="vm:ReplayRowViewModel">
-              <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="12,5">
-                <Grid ColumnDefinitions="Auto,*,Auto">
-                  <TextBlock Grid.Column="0" Text="{Binding TimeText}" FontFamily="monospace" FontSize="10.5"
-                             Foreground="{DynamicResource AppTextTertiaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
-                  <TextBlock Grid.Column="1" Text="{Binding MapText}" FontSize="11.5" TextTrimming="CharacterEllipsis"
-                             VerticalAlignment="Center" Margin="0,0,8,0" />
-                  <Border Grid.Column="2" CornerRadius="9" Padding="7,2" VerticalAlignment="Center"
-                          Background="{Binding UploadStatus, Converter={x:Static conv:UploadStatusToBrushConverter.Background}}">
-                    <StackPanel Orientation="Horizontal" Spacing="4">
-                      <Ellipse Width="5" Height="5" VerticalAlignment="Center"
-                               Fill="{Binding UploadStatus, Converter={x:Static conv:UploadStatusToBrushConverter.Foreground}}" />
-                      <TextBlock Text="{Binding StatusLabel}" FontSize="10" FontWeight="Medium"
-                                 Foreground="{Binding UploadStatus, Converter={x:Static conv:UploadStatusToBrushConverter.Foreground}}" />
-                    </StackPanel>
-                  </Border>
-                </Grid>
-              </Border>
+      <StackPanel DockPanel.Dock="Top" Margin="0,8,0,0" Spacing="4">
+        <TextBlock Text="{Binding StatusText}" FontWeight="Bold" Margin="0,0,0,6" />
+        <ItemsControl ItemsSource="{Binding StatusCounts}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:StatusCountViewModel">
+              <TextBlock Text="{Binding Text}" IsVisible="{Binding IsVisible}" Margin="0,2" />
             </DataTemplate>
-          </ListBox.ItemTemplate>
-          <!-- Explicit rather than relying on FluentTheme's default panel - real users have
-               thousands of replays, so this list must never realize more than what's on screen. -->
-          <ListBox.ItemsPanel>
-            <ItemsPanelTemplate>
-              <VirtualizingStackPanel />
-            </ItemsPanelTemplate>
-          </ListBox.ItemsPanel>
-        </ListBox>
-      </DockPanel>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Button Content="Retry failed uploads" HorizontalAlignment="Left" Margin="0,6,0,0"
+                Command="{Binding RetryFailedCommand}" IsVisible="{Binding HasFailedUploads}"
+                ToolTip.Tip="Try the uploads that failed again now (they're also retried every time the uploader starts)" />
+      </StackPanel>
 
-      <!-- Footer -->
-      <Border Grid.Row="3" Background="{DynamicResource AppBackgroundElevatedBrush}"
-              BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0" Padding="12,8">
-        <StackPanel Spacing="4">
-          <Grid ColumnDefinitions="*,Auto">
-            <StackPanel Orientation="Horizontal" Spacing="6">
-              <Button Classes="btn" Content="Settings" Click="OpenSettings_Click" />
-              <Button Classes="btn" Content="Show log" Command="{Binding ShowLogCommand}" />
-              <Button Classes="btn" Content="Check for update" Command="{Binding CheckForUpdateCommand}" />
-            </StackPanel>
-            <TextBlock Grid.Column="1" Text="{Binding VersionText}" FontSize="11" VerticalAlignment="Center"
-                       Foreground="{DynamicResource AppTextTertiaryBrush}" />
-          </Grid>
-          <Button Classes="link-btn" Content="{Binding UpdateStatusText}" Command="{Binding OpenUpdateCommand}"
-                  IsVisible="{Binding UpdateStatusText, Converter={x:Static conv:BoolConverters.NotEmpty}}" />
-        </StackPanel>
-      </Border>
+      <StackPanel DockPanel.Dock="Bottom" MaxWidth="180">
+        <CheckBox Content="{Binding StartOnLoginLabel}" IsChecked="{Binding StartOnLogin}"
+                  IsVisible="{Binding SupportsStartOnLogin}" Margin="0,8,8,0" />
+        <CheckBox Content="{Binding MinimizeToTrayLabel}" IsChecked="{Binding MinimizeToTray}" Margin="0,8,8,0" />
+        <CheckBox Content="Show in app menu" IsChecked="{Binding ShowInAppMenu}"
+                  IsVisible="{Binding SupportsAppMenuEntry}" Margin="0,8,8,0" />
+        <CheckBox Content="Prematch Page" IsChecked="{Binding PreMatchPage}" Margin="0,0,8,0" />
+        <CheckBox Content="Postmatch Page" IsChecked="{Binding PostMatchPage}" Margin="0,0,8,0" />
+        <CheckBox Content="Twitch Extension (Beta)" IsChecked="{Binding TwitchExtension}" Margin="0,0,8,0"
+                  ToolTip.Tip="Show your viewers your lobby, heroes and talents live. Set your uploader key in Settings." />
+        <TextBlock Text="{Binding TwitchStatus}" Classes="hint" MaxWidth="160" HorizontalAlignment="Left" />
+        <Button Content="Settings" HorizontalAlignment="Stretch" Margin="0,8,0,0" Click="OpenSettings_Click"
+                ToolTip.Tip="Replay folder, webhook and theme" />
+        <Button Content="Show log" HorizontalAlignment="Stretch" Margin="0,4,0,0" Command="{Binding ShowLogCommand}" />
+        <Button Content="Check for update" HorizontalAlignment="Stretch" Margin="0,4,0,0" Command="{Binding CheckForUpdateCommand}" />
+        <Button Classes="link" HorizontalAlignment="Left" Margin="0,4,0,0" Command="{Binding OpenUpdateCommand}"
+                IsVisible="{Binding UpdateStatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+          <TextBlock Text="{Binding UpdateStatusText}" Classes="hint" MaxWidth="160" TextDecorations="{x:Null}" />
+        </Button>
+      </StackPanel>
+    </DockPanel>
 
-    </Grid>
-  </Panel>
+    <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Margin="0,12,0,0" Orientation="Horizontal"
+                IsVisible="{Binding ShowRestartBanner}">
+      <TextBlock Foreground="{DynamicResource UpdateAvailableTextBrush}" VerticalAlignment="Center"
+                 Text="❗ An update is downloaded and will be installed when you restart the uploader. " />
+      <Button Classes="link" Click="RestartNow_Click" VerticalAlignment="Center">
+        <TextBlock Text="Restart now." />
+      </Button>
+    </StackPanel>
+  </Grid>
 </Window>

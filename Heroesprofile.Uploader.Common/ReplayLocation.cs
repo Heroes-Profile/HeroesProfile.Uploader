@@ -16,7 +16,7 @@ namespace Heroesprofile.Uploader.Common
         /// <summary>
         /// Standard location, used when no override is configured
         /// </summary>
-        public static readonly string DefaultPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), @"Heroes of the Storm\Accounts");
+        public static readonly string DefaultPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Heroes of the Storm", "Accounts");
 
         private static string _customPath;
 

@@ -1,4 +1,5 @@
 using Heroesprofile.Uploader.Common;
+using Heroesprofile.Uploader.Desktop.Platform;
 using NLog;
 using System;
 using System.Diagnostics;
@@ -17,6 +18,9 @@ namespace Heroesprofile.Uploader.Desktop
     /// </summary>
     internal class SettledMonitor : Monitor
     {
+        /// <summary>The replay folder watcher to use on <paramref name="platform"/>: settled on Linux/macOS, plain on Windows.</summary>
+        public static Monitor ForPlatform(IPlatform platform) => platform.UseSettledMonitor ? new SettledMonitor() : new Monitor();
+
         private static readonly Logger _log = LogManager.GetCurrentClassLogger();
 
         // How long the file size must stay unchanged before we consider the write finished.

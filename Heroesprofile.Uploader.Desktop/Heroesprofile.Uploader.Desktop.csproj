@@ -10,16 +10,14 @@
          which throws in invariant mode otherwise. -->
     <InvariantGlobalization>true</InvariantGlobalization>
     <PredefinedCulturesOnly>false</PredefinedCulturesOnly>
-    <!-- Kept in step with the Windows app's AssemblyVersion by reading it straight out of its
-         AssemblyInfo.cs at evaluation time, so there's only one version number to remember to bump.
-         CI (release-linux.yml) still passes -p:Version=<x.y.z[-suffix]> explicitly for test builds;
-         a global property set that way always wins over this plain PropertyGroup assignment, so the
-         Condition below is really just "when nobody already told us the version". "Check for update"
-         (Updater.cs/ReleaseVersion.cs) compares this (via AssemblyInformationalVersion) against the
-         latest release that carries a Linux build. -->
-    <Version Condition="'$(Version)' == ''">$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\Heroesprofile.Uploader.Windows\Properties\AssemblyInfo.cs')), 'AssemblyVersion\("(\d+\.\d+\.\d+)').Groups[1].Value)</Version>
-    <!-- Publish as one file: Skia/HarfBuzz native libs are bundled and self-extracted on first run. -->
+    <!-- HeroesProfileVersion (Directory.Build.props) unless a build passes -p:Version - release-desktop.yml
+         does, adding a "-beta.N" suffix for test builds; a global property like that always wins. The
+         window title, the "version" command-line option and the update checks read it back (ReleaseVersion.Current). -->
+    <Version Condition="'$(Version)' == ''">$(HeroesProfileVersion)</Version>
+    <!-- For the single-file Linux tarball: Skia/HarfBuzz native libs are bundled and self-extracted on first run. -->
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <!-- The Windows .exe's own icon (Explorer, taskbar) - the same one the WPF app used. -->
+    <ApplicationIcon>Gui/Assets/app-icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -33,8 +31,10 @@
   <ItemGroup>
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Desktop" />
-    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.Themes.Simple" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
+    <PackageReference Include="Velopack" />
   </ItemGroup>
 
   <ItemGroup>

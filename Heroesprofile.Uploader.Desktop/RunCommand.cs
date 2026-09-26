@@ -1,4 +1,7 @@
 using Heroesprofile.Uploader.Common;
+using Heroesprofile.Uploader.Desktop.Migration;
+using Heroesprofile.Uploader.Desktop.Platform;
+using Heroesprofile.Uploader.Desktop.Updates;
 using NLog;
 using System;
 using System.IO;
@@ -17,11 +20,13 @@ namespace Heroesprofile.Uploader.Desktop
     {
         private static readonly Logger _log = LogManager.GetCurrentClassLogger();
 
-        public static async Task<int> Execute(string prefixOverride)
+        public static async Task<int> Execute(string replayPathOverride)
         {
-            var config = AppConfig.Load();
-            var prefix = PrefixSetup.ResolvePrefix(prefixOverride, config);
-            PrefixSetup.Apply(prefix);
+            var config = AppConfig.LoadOrImport();
+            if (LegacyApp.IsRunning()) {
+                _log.Warn(LegacyApp.RunningWarning);
+            }
+            var folders = ReplayFolderSetup.ApplyForCommand(Platforms.Current, replayPathOverride, config);
 
             WebhookNotifier.WebhookUrl = config.WebhookUrl;
 
@@ -29,9 +34,10 @@ namespace Heroesprofile.Uploader.Desktop
             var manager = new Manager(new ReplayStorage(Path.Combine(AppConfig.DataDir, "replays_v8.xml"))) {
                 PreMatchPage = config.PreMatchPage,
                 PostMatchPage = config.PostMatchPage,
+                DeleteAfterUpload = config.DeleteAfterUpload,
             };
 
-            _log.Info($"Starting: prefix={prefix}, accounts={ReplayLocation.Current}, " +
+            _log.Info($"Starting on {Platforms.Current.Name}: replayPath={config.ReplayPath}, accounts={folders.Accounts}, " +
                 $"preMatchPage={config.PreMatchPage}, postMatchPage={config.PostMatchPage}, " +
                 $"webhook={(string.IsNullOrWhiteSpace(config.WebhookUrl) ? "off" : "on")}");
 
@@ -51,7 +57,7 @@ namespace Heroesprofile.Uploader.Desktop
             // Common.Uploader, spelled out - unqualified "Uploader" resolves to the enclosing
             // Heroesprofile.Uploader namespace segment instead of the type (same reason the Windows
             // app spells it "Common.Uploader" in App.xaml.cs).
-            manager.Start(new SettledMonitor(), new LiveMonitor(), new Analyzer(), new Common.Uploader(), new LiveProcessor(config.PreMatchPage, manager.Twitch));
+            manager.Start(SettledMonitor.ForPlatform(Platforms.Current), new LiveMonitor(), new Analyzer(), new Common.Uploader(), new LiveProcessor(config.PreMatchPage, manager.Twitch));
 
             // Headless: no GUI to click "Restart now", so this never downloads/stages anything - just
             // a log line for journalctl. Checks immediately, then every 24h until shutdown.
@@ -77,26 +83,29 @@ namespace Heroesprofile.Uploader.Desktop
 
         private static readonly TimeSpan UpdateCheckInterval = TimeSpan.FromHours(24);
 
+        /// <summary>
+        /// Headless: never updates itself (systemd would kill the restart), just logs once a day when a
+        /// newer release exists, so it shows up in journalctl.
+        /// </summary>
         private static async Task RunPeriodicUpdateCheckAsync(AppConfig config, CancellationToken ct)
         {
             if (!config.AutoUpdate) {
                 return;
             }
 
-            var updater = new Updater();
+            var checker = new ReleaseChecker();
             while (!ct.IsCancellationRequested) {
-                await LogIfUpdateAvailableAsync(updater, config);
+                await LogIfUpdateAvailableAsync(checker, config);
                 await Task.Delay(UpdateCheckInterval, ct);
             }
         }
 
-        private static async Task LogIfUpdateAvailableAsync(Updater updater, AppConfig config)
+        private static async Task LogIfUpdateAvailableAsync(ReleaseChecker checker, AppConfig config)
         {
             try {
-                var release = await updater.FindLatestAsync(config.UpdateRepository, config.AllowPreReleases);
-                var current = ReleaseVersion.Current();
-                if (release != null && release.Version > current) {
-                    _log.Warn($"A newer version (v{release.Version}) is available: {release.HtmlUrl}");
+                var release = await checker.FindNewerAsync(config.UpdateRepository, config.AllowPreReleases);
+                if (release != null) {
+                    _log.Warn($"A newer version (v{release.Version}) is available: {release.Url}");
                 }
             }
             catch (Exception ex) {

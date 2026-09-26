@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/Heroes.ReplayParser/">
+    <Project Path="Heroes.ReplayParser/Heroes.ReplayParser/Heroes.ReplayParser.csproj" />
+  </Folder>
+  <Project Path="Heroesprofile.Uploader.Common/Heroesprofile.Uploader.Common.csproj" />
+  <Project Path="Heroesprofile.Uploader.Desktop/Heroesprofile.Uploader.Desktop.csproj" />
+  <Project Path="Heroesprofile.Uploader.Tests/Heroesprofile.Uploader.Tests.csproj" />
+</Solution>

@@ -1,7 +1,7 @@
 using System.IO;
 using System.Linq;
 
-namespace Heroesprofile.Uploader.Desktop
+namespace Heroesprofile.Uploader.Desktop.Platform
 {
     /// <summary>
     /// Finds the folders HotS writes to inside a Wine/Proton prefix. Accepts what a user might

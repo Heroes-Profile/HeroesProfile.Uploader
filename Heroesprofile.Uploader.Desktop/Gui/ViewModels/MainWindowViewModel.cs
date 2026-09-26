@@ -1,9 +1,11 @@
 using Avalonia;
-using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Heroesprofile.Uploader.Common;
+using Heroesprofile.Uploader.Desktop.Migration;
+using Heroesprofile.Uploader.Desktop.Platform;
+using Heroesprofile.Uploader.Desktop.Updates;
 using NLog;
 using System;
 using System.Collections.ObjectModel;
@@ -15,68 +17,55 @@ using System.Threading.Tasks;
 namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
 {
     /// <summary>
-    /// Drives the main window: loads/saves config.json, resolves the prefix (or shows the first-run
-    /// empty state), owns the real Manager once a prefix is known, and exposes everything the view
-    /// binds to. Manager itself fires from background threads, so every handler here marshals back
-    /// to the UI thread before touching bound state.
+    /// Drives the main window, which mirrors the WPF app's MainWindow: replay list, status and per-status
+    /// counts, the option checkboxes, Settings/Show log/Check for update, and the update banner. Owns
+    /// config.json and the Manager. Manager fires from background threads, so every handler here
+    /// marshals back to the UI thread before touching bound state.
     /// </summary>
     public partial class MainWindowViewModel : ObservableObject
     {
         private static readonly Logger _log = LogManager.GetCurrentClassLogger();
-        private const string NoPrefixFoundMessage = "Couldn't find Heroes of the Storm in that prefix. Check the path and try again.";
+
+        private static IPlatform Platform => Platforms.Current;
 
         public AppConfig Config { get; }
         public Manager Manager { get; private set; }
-        public ObservableCollection<StatChipViewModel> StatChips { get; }
+
+        /// <summary>WPF's title: "Heroesprofile.com Uploader v2.9" (patch and prerelease only when there is one).</summary>
+        public string WindowTitle { get; } = $"Heroesprofile.com Uploader {VersionString(ReleaseVersion.Current())}";
 
         [ObservableProperty]
         private ObservableCollection<ReplayRowViewModel> rows = new ObservableCollection<ReplayRowViewModel>();
 
-        [ObservableProperty]
-        private bool isEmptyState = true;
+        public ObservableCollection<StatusCountViewModel> StatusCounts { get; } =
+            new ObservableCollection<StatusCountViewModel>(StatusCountViewModel.Lines.Select(l => new StatusCountViewModel(l.Status, l.Label)));
 
+        /// <summary>The bold line above the counts: Manager's own "Idle"/"Uploading...", or "Paused".</summary>
         [ObservableProperty]
-        private string emptyPrefixPath = "";
+        private string statusText = Heroesprofile.Uploader.Common.Manager.IdleStatus;
 
-        [ObservableProperty]
-        private string emptyStatusText = "";
-
-        [ObservableProperty]
-        private bool emptyStatusIsOk;
-
-        [ObservableProperty]
-        private string overallStatusText = "Idle";
-
-        [ObservableProperty]
-        private string overallStatusBrushKey = "AppTextSecondaryBrush";
-
-        [ObservableProperty]
-        private bool showErrorBanner;
-
-        [ObservableProperty]
-        private string errorBannerText = "";
-
-        [ObservableProperty]
-        private string listCaption = "";
+        /// <summary>
+        /// Set when no replay folder could be found at startup - the view shows it the way the WPF app's
+        /// WarnIfReplayFolderMissing message box does, pointing the user at Settings.
+        /// </summary>
+        public string ReplayFolderError { get; private set; }
 
         [ObservableProperty]
         private bool isPaused;
+
+        [ObservableProperty]
+        private string twitchStatus = "";
 
         [ObservableProperty]
         private string updateStatusText = "";
 
         private string _updateReleaseUrl;
 
-        /// <summary>An update was downloaded, verified and staged - same wording/behaviour as the
-        /// Windows app's own banner (MainWindow.xaml), just Avalonia-styled.</summary>
+        /// <summary>An update is downloaded and ready - shows the WPF app's orange banner with "Restart now."</summary>
         [ObservableProperty]
         private bool showRestartBanner;
 
-        public string RestartBannerText => "An update is downloaded and will be installed when you restart the uploader.";
-
-        public string VersionText => $"v{ReleaseVersion.Current()}";
-
-        private readonly Updater _updater = new Updater();
+        private readonly AppUpdater _updater = new AppUpdater();
         private bool _restarting;
 
         [ObservableProperty]
@@ -98,15 +87,25 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
         [ObservableProperty]
         private bool showInAppMenu;
 
-        public string PauseButtonGlyph => IsPaused ? "▶" : "⏸"; // ▶ / ⏸
-        public string PauseButtonTooltip => IsPaused ? "Resume uploading" : "Pause uploading";
+        public bool SupportsStartOnLogin => Platform.SupportsStartOnLogin;
+
+        /// <summary>"Show in app menu" is Linux-only: Windows and macOS installers add the app to their menus themselves.</summary>
+        public bool SupportsAppMenuEntry => OperatingSystem.IsLinux();
+
+        // The WPF wording, adjusted where the OS calls it something else.
+        public string StartOnLoginLabel => OperatingSystem.IsWindows() ? "Start with windows" : "Start on login";
+        public string MinimizeToTrayLabel => OperatingSystem.IsMacOS() ? "Minimize to menu bar" : "Minimize to tray";
+
+        /// <summary>Title of the replay folder picker in Settings.</summary>
+        public static string BrowseTitle => Platforms.Current.ReplayPathIsWinePrefix
+            ? "Select the Wine/Proton prefix (or the Heroes of the Storm \"Accounts\" folder)"
+            : "Select the Heroes of the Storm \"Accounts\" folder";
 
         private ReplayListBridge _bridge;
 
         public MainWindowViewModel()
         {
             Config = LoadConfigSafely();
-            StatChips = new ObservableCollection<StatChipViewModel>(StatusPresentation.GridOrder.Select(s => new StatChipViewModel(s)));
 
             // Assign backing fields directly (not the generated properties) so this initial sync
             // doesn't itself trigger the OnXChanged handlers below, which persist to config.json.
@@ -115,15 +114,45 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
             twitchExtension = Config.TwitchExtension;
             minimizeToTray = Config.MinimizeToTray;
             startOnLogin = Config.StartOnLogin;
-            showInAppMenu = DesktopIntegration.IsAppMenuEntryInstalled;
+            showInAppMenu = OperatingSystem.IsLinux() && DesktopIntegration.IsAppMenuEntryInstalled;
 
-            TryResolveAndStart(Config.Prefix, reportErrorIfSet: true);
+            if (!ReplayFolderSetup.TryApply(Platform, Config.ReplayPath, out var error)) {
+                ReplayFolderError = error;
+                _log.Warn($"Replay folder not found: {error}");
+                return;
+            }
+
+            // Don't start uploading next to the WPF app - the window asks first (see ContinueNextToLegacyApp).
+            WaitingForLegacyApp = LegacyApp.IsRunning();
+            if (WaitingForLegacyApp) {
+                _log.Warn(LegacyApp.RunningWarning);
+                return;
+            }
+            StartManager();
+        }
+
+        /// <summary>True while the WPF uploader is running and the user hasn't chosen to run alongside it.</summary>
+        public bool WaitingForLegacyApp { get; private set; }
+
+        /// <summary>The user chose "Run anyway" with the WPF app still running.</summary>
+        public void ContinueNextToLegacyApp()
+        {
+            WaitingForLegacyApp = false;
+            if (ReplayFolderError == null) {
+                StartManager();
+            }
+        }
+
+        private static string VersionString(ReleaseVersion version)
+        {
+            var text = $"v{version.Major}.{version.Minor}" + (version.Patch == 0 ? "" : $".{version.Patch}");
+            return version.PreRelease.Length == 0 ? text : $"{text}-{string.Join(".", version.PreRelease)}";
         }
 
         private static AppConfig LoadConfigSafely()
         {
             try {
-                return AppConfig.Load();
+                return AppConfig.LoadOrImport();
             }
             catch (ConfigError ex) {
                 // Corrupt config.json - log it and start from defaults rather than refusing to launch;
@@ -131,48 +160,6 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
                 _log.Error(ex.Message);
                 return new AppConfig();
             }
-        }
-
-        private void TryResolveAndStart(string prefix, bool reportErrorIfSet)
-        {
-            if (string.IsNullOrWhiteSpace(prefix)) {
-                IsEmptyState = true;
-                return;
-            }
-
-            if (!PrefixSetup.TryApply(prefix, out _)) {
-                IsEmptyState = true;
-                EmptyPrefixPath = prefix;
-                if (reportErrorIfSet) {
-                    EmptyStatusIsOk = false;
-                    EmptyStatusText = NoPrefixFoundMessage;
-                }
-                return;
-            }
-
-            IsEmptyState = false;
-            StartManager();
-        }
-
-        /// <summary>Called by the view after the folder picker returns a path in the first-run empty state.</summary>
-        public async Task UseNewPrefixAsync(string path)
-        {
-            EmptyPrefixPath = path;
-
-            if (!PrefixSetup.TryApply(path, out _)) {
-                EmptyStatusIsOk = false;
-                EmptyStatusText = NoPrefixFoundMessage;
-                return;
-            }
-
-            EmptyStatusIsOk = true;
-            EmptyStatusText = "Found it — switching to your replay list…";
-            Config.Prefix = path;
-            SaveConfig();
-
-            await Task.Delay(600);
-            IsEmptyState = false;
-            StartManager();
         }
 
         private void StartManager()
@@ -185,26 +172,26 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
             Manager = new Manager(new ReplayStorage(Path.Combine(AppConfig.DataDir, "replays_v8.xml"))) {
                 PreMatchPage = Config.PreMatchPage,
                 PostMatchPage = Config.PostMatchPage,
+                DeleteAfterUpload = Config.DeleteAfterUpload,
             };
             WebhookNotifier.WebhookUrl = Config.WebhookUrl;
             Manager.Twitch.Key = Config.TwitchUploaderKey;
             Manager.Twitch.Enabled = Config.TwitchExtension;
+            Manager.Twitch.StatusChanged += (_, e) => Dispatcher.UIThread.Post(() => TwitchStatus = e.Data);
 
             _bridge = new ReplayListBridge(Manager);
             Rows = _bridge.Rows;
-            Rows.CollectionChanged += (_, __) => UpdateListCaption();
 
             Manager.PropertyChanged += (_, e) => Dispatcher.UIThread.Post(() => OnManagerPropertyChanged(e.PropertyName));
 
-            _log.Info($"Starting: prefix={Config.Prefix}, accounts={ReplayLocation.Current}, " +
+            _log.Info($"Starting on {Platform.Name}: replayPath={Config.ReplayPath}, accounts={ReplayLocation.Current}, " +
                 $"preMatchPage={Config.PreMatchPage}, postMatchPage={Config.PostMatchPage}, " +
                 $"twitchExtension={Config.TwitchExtension}, webhook={(string.IsNullOrWhiteSpace(Config.WebhookUrl) ? "off" : "on")}");
 
-            // Common.Uploader, spelled out - see PrefixSetup/RunCommand for why the plain name resolves wrong here.
-            Manager.Start(new SettledMonitor(), new LiveMonitor(), new Analyzer(), new Common.Uploader(), new LiveProcessor(Manager.PreMatchPage, Manager.Twitch));
+            // Common.Uploader, spelled out - see RunCommand for why the plain name resolves wrong here.
+            Manager.Start(SettledMonitor.ForPlatform(Platform), new LiveMonitor(), new Analyzer(), new Common.Uploader(), new LiveProcessor(Manager.PreMatchPage, Manager.Twitch));
 
-            UpdateListCaption();
-            RefreshAggregates();
+            RefreshStatus();
         }
 
         private void OnManagerPropertyChanged(string propertyName)
@@ -212,53 +199,32 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
             if (propertyName == nameof(Manager.Paused)) {
                 IsPaused = Manager.Paused;
             }
-            RefreshAggregates();
+            RefreshStatus();
         }
 
-        private void RefreshAggregates()
+        private void RefreshStatus()
         {
             var totals = Manager?.Aggregates;
-            foreach (var chip in StatChips) {
-                chip.Total = totals != null && totals.TryGetValue(chip.Status, out var n) ? n : 0;
+            foreach (var line in StatusCounts) {
+                line.Count = totals != null && totals.TryGetValue(line.Status, out var n) ? n : 0;
             }
-            UpdateOverallStatus();
+            StatusText = Manager == null ? Heroesprofile.Uploader.Common.Manager.IdleStatus
+                : IsPaused ? "Paused"
+                : Manager.Status;
+            HasFailedUploads = StatusCounts.Any(l => l.Status == UploadStatus.UploadError && l.Count > 0);
         }
 
-        private void UpdateOverallStatus()
-        {
-            var errorCount = StatChips.First(c => c.Status == UploadStatus.UploadError).Total;
-            ShowErrorBanner = errorCount > 0;
-            ErrorBannerText = errorCount == 1 ? "1 upload failed — see log" : $"{errorCount} uploads failed — see log";
+        partial void OnIsPausedChanged(bool value) => RefreshStatus();
 
-            if (Manager == null) {
-                OverallStatusText = "Idle";
-                OverallStatusBrushKey = "AppTextSecondaryBrush";
-            } else if (IsPaused) {
-                OverallStatusText = "Paused";
-                OverallStatusBrushKey = "AppTextSecondaryBrush";
-            } else if (Manager.Status == Heroesprofile.Uploader.Common.Manager.UploadingStatus) {
-                // Fully qualified: the "Manager" property on this class shadows the "Manager" type name.
-                OverallStatusText = "Uploading…";
-                OverallStatusBrushKey = "StatusProgressBrush";
-            } else if (errorCount > 0) {
-                OverallStatusText = "Idle — last upload failed";
-                OverallStatusBrushKey = "StatusErrorBrush";
-            } else {
-                OverallStatusText = "Idle";
-                OverallStatusBrushKey = "AppTextSecondaryBrush";
-            }
-        }
+        /// <summary>Shows "Retry failed uploads" - only while there's something to retry, so the panel otherwise looks as in WPF.</summary>
+        [ObservableProperty]
+        private bool hasFailedUploads;
 
-        private void UpdateListCaption()
+        /// <summary>Tries every failed upload again now, instead of waiting for the next start of the app.</summary>
+        [RelayCommand]
+        private void RetryFailed()
         {
-            var count = Rows.Count;
-            ListCaption = count == 1 ? "1 replay" : $"{count:N0} replays";
-        }
-
-        partial void OnIsPausedChanged(bool value)
-        {
-            OnPropertyChanged(nameof(PauseButtonGlyph));
-            OnPropertyChanged(nameof(PauseButtonTooltip));
+            Manager?.RetryFailed();
         }
 
         [RelayCommand]
@@ -291,6 +257,7 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
         {
             Config.TwitchExtension = value;
             Manager?.SetTwitchEnabled(value);
+            TwitchStatus = value ? "Twitch extension on. Waiting for a game." : "";
             SaveConfig();
         }
 
@@ -304,7 +271,7 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
         {
             Config.StartOnLogin = value;
             try {
-                DesktopIntegration.SetStartOnLogin(value);
+                Platform.SetStartOnLogin(value);
             }
             catch (Exception ex) {
                 _log.Warn(ex, "Could not update the autostart entry");
@@ -314,6 +281,9 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
 
         partial void OnShowInAppMenuChanged(bool value)
         {
+            if (!OperatingSystem.IsLinux()) {
+                return;
+            }
             try {
                 if (value) {
                     var whyNot = DesktopIntegration.WhyNotInstallable();
@@ -346,7 +316,7 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
             }
         }
 
-        private void SaveConfig()
+        public void SaveConfig()
         {
             try {
                 Config.Save();
@@ -356,112 +326,112 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
             }
         }
 
-        /// <summary>Applied by the view once the Settings dialog closes with Save.</summary>
-        public void ApplySettings(SettingsWindowViewModel settings)
+        // Settings applies each change as it's made, like the WPF SettingsWindow's two-way bindings.
+
+        /// <summary>Points the app at a new replay path, starting the Manager if there wasn't a usable folder before.</summary>
+        public void ApplyReplayPath(string replayPath)
         {
-            var prefixChanged = Config.Prefix != settings.PrefixPath;
-
-            Config.Prefix = settings.PrefixPath;
-            Config.WebhookUrl = settings.WebhookUrl;
-            Config.Theme = settings.SelectedTheme;
-            Config.TwitchUploaderKey = settings.TwitchUploaderKey;
-            Config.LogLevel = settings.SelectedLogLevel;
-            Config.AutoUpdate = settings.AutoUpdate;
-            Config.AllowPreReleases = settings.AllowPreReleases;
-            SaveConfig();
-
-            Logging.Configure(Logging.ParseLevel(Config.LogLevel));
-            WebhookNotifier.WebhookUrl = Config.WebhookUrl;
-            if (Manager != null) {
-                Manager.Twitch.Key = Config.TwitchUploaderKey;
-            }
-
-            if (Application.Current != null) {
-                Application.Current.RequestedThemeVariant = App.ThemeVariantFor(Config.Theme);
-            }
-            RefreshThemeDependentVisuals();
-
-            if (prefixChanged && !string.IsNullOrWhiteSpace(Config.Prefix)) {
-                // ReplayLocation.Changed (subscribed inside Manager.Start) reloads the folder for us
-                // if a Manager is already running; if we were in the empty state, start one now.
-                if (PrefixSetup.TryApply(Config.Prefix, out _)) {
-                    if (IsEmptyState) {
-                        IsEmptyState = false;
-                        StartManager();
-                    }
+            Config.ReplayPath = string.IsNullOrWhiteSpace(replayPath) ? null : replayPath.Trim();
+            // ReplayLocation.Changed (subscribed inside Manager.Start) reloads the folder for us if a
+            // Manager is already running; if there wasn't a folder to start one with, start it now.
+            if (ReplayFolderSetup.TryApply(Platform, Config.ReplayPath, out _)) {
+                ReplayFolderError = null;
+                if (!WaitingForLegacyApp) {
+                    StartManager();
                 }
             }
         }
 
-        private void RefreshThemeDependentVisuals()
+        public void ApplyTheme(string theme)
         {
-            foreach (var chip in StatChips) {
-                chip.TouchForThemeRefresh();
-            }
-            foreach (var row in Rows) {
-                row.TouchForThemeRefresh();
+            Config.Theme = theme;
+            if (Application.Current != null) {
+                Application.Current.RequestedThemeVariant = App.ThemeVariantFor(Config.Theme);
             }
         }
 
+        public void ApplyTwitchKey(string key)
+        {
+            Config.TwitchUploaderKey = key?.Trim() ?? "";
+            if (Manager != null) {
+                Manager.Twitch.Key = Config.TwitchUploaderKey;
+            }
+        }
+
+        public void ApplyWebhookUrl(string url)
+        {
+            Config.WebhookUrl = url?.Trim() ?? "";
+            WebhookNotifier.WebhookUrl = Config.WebhookUrl;
+        }
+
+        /// <summary>WPF's "Show log" opens the logs folder, not the file.</summary>
         [RelayCommand]
         private void ShowLog()
         {
             try {
                 var dir = Path.GetDirectoryName(Logging.LogFilePath);
                 Directory.CreateDirectory(dir);
-                if (!File.Exists(Logging.LogFilePath)) {
-                    File.WriteAllText(Logging.LogFilePath, "");
-                }
-                Process.Start(new ProcessStartInfo(Logging.LogFilePath) { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo(dir) { UseShellExecute = true });
             }
             catch (Exception ex) {
-                _log.Warn(ex, "Could not open the log file");
+                _log.Warn(ex, "Could not open the log folder");
             }
         }
 
-        /// <summary>Startup/hourly auto-check, wired up by App.axaml.cs - stages an update if
-        /// AutoUpdate is on and one's found, same as `run`'s headless check but with actual staging
-        /// (there's a window here to show a restart banner in).</summary>
-        public Task RunAutoUpdateCheckAsync() => Config.AutoUpdate ? CheckAndMaybeStageAsync(manual: false) : Task.CompletedTask;
+        /// <summary>Opens heroesprofile.com - the WPF app's logo click.</summary>
+        [RelayCommand]
+        private void OpenWebsite() => OpenUrl("https://www.heroesprofile.com/");
+
+        private static void OpenUrl(string url)
+        {
+            try {
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            }
+            catch (Exception ex) {
+                _log.Warn(ex, $"Could not open {url}");
+            }
+        }
+
+        /// <summary>Startup/hourly auto-check, wired up by App.axaml.cs - the WPF app's own cadence.</summary>
+        public Task RunAutoUpdateCheckAsync() => Config.AutoUpdate ? CheckForUpdateCoreAsync(manual: false) : Task.CompletedTask;
 
         [RelayCommand]
-        private Task CheckForUpdateAsync() => CheckAndMaybeStageAsync(manual: true);
+        private Task CheckForUpdateAsync() => CheckForUpdateCoreAsync(manual: true);
 
         /// <summary>
-        /// Runs the same check/stage either way - the manual button ignores AutoUpdate (plan: "runs the
-        /// same check regardless of autoUpdate and stages if found"); only the status text/"Checking…"
-        /// feedback is manual-only, since the auto path shouldn't narrate itself in the UI.
+        /// The same check either way - the manual button just ignores AutoUpdate and reports what it
+        /// found, where the automatic one stays quiet unless there's an update to install.
         /// </summary>
-        private async Task CheckAndMaybeStageAsync(bool manual)
+        private async Task CheckForUpdateCoreAsync(bool manual)
         {
             if (manual) {
                 UpdateStatusText = "Checking…";
                 _updateReleaseUrl = null;
             }
 
-            var result = await _updater.CheckAndStageAsync(Config);
+            var result = await _updater.CheckAndDownloadAsync(Config);
             switch (result.Outcome) {
-                case Updater.StageOutcome.Staged:
+                case AppUpdater.Outcome.ReadyToRestart:
                     ShowRestartBanner = true;
                     if (manual) {
                         UpdateStatusText = "";
                     }
                     break;
 
-                case Updater.StageOutcome.Fallback:
-                    _updateReleaseUrl = result.ReleaseUrl;
-                    if (manual) {
-                        UpdateStatusText = $"Update available: v{result.Version} — click to open the release page.";
-                    }
-                    break;
-
-                case Updater.StageOutcome.NoUpdate:
+                case AppUpdater.Outcome.NoUpdate:
                     if (manual) {
                         UpdateStatusText = "You're up to date.";
                     }
                     break;
 
-                default: // Failed / Skipped - CheckAndStageAsync already logged the real reason.
+                case AppUpdater.Outcome.NotInstalled:
+                    // A copy Velopack can't update (the Linux tarball, a dev build): point at the release instead.
+                    if (manual) {
+                        await ReportNewerReleaseAsync();
+                    }
+                    break;
+
+                default: // Failed - already logged.
                     if (manual) {
                         UpdateStatusText = "Couldn't check for updates - see log.";
                     }
@@ -469,42 +439,46 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
             }
         }
 
+        private async Task ReportNewerReleaseAsync()
+        {
+            try {
+                var release = await new ReleaseChecker().FindNewerAsync(Config.UpdateRepository, Config.AllowPreReleases);
+                if (release == null) {
+                    UpdateStatusText = "You're up to date.";
+                } else {
+                    _updateReleaseUrl = release.Url;
+                    UpdateStatusText = $"Update available: v{release.Version} — click to open the release page.";
+                }
+            }
+            catch (Exception ex) {
+                _log.Warn(ex, "Update check failed");
+                UpdateStatusText = "Couldn't check for updates - see log.";
+            }
+        }
+
         [RelayCommand]
         private void OpenUpdate()
         {
-            if (string.IsNullOrEmpty(_updateReleaseUrl)) {
-                return;
-            }
-            try {
-                Process.Start(new ProcessStartInfo(_updateReleaseUrl) { UseShellExecute = true });
-            }
-            catch (Exception ex) {
-                _log.Warn(ex, "Could not open the release page");
+            if (!string.IsNullOrEmpty(_updateReleaseUrl)) {
+                OpenUrl(_updateReleaseUrl);
             }
         }
 
         /// <summary>The banner's "Restart now." link - called from MainWindow's code-behind, which
         /// knows whether the window is currently hidden (tray) and passes that through as --minimized.</summary>
-        public async Task RestartNowAsync(bool minimized)
+        public void RestartNow(bool minimized)
         {
             if (_restarting) {
                 return;
             }
             _restarting = true;
             try {
+                // Finish what's in flight and save the upload history before Velopack ends this process.
                 Manager?.Stop();
-                // Hashes the staged binary to verify it (can be tens of MB) - off the UI thread.
-                var applied = await Task.Run(() => Updater.ApplyStagedAndRelaunch(minimized));
-                if (!applied) {
-                    _log.Warn("Restart now: nothing valid staged to apply.");
+                SaveConfig();
+                if (!_updater.ApplyAndRestart(minimized)) {
+                    _log.Warn("Restart now: no downloaded update to install.");
                     _restarting = false;
-                    return;
-                }
-
-                if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) {
-                    desktop.Shutdown();
-                } else {
-                    Environment.Exit(0);
                 }
             }
             catch (Exception ex) {

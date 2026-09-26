@@ -1,10 +1,10 @@
 <Project>
 
   <!--
-    Central package versions for our SDK-style projects (Common, Linux/Desktop, Tests) - see
+    Central package versions for our projects (Common, Desktop, Tests) - see
     ManagePackageVersionsCentrally in Directory.Build.props. Project files only name packages; bump a
     version here and every project picks it up. Dependabot updates this file.
-    The legacy WPF project and the Heroes.ReplayParser submodule keep their own inline versions.
+    The Heroes.ReplayParser submodule keeps its own inline versions.
   -->
 
   <ItemGroup Label="Common">
@@ -14,10 +14,14 @@
   </ItemGroup>
 
   <ItemGroup Label="Desktop app">
-    <PackageVersion Include="Avalonia" Version="11.3.22" />
-    <PackageVersion Include="Avalonia.Desktop" Version="11.3.22" />
-    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+    <PackageVersion Include="Avalonia" Version="12.1.3" />
+    <PackageVersion Include="Avalonia.Desktop" Version="12.1.3" />
+    <PackageVersion Include="Avalonia.Themes.Simple" Version="12.1.3" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <!-- DPAPI, for the Twitch key on Windows - the same protection the WPF app used -->
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="10.0.12" />
+    <!-- Installs and updates on all three OSes; keep in step with vpk in dotnet-tools.json -->
+    <PackageVersion Include="Velopack" Version="1.2.158" />
   </ItemGroup>
 
   <ItemGroup Label="Tests">
@@ -29,8 +33,8 @@
       DotNetZip (transitive, from the Heroes.ReplayParser submodule) - directory traversal when
       *extracting zip archives*. No patched DotNetZip release exists. The parser only uses DotNetZip's
       BZip2InputStream and ZlibStream to decompress MPQ blocks in memory (Foole.Mpq/MpqStream.cs) and
-      never extracts a zip archive, so the vulnerable code path is unreachable. Follow-up: replace
-      DotNetZip in the submodule, then remove this suppression.
+      never extracts a zip archive, so the vulnerable code path is unreachable. The submodule is kept
+      pinned on purpose (newer versions break the uploader), so this stays until it's updated by hand.
     -->
     <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-xhg6-9j5j-w4vf" />
   </ItemGroup>

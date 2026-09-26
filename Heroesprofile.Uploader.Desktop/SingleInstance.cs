@@ -1,3 +1,4 @@
+using Heroesprofile.Uploader.Desktop.Platform;
 using NLog;
 using System;
 using System.IO;
@@ -9,8 +10,8 @@ using System.Threading.Tasks;
 namespace Heroesprofile.Uploader.Desktop
 {
     /// <summary>
-    /// Keeps the GUI to one instance per user, like the Windows app's SingleInstanceManager: the first
-    /// instance listens on a Unix socket, and a second launch (app menu clicked while the tray copy
+    /// Keeps the GUI to one instance per user, like the WPF app's SingleInstanceManager: the first
+    /// instance listens on a Unix domain socket (supported on Windows 10+ too), and a second launch (app menu clicked while the tray copy
     /// runs, say) asks it to show its window and exits. Without this, two instances would upload from
     /// the same replay storage, and the second one could apply a staged update over the running first.
     /// </summary>
@@ -32,15 +33,20 @@ namespace Heroesprofile.Uploader.Desktop
             Task.Run(AcceptLoop);
         }
 
-        // $XDG_RUNTIME_DIR is per-user and private (0700); the data dir is the fallback when it isn't set.
-        private static string SocketPath
+        private static string SocketPath => ShortEnoughForASocket(Platforms.Current.SingleInstanceSocketPath);
+
+        // Unix domain socket paths are capped at 108 bytes (104 on macOS). A deep home folder or a long
+        // user name can go past that, so fall back to a short name in the per-user temp folder, keyed
+        // by the original path so different homes still get different sockets.
+        private const int MaxSocketPathBytes = 100;
+
+        internal static string ShortEnoughForASocket(string path)
         {
-            get {
-                var runtimeDir = Environment.GetEnvironmentVariable("XDG_RUNTIME_DIR");
-                return !string.IsNullOrEmpty(runtimeDir) && Directory.Exists(runtimeDir)
-                    ? Path.Combine(runtimeDir, "heroesprofile-uploader.sock")
-                    : Path.Combine(AppConfig.DataDir, "instance.sock");
+            if (Encoding.UTF8.GetByteCount(path) <= MaxSocketPathBytes) {
+                return path;
             }
+            var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(path)))[..12].ToLowerInvariant();
+            return Path.Combine(Path.GetTempPath(), $"heroesprofile-uploader-{hash}.sock");
         }
 
         /// <summary>

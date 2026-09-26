@@ -1,0 +1,80 @@
+name: CI
+
+# Builds and tests the .NET projects (Common, the Linux/Desktop app, Tests) on every OS we ship for,
+# on every pull request - including Dependabot's, so a dependency bump is safe to merge once this is
+# green. Read-only token, no secrets: signing never happens here.
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - OSAgnosticUpdate
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      # CI=true (set by Actions) turns on RestoreLockedMode, so this fails if any packages.lock.json
+      # is out of date, and NuGetAudit fails it on any known-vulnerable package.
+      - name: Restore
+        run: dotnet restore Heroesprofile.Uploader.Tests
+
+      - name: Build
+        run: dotnet build Heroesprofile.Uploader.Tests --no-restore -c Release
+
+      - name: Test
+        run: dotnet test --project Heroesprofile.Uploader.Tests --no-build -c Release
+
+      - name: Check formatting
+        if: runner.os == 'Linux'
+        run: |
+          for project in Heroesprofile.Uploader.Common Heroesprofile.Uploader.Linux Heroesprofile.Uploader.Tests; do
+            dotnet format whitespace "$project/$project.csproj" --no-restore --verify-no-changes
+          done
+
+  # Publishes the real self-contained Linux binary and runs it, so a runtime break (a trimmed-away
+  # type, a native library that no longer loads, a bad NLog config) shows up here, not in a release.
+  linux-smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      # A RID-specific publish restores a different graph than the lock files describe (runtime packs,
+      # ILLink tasks), so locked mode is off for publishing only. Versions still come from
+      # Directory.Packages.props.
+      - name: Publish
+        run: >
+          dotnet publish Heroesprofile.Uploader.Linux -c Release -r linux-x64 --self-contained
+          -p:PublishSingleFile=true -p:DebugType=none -p:RestoreLockedMode=false -o publish
+
+      - name: Run it
+        run: |
+          ./publish/heroesprofile-uploader --version
+          prefix=$(mktemp -d)
+          mkdir -p "$prefix/drive_c/users/ci/Documents/Heroes of the Storm/Accounts"
+          ./publish/heroesprofile-uploader scan --dry-run --prefix "$prefix"
+          test -s "$HOME/.local/share/heroesprofile/logs/log.txt"

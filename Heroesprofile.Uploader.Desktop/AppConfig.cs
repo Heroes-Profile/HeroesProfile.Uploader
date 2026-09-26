@@ -162,16 +162,18 @@ namespace Heroesprofile.Uploader.Desktop
 
         /// <summary>
         /// <see cref="Load"/>, except that on the very first run on Windows - no config.json yet - the
-        /// WPF app's settings are imported and (with <paramref name="save"/>) saved as the starting config.
+        /// WPF app's settings are imported and (with <paramref name="save"/>) saved as the starting config,
+        /// and its upload history is copied over, so nothing is uploaded twice (see WpfMigration).
         /// </summary>
         public static AppConfig LoadOrImport(bool save = true)
         {
             if (!File.Exists(ConfigPath) && OperatingSystem.IsWindows() &&
-                WpfSettingsImporter.TryImport(out var imported, out var source)) {
+                WpfMigration.TryImportSettings(out var imported, out var source)) {
                 _log.Info($"No config.json yet - imported the Windows app's settings from {source}");
                 try {
                     if (save) {
                         imported.Save();
+                        WpfMigration.CopyHistory(WpfMigration.OldDataDir, DataDir);
                     }
                 }
                 catch (Exception ex) {

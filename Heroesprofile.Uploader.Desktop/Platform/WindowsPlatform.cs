@@ -26,10 +26,15 @@ namespace Heroesprofile.Uploader.Desktop.Platform
 
         public string Name => "Windows";
 
-        // The same folder the WPF app uses (App.SettingsDir), so the upload history (replays_v8.xml)
-        // and logs carry straight over and nothing is uploaded twice after the switch.
+        /// <summary>
+        /// This app's own folder - not the WPF app's %APPDATA%\Heroesprofile. The first run copies the WPF
+        /// app's upload history (and settings) in from there (see Migration.WpfMigration), after which the
+        /// old app can be uninstalled normally, taking its folder with it.
+        /// </summary>
+        public const string FolderName = "HeroesProfileUploader";
+
         public string ConfigDir => DataDir;
-        public string DataDir => _home ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Heroesprofile");
+        public string DataDir => _home ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), FolderName);
 
         public string DefaultReplayFolder =>
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Heroes of the Storm", "Accounts");
@@ -55,7 +60,7 @@ namespace Heroesprofile.Uploader.Desktop.Platform
         // Local rather than roaming AppData - a socket file has no business following the user around.
         public string SingleInstanceSocketPath => _home != null
             ? Path.Combine(_home, "instance.sock")
-            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Heroesprofile", "instance.sock");
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), FolderName, "instance.sock");
 
         // Marks a DPAPI value in config.json, so a plain value (hand-edited, or copied from a Linux
         // config) is still recognised and read as-is.

@@ -13,6 +13,9 @@ folder).
       **Settings** (Linux). Your replays appear in the list.
 - [ ] Windows, coming from the current uploader: your settings came over (the match page boxes, theme,
       webhook, Twitch key), and nothing is uploaded a second time.
+- [ ] Windows, coming from the current uploader: it offers to uninstall the old one. After
+      **Uninstall**, the old one is gone from **Settings → Apps** and doesn't start when you log in, and
+      the new app still has your settings and upload history.
 
 **Uploading**
 - [ ] Play a game. After it ends, the new replay appears and changes to **Success**.
@@ -39,7 +42,7 @@ folder).
 
 - **Unsigned builds:** your OS warns the first time you open one (see [INSTALL.md](INSTALL.md)). That
   goes away once the app is signed.
-- **Don't run it alongside the current Windows uploader:** they share the same upload history. The new
-  app warns you if the old one is running.
+- **Don't run it alongside the current Windows uploader:** both would upload every game. The new app
+  warns you if the old one is running, and offers to uninstall it.
 - **Linux tarball:** the headless `.tar.gz` version doesn't update itself; it logs when a newer
   release is out.

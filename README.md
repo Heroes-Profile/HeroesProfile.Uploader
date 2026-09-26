@@ -20,9 +20,9 @@ Nothing else needs installing (no .NET), and it updates itself. See
 while builds aren't code-signed yet. On Linux, Heroes of the Storm runs under Wine/Proton and you point
 the uploader at that prefix; see [packaging/linux/README.md](packaging/linux/README.md).
 
-**Coming from the old Windows uploader?** Install the new one and quit the old one. On its first start
-the new app copies your settings over (including your Twitch key) and knows what's already been
-uploaded, so nothing is uploaded twice.
+**Coming from the old Windows uploader?** Just install the new one. On its first start it copies your
+settings (including your Twitch key) and the record of what's already been uploaded into its own
+folder, so nothing is uploaded twice, and then offers to uninstall the old app.
 
 # Contributing
 

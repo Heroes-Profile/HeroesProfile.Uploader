@@ -18,9 +18,11 @@ update is ready you'll see a banner with **Restart now**.
 **Coming from the current uploader?**
 - **Your settings carry over:** the first time the new app starts, it copies them from the old one,
   including your Twitch key.
-- **Nothing is uploaded twice:** both apps share the same record of what's already been uploaded.
-- **Don't run both at once:** quit the old one first (right-click its tray icon). The new one will
-  warn you if it's still running.
+- **Nothing is uploaded twice:** it also copies the old app's record of what's already been uploaded.
+- **The old one can go:** the new app then offers to uninstall the old one. You can also do it later
+  from **Settings → Apps** ("Heroesprofile"); the new app keeps its own copies either way.
+- **Don't run both at once:** they'd both upload every game. The new one warns you if the old one is
+  still running.
 
 To uninstall, use **Settings → Apps** in Windows. Your settings and upload history are kept.
 
@@ -58,8 +60,8 @@ doesn't update itself.
 
 | | Windows | macOS | Linux |
 |---|---|---|---|
-| Settings (`config.json`) | `%APPDATA%\Heroesprofile` | `~/Library/Application Support/Heroesprofile` | `~/.config/heroesprofile` |
-| Upload history and logs | `%APPDATA%\Heroesprofile` | `~/Library/Application Support/Heroesprofile` | `~/.local/share/heroesprofile` |
+| Settings (`config.json`) | `%APPDATA%\HeroesProfileUploader` | `~/Library/Application Support/Heroesprofile` | `~/.config/heroesprofile` |
+| Upload history and logs | `%APPDATA%\HeroesProfileUploader` | `~/Library/Application Support/Heroesprofile` | `~/.local/share/heroesprofile` |
 | Twitch key | encrypted for your Windows user (DPAPI) | your login Keychain | `config.json`, readable only by you |
 
 **Show log** in the app opens the logs folder. Please include the log when you report a problem.

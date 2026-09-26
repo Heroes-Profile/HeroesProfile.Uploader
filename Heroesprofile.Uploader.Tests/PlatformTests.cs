@@ -36,15 +36,16 @@ public class PlatformTests
     }
 
     [Fact]
-    public void Windows_keeps_its_data_in_the_same_folder_as_the_WPF_app()
+    public void Windows_keeps_its_data_apart_from_the_WPF_app()
     {
         if (!OperatingSystem.IsWindows()) {
             return;
         }
-        // App.SettingsDir in the WPF app - sharing it is what carries the upload history over.
+        // Not App.SettingsDir (%APPDATA%\Heroesprofile): the WPF app's uninstaller deletes that folder.
         // (A fresh WindowsPlatform: the tests' own Platforms.Current points at a scratch folder.)
-        var wpfSettingsDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Heroesprofile");
-        Assert.Equal(wpfSettingsDir, new WindowsPlatform().DataDir);
+        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        Assert.Equal(Path.Combine(appData, "HeroesProfileUploader"), new WindowsPlatform().DataDir);
+        Assert.NotEqual(Path.Combine(appData, "Heroesprofile"), new WindowsPlatform().DataDir, StringComparer.OrdinalIgnoreCase);
     }
 
     [Fact]

@@ -16,6 +16,8 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
     /// </summary>
     public partial class MainWindow : Window
     {
+        private static readonly NLog.Logger _log = NLog.LogManager.GetCurrentClassLogger();
+
         private MainWindowViewModel ViewModel => (MainWindowViewModel)DataContext;
 
         public MainWindow()
@@ -68,6 +70,28 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
 
         private async void OnOpened(object sender, EventArgs e)
         {
+            // The old WPF uploader still installed: offer to uninstall it (this app already has its own
+            // copies of the settings and history), so it stops starting with Windows and can't run next
+            // to this one. Asked again next start if kept.
+            if (OperatingSystem.IsWindows() && LegacyApp.IsInstalled()) {
+                var answer = await MessageDialog.ShowAsync(this, "Old uploader installed", LegacyApp.RemovePrompt, "Uninstall", "Keep for now");
+                if (answer == "Uninstall") {
+                    try {
+                        await System.Threading.Tasks.Task.Run(LegacyApp.Remove);
+                    }
+                    catch (Exception ex) {
+                        _log.Warn(ex, "Could not remove the old uploader");
+                        await MessageDialog.ShowAsync(this, "Old uploader installed",
+                            $"Couldn't uninstall the old uploader: {ex.Message}\n\nYou can uninstall it from Settings → Apps instead. " +
+                            "Your settings and upload history in this app are kept either way.");
+                    }
+                    // It's gone (and stopped), so there's nothing to wait for any more.
+                    if (ViewModel?.WaitingForLegacyApp == true && !LegacyApp.IsRunning()) {
+                        ViewModel.ContinueNextToLegacyApp();
+                    }
+                }
+            }
+
             if (ViewModel?.WaitingForLegacyApp == true) {
                 var answer = await MessageDialog.ShowAsync(this, "Old uploader running", LegacyApp.RunningWarning, "Quit", "Run anyway");
                 if (answer != "Run anyway") {

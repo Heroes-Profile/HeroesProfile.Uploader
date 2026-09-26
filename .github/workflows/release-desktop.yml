@@ -35,8 +35,8 @@ permissions:
   contents: read
 
 env:
-  # Velopack app id - installs and updates key on it, so never change it. It's also the old WPF app's
-  # Squirrel package id, so new Windows installs land in the same %LOCALAPPDATA%\Heroesprofile.Uploader.
+  # Velopack app id - installs and updates key on it, so never change it. Windows installs go to
+  # %LOCALAPPDATA%\Heroesprofile.Uploader, next to (not over) the old WPF app's %LOCALAPPDATA%\Heroesprofile.
   PACK_ID: Heroesprofile.Uploader
   PACK_TITLE: Heroes Profile Uploader
   MAIN_EXE: heroesprofile-uploader
@@ -222,6 +222,9 @@ jobs:
           # app's installer name); a copy under that name keeps those links working.
           cp release-win/releases/*-win-Setup.exe HeroesProfileUploaderSetup.exe
           gh release upload "v$VERSION" HeroesProfileUploader-linux-x64.tar.gz SHA256SUMS HeroesProfileUploaderSetup.exe --clobber
+          # The release description: which of all these files to download on which OS.
+          sed "s|INSTALL_URL|https://github.com/${{ github.repository }}/blob/${{ github.sha }}/packaging/INSTALL.md|"             packaging/release-notes.md > release-notes.md
+          gh release edit "v$VERSION" --notes-file release-notes.md
 
       - name: Summary
         env:

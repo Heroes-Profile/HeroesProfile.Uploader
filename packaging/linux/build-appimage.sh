@@ -23,7 +23,7 @@ mkdir -p "$appdir/usr/bin"
 install -m 755 "$binary" "$appdir/usr/bin/heroesprofile-uploader"
 ln -s usr/bin/heroesprofile-uploader "$appdir/AppRun"
 cp "$here/heroesprofile-uploader.desktop" "$appdir/"
-cp "$repo/Heroesprofile.Uploader.Linux/Gui/Assets/app-icon.png" "$appdir/heroesprofile-uploader.png"
+cp "$repo/Heroesprofile.Uploader.Desktop/Gui/Assets/app-icon.png" "$appdir/heroesprofile-uploader.png"
 ln -s heroesprofile-uploader.png "$appdir/.DirIcon"
 
 tool="$work/appimagetool"

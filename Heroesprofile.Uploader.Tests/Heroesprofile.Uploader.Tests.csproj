@@ -15,7 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Heroesprofile.Uploader.Common\Heroesprofile.Uploader.Common.csproj" />
-    <ProjectReference Include="..\Heroesprofile.Uploader.Linux\Heroesprofile.Uploader.Linux.csproj" />
+    <ProjectReference Include="..\Heroesprofile.Uploader.Desktop\Heroesprofile.Uploader.Desktop.csproj" />
   </ItemGroup>
 
   <ItemGroup>

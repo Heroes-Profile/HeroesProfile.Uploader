@@ -151,7 +151,7 @@ delete `~/.config/heroesprofile`, `~/.local/share/heroesprofile` and `~/.net/her
 ## Building from source
 
 ```sh
-dotnet publish Heroesprofile.Uploader.Linux -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true
+dotnet publish Heroesprofile.Uploader.Desktop -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true
 packaging/linux/build-appimage.sh <path to the published heroesprofile-uploader> HeroesProfileUploader-linux-x86_64.AppImage
 ```
 

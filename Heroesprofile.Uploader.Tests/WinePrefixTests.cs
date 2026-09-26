@@ -1,4 +1,4 @@
-using Heroesprofile.Uploader.Linux;
+using Heroesprofile.Uploader.Desktop;
 using Xunit;
 
 namespace Heroesprofile.Uploader.Tests;

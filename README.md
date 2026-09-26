@@ -19,4 +19,4 @@ There is a native Linux build: download **"HeroesProfileUploader-linux-x86_64.Ap
 
 Coding conventions are as usual for C# except braces, those are in egyptian style ([OTBS](https://en.wikipedia.org/wiki/Indent_style#1TBS)). For repos included as submodules their coding style is used.
 
-All logic is contained in `Heroesprofile.Uploader.Common` to make UI project as thin as possible. `Heroesprofile.Uploader.Windows` is responsible for only OS-specific tasks such as auto update, tray icon, autorun, file locations. `Heroesprofile.Uploader.Linux` does the same for Linux (Avalonia GUI plus a headless CLI).
+All logic is contained in `Heroesprofile.Uploader.Common` to make UI project as thin as possible. `Heroesprofile.Uploader.Windows` is responsible for only OS-specific tasks such as auto update, tray icon, autorun, file locations. `Heroesprofile.Uploader.Desktop` does the same for Linux (Avalonia GUI plus a headless CLI).

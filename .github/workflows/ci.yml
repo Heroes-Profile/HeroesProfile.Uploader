@@ -45,7 +45,7 @@ jobs:
       - name: Check formatting
         if: runner.os == 'Linux'
         run: |
-          for project in Heroesprofile.Uploader.Common Heroesprofile.Uploader.Linux Heroesprofile.Uploader.Tests; do
+          for project in Heroesprofile.Uploader.Common Heroesprofile.Uploader.Desktop Heroesprofile.Uploader.Tests; do
             dotnet format whitespace "$project/$project.csproj" --no-restore --verify-no-changes
           done
 
@@ -68,7 +68,7 @@ jobs:
       # Directory.Packages.props.
       - name: Publish
         run: >
-          dotnet publish Heroesprofile.Uploader.Linux -c Release -r linux-x64 --self-contained
+          dotnet publish Heroesprofile.Uploader.Desktop -c Release -r linux-x64 --self-contained
           -p:PublishSingleFile=true -p:DebugType=none -p:RestoreLockedMode=false -o publish
 
       - name: Run it

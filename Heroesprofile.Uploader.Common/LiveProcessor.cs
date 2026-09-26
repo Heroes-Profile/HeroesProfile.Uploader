@@ -135,7 +135,8 @@ namespace Heroesprofile.Uploader.Common
                     _log.Error(ex, $"Failed to open prematch page {pageUrl}");
                 }
                 WebhookNotifier.Notify("prematch", pageUrl);
-            } catch (Exception ex) {
+            }
+            catch (Exception ex) {
                 _log.Error(ex, $"Prematch failed ({apiUrl})");
             }
         }

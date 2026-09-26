@@ -319,12 +319,10 @@ namespace Heroesprofile.Uploader.Linux.Gui.ViewModels
                     var whyNot = DesktopIntegration.WhyNotInstallable();
                     if (whyNot != null) {
                         _log.Warn(whyNot);
-                    }
-                    else {
+                    } else {
                         DesktopIntegration.InstallAppMenuEntry();
                     }
-                }
-                else {
+                } else {
                     DesktopIntegration.RemoveAppMenuEntry();
                 }
                 // The autostart entry points at the ~/.local/bin copy when there is one, so rewrite
@@ -333,8 +331,7 @@ namespace Heroesprofile.Uploader.Linux.Gui.ViewModels
                 if (StartOnLogin && !value && DesktopIntegration.IsRunningInstalledCopy) {
                     _log.Warn("Removed from the app menu while running from it - turning off Start on login too.");
                     StartOnLogin = false;
-                }
-                else if (StartOnLogin) {
+                } else if (StartOnLogin) {
                     DesktopIntegration.SetStartOnLogin(true);
                 }
             }

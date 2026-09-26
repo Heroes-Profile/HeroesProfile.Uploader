@@ -49,7 +49,8 @@ namespace Heroesprofile.Uploader.Common
                     if (!response.IsSuccessStatusCode) {
                         _log.Warn($"Webhook {eventType} notification returned {(int)response.StatusCode}");
                     }
-                } catch (Exception ex) {
+                }
+                catch (Exception ex) {
                     _log.Warn(ex, $"Webhook {eventType} notification failed");
                 }
             });

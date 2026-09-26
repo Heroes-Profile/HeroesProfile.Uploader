@@ -74,6 +74,7 @@ public sealed class WpfMigrationTests : IDisposable
         Touch(Path.Combine(install, "app-2.9.0", "Heroesprofile.Uploader.exe"));
         Touch(Path.Combine(install, "packages", "RELEASES"));
         Touch(Path.Combine(install, "SquirrelSetup.log"));
+        Touch(Path.Combine(install, ".dead"));
         Touch(Path.Combine(install, "Heroesprofile.Uploader.exe_Url_abc", "2.9.0.0", "user.config"));
 
         LegacyApp.RemoveProgramFiles(install);

@@ -90,6 +90,8 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
                         ViewModel.ContinueNextToLegacyApp();
                     }
                 }
+            } else if (OperatingSystem.IsWindows()) {
+                await System.Threading.Tasks.Task.Run(LegacyApp.CleanUpLeftovers);
             }
 
             if (ViewModel?.WaitingForLegacyApp == true) {

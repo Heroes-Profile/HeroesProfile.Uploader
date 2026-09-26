@@ -14,10 +14,12 @@ namespace Heroesprofile.Uploader.Desktop.Migration
     /// The WPF uploader this app replaces. Running both at once has each upload every game (the second
     /// copy is rejected as a duplicate) and open every match page, hence the "still running" warning.
     ///
-    /// It can also be removed from here (the first-run "Remove the old uploader?" prompt), using its own
-    /// uninstaller. That deletes its whole %APPDATA%\Heroesprofile folder, which is fine by then: this
-    /// app keeps its own copies of the settings and upload history (WpfMigration), and makes sure of the
-    /// history once more right before uninstalling.
+    /// It can also be removed from here (the first-run "Uninstall the old uploader?" prompt) - by this
+    /// app, NOT by running the old app's uninstaller: Squirrel's `Update.exe --uninstall` kills every
+    /// process whose path merely starts with its install folder, and %LOCALAPPDATA%\Heroesprofile.Uploader
+    /// (this app, installed by Velopack) does. So this does what that uninstaller did: removes the program
+    /// files, shortcuts, Apps-list entry and %APPDATA%\Heroesprofile - the last only once this app has its
+    /// own copies of the settings and upload history (WpfMigration).
     /// </summary>
     internal static class LegacyApp
     {
@@ -75,34 +77,57 @@ namespace Heroesprofile.Uploader.Desktop.Migration
             (File.Exists(Path.Combine(root, "Heroesprofile.Uploader.exe")) || Directory.EnumerateDirectories(root, "app-*").Any());
 
         /// <summary>
-        /// Uninstalls the WPF app with its own uninstaller, after making sure this app has its own copy of
-        /// the upload history. Then removes whatever the uninstaller left behind - notably the Startup
-        /// shortcut the WPF app created itself - so nothing of it starts at login. Throws if its program
+        /// Uninstalls the WPF app: closes it, then removes its program files, shortcuts (the Startup one
+        /// too, so it no longer starts at login), Apps-list entry and - once this app has its own copies
+        /// of the settings and upload history - its %APPDATA%\Heroesprofile folder. Throws if its program
         /// files can't be removed (e.g. still in use).
         /// </summary>
         [SupportedOSPlatform("windows")]
         public static void Remove()
         {
-            // The uninstaller deletes %APPDATA%\Heroesprofile, history included - never before we have ours.
             WpfMigration.CopyHistory(WpfMigration.OldDataDir, AppConfig.DataDir);
 
             StopRunning();
 
             var root = InstallRoot;
-            var uninstaller = Path.Combine(root, "Update.exe");
-            if (File.Exists(uninstaller)) {
-                try {
-                    using var run = Process.Start(new ProcessStartInfo(uninstaller, "--uninstall") { UseShellExecute = false });
-                    if (run != null && !run.WaitForExit(120_000)) {
-                        _log.Warn("The old uploader's uninstaller is taking a long time - cleaning up what's left anyway");
-                    }
-                }
-                catch (Exception ex) {
-                    _log.Warn(ex, "The old uploader's uninstaller failed - removing its files directly");
-                }
-            }
+            RemoveInstall(root);
+            RemoveUninstallEntry(root);
 
-            // Whatever the uninstaller didn't (or couldn't) remove.
+            // Only once ours are safely in place; the WPF app's own uninstaller deleted this folder too.
+            if (File.Exists(AppConfig.ConfigPath) && Directory.Exists(WpfMigration.OldDataDir) &&
+                !string.Equals(Path.GetFullPath(WpfMigration.OldDataDir), Path.GetFullPath(AppConfig.DataDir), StringComparison.OrdinalIgnoreCase)) {
+                Directory.Delete(WpfMigration.OldDataDir, recursive: true);
+            }
+            _log.Info("Uninstalled the old WPF uploader (this app keeps its own settings and upload history)");
+        }
+
+        /// <summary>
+        /// Tidies up what's left of a WPF app that's no longer installed - e.g. its Startup shortcut, left
+        /// pointing at a deleted exe when an earlier beta ran the old uninstaller. Nothing to do (and cheap)
+        /// when there's no %LOCALAPPDATA%\Heroesprofile. Never throws.
+        /// </summary>
+        [SupportedOSPlatform("windows")]
+        public static void CleanUpLeftovers()
+        {
+            var root = InstallRoot;
+            if (!Directory.Exists(root) || IsInstalledIn(root)) {
+                return;
+            }
+            try {
+                RemoveInstall(root);
+                _log.Info("Tidied up what was left of the old uploader");
+            }
+            catch (Exception ex) {
+                _log.Warn(ex, "Could not tidy up what's left of the old uploader");
+            }
+        }
+
+        /// <summary>
+        /// The install's program files and the shortcuts pointing into it, then the install folder itself
+        /// if that leaves it empty.
+        /// </summary>
+        private static void RemoveInstall(string root)
+        {
             if (Directory.Exists(root)) {
                 RemoveProgramFiles(root);
             }
@@ -110,8 +135,9 @@ namespace Heroesprofile.Uploader.Desktop.Migration
                 Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
                 Environment.GetFolderPath(Environment.SpecialFolder.Startup),
             }, Environment.GetFolderPath(Environment.SpecialFolder.Programs));
-            RemoveUninstallEntry(root);
-            _log.Info("Uninstalled the old WPF uploader (this app keeps its own settings and upload history)");
+            if (Directory.Exists(root) && !Directory.EnumerateFileSystemEntries(root).Any()) {
+                Directory.Delete(root);
+            }
         }
 
         private static void StopRunning()
@@ -131,8 +157,8 @@ namespace Heroesprofile.Uploader.Desktop.Migration
 
         /// <summary>
         /// Deletes the Squirrel install's own files from <paramref name="root"/> - Update.exe, the launcher,
-        /// the app-x.y.z folders, packages and Squirrel's logs - if its uninstaller left any. Nothing else:
-        /// the folder also holds .NET's user.config folders.
+        /// the app-x.y.z folders, packages and Squirrel's logs. Nothing else: the folder also holds .NET's
+        /// user.config folders.
         /// </summary>
         internal static void RemoveProgramFiles(string root)
         {

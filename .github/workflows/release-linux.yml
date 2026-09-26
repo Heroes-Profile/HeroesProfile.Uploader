@@ -1,0 +1,82 @@
+name: Release (Linux)
+
+# Runs after the Windows "Release" workflow and attaches the Linux build to the release it
+# published, at the same version (AssemblyInfo.cs). It never creates or edits a release itself and
+# leaves the Windows workflow untouched: if there is no release for this version, or it already has
+# a Linux build, the build still runs (so a break shows up) but nothing is uploaded.
+on:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Resolve version
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(sed -nE 's/^\[assembly: AssemblyVersion\("([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' Heroesprofile.Uploader.Windows/Properties/AssemblyInfo.cs)
+          if [ -z "$version" ]; then
+            echo "Could not read a three-part AssemblyVersion out of AssemblyInfo.cs" >&2
+            exit 1
+          fi
+          tag="v$version"
+
+          if ! assets=$(gh release view "$tag" --json assets --jq '.assets[].name' 2>/dev/null); then
+            summary="No release **$tag** - built, not uploaded."
+            publish=false
+          elif echo "$assets" | grep -q 'linux'; then
+            summary="Release **$tag** already has a Linux build - built, not uploaded."
+            publish=false
+          else
+            summary="Attaching the Linux build to release **$tag**."
+            publish=true
+          fi
+          echo "$summary"
+          echo "$summary" >> "$GITHUB_STEP_SUMMARY"
+
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+
+      - name: Publish
+        run: >
+          dotnet publish Heroesprofile.Uploader.Linux -c Release -r linux-x64 --self-contained
+          -p:PublishSingleFile=true -p:DebugType=none -p:Version=${{ steps.version.outputs.version }}
+          -o publish
+
+      - name: Package
+        run: |
+          mkdir -p dist/HeroesProfileUploader
+          cp publish/heroesprofile-uploader packaging/linux/README.md packaging/linux/heroesprofile-uploader.service dist/HeroesProfileUploader/
+          tar -czf HeroesProfileUploader-linux-x64.tar.gz -C dist HeroesProfileUploader
+          packaging/linux/build-appimage.sh publish/heroesprofile-uploader HeroesProfileUploader-linux-x86_64.AppImage
+          # In-app "Check for update" verifies its download against this before ever running it -
+          # exact name/format expected: `<hex>  <asset filename>` per line, one line per asset.
+          sha256sum HeroesProfileUploader-linux-x86_64.AppImage HeroesProfileUploader-linux-x64.tar.gz > SHA256SUMS
+
+      - name: Attach to release
+        if: steps.version.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release upload "${{ steps.version.outputs.tag }}"
+          HeroesProfileUploader-linux-x86_64.AppImage HeroesProfileUploader-linux-x64.tar.gz SHA256SUMS

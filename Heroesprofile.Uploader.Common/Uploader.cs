@@ -133,7 +133,9 @@ namespace Heroesprofile.Uploader.Common
                         var pageUrl = $"{HeroesProfileMatchSummary}{replayID}";
                         _log.Debug($"Replay {replayID} parsed after {timer.ElapsedMilliseconds}ms, opening postmatch page {pageUrl}");
                         try {
-                            Process.Start(pageUrl);
+                            // UseShellExecute is needed to open a URL rather than try to execute it as a file -
+                            // it's the .NET Framework default but not on .NET Core, where it also maps to xdg-open on Linux
+                            Process.Start(new ProcessStartInfo(pageUrl) { UseShellExecute = true });
                         }
                         catch (Exception ex) {
                             _log.Error(ex, $"Failed to open postmatch page {pageUrl}");

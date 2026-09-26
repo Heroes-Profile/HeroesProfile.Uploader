@@ -38,11 +38,14 @@ namespace Heroesprofile.Uploader.Common
                     file.UploadStatus = status.Value;
                 }
 
-                if (replay == null) {
-                    return null;
-                }
-
-                if (parseResult != DataParser.ReplayParseResult.Success) {
+                if (replay == null || parseResult != DataParser.ReplayParseResult.Success) {
+                    if (status == null) {
+                        // parsing didn't succeed and GetPreStatus didn't assign a status either (e.g. a
+                        // half-written replay on Linux, or a genuinely corrupt file) - without this the
+                        // file is left at InProgress forever. UploadError isn't persisted, so it's retried.
+                        _log.Warn($"Parse result {parseResult} left no status, marking as error: {file}");
+                        file.UploadStatus = UploadStatus.UploadError;
+                    }
                     return null;
                 }
 
@@ -51,6 +54,9 @@ namespace Heroesprofile.Uploader.Common
             }
             catch (Exception e) {
                 _log.Warn(e, $"Error analyzing file {file}");
+                if (file.UploadStatus == UploadStatus.InProgress) {
+                    file.UploadStatus = UploadStatus.UploadError;
+                }
                 return null;
             }
         }

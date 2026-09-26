@@ -1,0 +1,13 @@
+[Unit]
+Description=Heroes Profile replay uploader
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/heroesprofile-uploader run
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

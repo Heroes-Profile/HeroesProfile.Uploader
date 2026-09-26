@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Heroes Profile Uploader
+Comment=Upload Heroes of the Storm replays to heroesprofile.com
+Exec=heroesprofile-uploader
+Icon=heroesprofile-uploader
+Terminal=false
+Categories=Game;Utility;
+StartupWMClass=heroesprofile-uploader

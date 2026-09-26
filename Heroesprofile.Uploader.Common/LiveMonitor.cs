@@ -11,7 +11,16 @@ namespace Heroesprofile.Uploader.Common
     public class LiveMonitor : ILiveMonitor
     {
         private static Logger _log = LogManager.GetCurrentClassLogger();
-        protected readonly string BattleLobbyTempPath = Path.GetTempPath();
+
+        /// <summary>
+        /// Overrides where the battle lobby watcher looks for .battlelobby files. Windows needs no
+        /// override - it's Path.GetTempPath(). Under Wine/Proton on Linux the game writes it inside the
+        /// prefix instead, at drive_c\users\*\AppData\Local\Temp\, so the resolved prefix path has to be
+        /// set here before the watchers are started.
+        /// </summary>
+        public static string BattleLobbyTempPathOverride { get; set; }
+
+        protected string BattleLobbyTempPath { get { return BattleLobbyTempPathOverride ?? Path.GetTempPath(); } }
         protected string StormSavePath { get { return ReplayLocation.Current; } }
         protected FileSystemWatcher _battlelobby_watcher;
         protected FileSystemWatcher _stormsave_watcher;

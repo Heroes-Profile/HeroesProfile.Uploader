@@ -1,0 +1,37 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Heroesprofile.Uploader.Linux.Gui.App"
+             RequestedThemeVariant="Dark">
+
+  <Application.Styles>
+    <FluentTheme />
+    <StyleInclude Source="avares://heroesprofile-uploader/Gui/Theme/Styles.axaml" />
+  </Application.Styles>
+
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://heroesprofile-uploader/Gui/Theme/Colors.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+
+  <!-- Open/Pause/Quit mirror the Windows app's NotifyIcon menu. Only shown while the main window is
+       hidden (minimized/closed to tray) - see App.axaml.cs, matching the Windows app's own
+       TrayIcon.Visible toggling in MainWindow.xaml.cs/App.xaml.cs. -->
+  <TrayIcon.Icons>
+    <TrayIcons>
+      <TrayIcon ToolTipText="Heroes Profile Uploader" IsVisible="False" Icon="/Gui/Assets/app-icon.png">
+        <TrayIcon.Menu>
+          <NativeMenu>
+            <NativeMenuItem Header="Open" Click="TrayOpen_Click" />
+            <NativeMenuItem Header="Pause uploading" Click="TrayPause_Click" />
+            <NativeMenuItem Header="Open log" Click="TrayOpenLog_Click" />
+            <NativeMenuItemSeparator />
+            <NativeMenuItem Header="Quit" Click="TrayQuit_Click" />
+          </NativeMenu>
+        </TrayIcon.Menu>
+      </TrayIcon>
+    </TrayIcons>
+  </TrayIcon.Icons>
+</Application>

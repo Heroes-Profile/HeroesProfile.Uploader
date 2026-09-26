@@ -1,0 +1,17 @@
+<Project>
+
+  <!--
+    Linux support: GitVersionTask 5.1.3 (pulled in by the Heroes.ReplayParser submodule) can't load its
+    MSBuild task assembly under the SDK's Core-hosted `dotnet build`/`dotnet run` on Linux - it throws a
+    FileNotFoundException on GitVersionTask.MsBuild. DisableGitVersionTask is a first-class switch the
+    package itself defines (see its GitVersionTask.props) that short-circuits all of its targets.
+    Directory.Build.props is auto-imported by every project evaluated under this directory during
+    restore/build, including the submodule's, so setting it here reaches Heroes.ReplayParser without
+    needing -p:DisableGitVersionTask=true on every command line. $(OS) is "Windows_NT" on a real Windows
+    build (where GitVersionTask.MsBuild loads fine) and "Unix" here, so this is a no-op there.
+  -->
+  <PropertyGroup>
+    <DisableGitVersionTask Condition="'$(OS)' != 'Windows_NT'">true</DisableGitVersionTask>
+  </PropertyGroup>
+
+</Project>

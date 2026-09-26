@@ -1,0 +1,97 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!--
+    Colour tokens for the dark (MetroDark greys, as in the Windows app) and light themes. Avalonia re-resolves DynamicResource lookups against
+    whichever of these two dictionaries matches the active ThemeVariant, so switching theme is just
+    setting Application.RequestedThemeVariant - no manual brush swapping anywhere else.
+  -->
+  <ResourceDictionary.ThemeDictionaries>
+
+    <ResourceDictionary x:Key="Dark">
+      <SolidColorBrush x:Key="AppBackgroundBrush">#181818</SolidColorBrush>
+      <SolidColorBrush x:Key="AppBackgroundElevatedBrush">#202020</SolidColorBrush>
+      <SolidColorBrush x:Key="AppBackgroundPanelBrush">#232323</SolidColorBrush>
+      <SolidColorBrush x:Key="AppRowAltBrush">#1e1e1e</SolidColorBrush>
+      <SolidColorBrush x:Key="AppRowHoverBrush">#2a2a2a</SolidColorBrush>
+      <SolidColorBrush x:Key="AppBorderBrush">#333333</SolidColorBrush>
+      <SolidColorBrush x:Key="AppTextBrush">#f0f0f0</SolidColorBrush>
+      <SolidColorBrush x:Key="AppTextSecondaryBrush">#a3a3a3</SolidColorBrush>
+      <SolidColorBrush x:Key="AppTextTertiaryBrush">#6f6f6f</SolidColorBrush>
+      <SolidColorBrush x:Key="AppAccentBrush">#2bb693</SolidColorBrush>
+      <SolidColorBrush x:Key="AppAccentInkBrush">#0b2b22</SolidColorBrush>
+      <!-- Accent at ~18% alpha - active segmented-control fill, selection highlight. -->
+      <SolidColorBrush x:Key="AppAccentBgBrush">#2e2bb693</SolidColorBrush>
+      <!-- Fluent's own controls (checkboxes, focus rings) read the system accent - pin it to ours so they
+           don't come out in the desktop's blue. -->
+      <Color x:Key="SystemAccentColor">#2bb693</Color>
+      <Color x:Key="SystemAccentColorDark1">#23977a</Color>
+      <Color x:Key="SystemAccentColorDark2">#1b7861</Color>
+      <Color x:Key="SystemAccentColorDark3">#135948</Color>
+      <Color x:Key="SystemAccentColorLight1">#4cc4a5</Color>
+      <Color x:Key="SystemAccentColorLight2">#6fd1b8</Color>
+      <Color x:Key="SystemAccentColorLight3">#92dfcb</Color>
+
+      <SolidColorBrush x:Key="StatusSuccessBrush">#4caf6d</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusDuplicateBrush">#8a97a6</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusProgressBrush">#e0a233</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusErrorBrush">#e0665a</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusAiBrush">#b07bdb</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusIncompleteBrush">#c9c05a</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusPtrBrush">#5aa3e0</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusOldBrush">#7a7a7a</SolidColorBrush>
+
+      <!-- Badge fill = the status colour at ~22% alpha -->
+      <SolidColorBrush x:Key="StatusSuccessBgBrush">#384caf6d</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusDuplicateBgBrush">#388a97a6</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusProgressBgBrush">#38e0a233</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusErrorBgBrush">#38e0665a</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusAiBgBrush">#38b07bdb</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusIncompleteBgBrush">#38c9c05a</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusPtrBgBrush">#385aa3e0</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusOldBgBrush">#387a7a7a</SolidColorBrush>
+    </ResourceDictionary>
+
+    <ResourceDictionary x:Key="Light">
+      <SolidColorBrush x:Key="AppBackgroundBrush">#f4f4f4</SolidColorBrush>
+      <SolidColorBrush x:Key="AppBackgroundElevatedBrush">#ffffff</SolidColorBrush>
+      <SolidColorBrush x:Key="AppBackgroundPanelBrush">#ffffff</SolidColorBrush>
+      <SolidColorBrush x:Key="AppRowAltBrush">#eeeeee</SolidColorBrush>
+      <SolidColorBrush x:Key="AppRowHoverBrush">#e2f3ec</SolidColorBrush>
+      <SolidColorBrush x:Key="AppBorderBrush">#d7d7d7</SolidColorBrush>
+      <SolidColorBrush x:Key="AppTextBrush">#181818</SolidColorBrush>
+      <SolidColorBrush x:Key="AppTextSecondaryBrush">#5c5c5c</SolidColorBrush>
+      <SolidColorBrush x:Key="AppTextTertiaryBrush">#8a8a8a</SolidColorBrush>
+      <SolidColorBrush x:Key="AppAccentBrush">#1c8a6c</SolidColorBrush>
+      <SolidColorBrush x:Key="AppAccentInkBrush">#ffffff</SolidColorBrush>
+      <SolidColorBrush x:Key="AppAccentBgBrush">#2e1c8a6c</SolidColorBrush>
+      <!-- Fluent's own controls (checkboxes, focus rings) read the system accent - pin it to ours so they
+           don't come out in the desktop's blue. -->
+      <Color x:Key="SystemAccentColor">#1c8a6c</Color>
+      <Color x:Key="SystemAccentColorDark1">#176f57</Color>
+      <Color x:Key="SystemAccentColorDark2">#115542</Color>
+      <Color x:Key="SystemAccentColorDark3">#0c3b2e</Color>
+      <Color x:Key="SystemAccentColorLight1">#34a384</Color>
+      <Color x:Key="SystemAccentColorLight2">#5bb89e</Color>
+      <Color x:Key="SystemAccentColorLight3">#83ccb8</Color>
+
+      <SolidColorBrush x:Key="StatusSuccessBrush">#2e8b4f</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusDuplicateBrush">#5b6672</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusProgressBrush">#a8710f</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusErrorBrush">#bb3b2e</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusAiBrush">#7a45b0</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusIncompleteBrush">#8a7c1f</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusPtrBrush">#1f6fb5</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusOldBrush">#797979</SolidColorBrush>
+
+      <SolidColorBrush x:Key="StatusSuccessBgBrush">#382e8b4f</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusDuplicateBgBrush">#385b6672</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusProgressBgBrush">#38a8710f</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusErrorBgBrush">#38bb3b2e</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusAiBgBrush">#387a45b0</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusIncompleteBgBrush">#388a7c1f</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusPtrBgBrush">#381f6fb5</SolidColorBrush>
+      <SolidColorBrush x:Key="StatusOldBgBrush">#38797979</SolidColorBrush>
+    </ResourceDictionary>
+
+  </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>

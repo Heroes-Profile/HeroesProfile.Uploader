@@ -84,6 +84,19 @@ public sealed class WpfMigrationTests : IDisposable
     }
 
     [Fact]
+    public void Old_settings_folders_are_removed_separately()
+    {
+        var install = Sub("Heroesprofile");
+        Touch(Path.Combine(install, "Heroesprofile.Uploader.exe_Url_abc", "2.9.0.0", "user.config"));
+        Touch(Path.Combine(install, "Heroesprofile.Uploader.ex_Url_def", "2.8.0.0", "user.config"));
+        Touch(Path.Combine(install, "something-else", "keep.txt"));
+
+        LegacyApp.RemoveOldSettings(install);
+
+        Assert.Equal(new[] { "something-else" }, Directory.EnumerateFileSystemEntries(install).Select(Path.GetFileName));
+    }
+
+    [Fact]
     public void Only_shortcuts_into_the_old_install_are_removed()
     {
         var install = Sub("Heroesprofile");

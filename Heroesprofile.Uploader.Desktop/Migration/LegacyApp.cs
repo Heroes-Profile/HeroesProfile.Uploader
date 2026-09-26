@@ -123,13 +123,17 @@ namespace Heroesprofile.Uploader.Desktop.Migration
         }
 
         /// <summary>
-        /// The install's program files and the shortcuts pointing into it, then the install folder itself
-        /// if that leaves it empty.
+        /// The install's program files and the shortcuts pointing into it - and, once this app has saved
+        /// its own config.json, the WPF app's user.config folders too - then the install folder itself if
+        /// that leaves it empty.
         /// </summary>
         private static void RemoveInstall(string root)
         {
             if (Directory.Exists(root)) {
                 RemoveProgramFiles(root);
+                if (File.Exists(AppConfig.ConfigPath)) {
+                    RemoveOldSettings(root);
+                }
             }
             RemoveShortcuts(root, new[] {
                 Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
@@ -173,6 +177,18 @@ namespace Heroesprofile.Uploader.Desktop.Migration
                 if (File.Exists(file)) {
                     File.Delete(file);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Deletes the WPF app's .NET settings from <paramref name="root"/>: the
+        /// Heroesprofile.Uploader.exe_Url_&lt;hash&gt;\&lt;version&gt;\user.config folders. Only needed
+        /// for the first-run settings import (WpfSettingsImporter), so only removed once that's done.
+        /// </summary>
+        internal static void RemoveOldSettings(string root)
+        {
+            foreach (var dir in Directory.EnumerateDirectories(root, "Heroesprofile.Uploader.*_Url_*")) {
+                Directory.Delete(dir, recursive: true);
             }
         }
 

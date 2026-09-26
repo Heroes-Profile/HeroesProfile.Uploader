@@ -1,9 +1,9 @@
 version: 2
 
 updates:
-  # Directory.Packages.props (Common, Linux/Desktop, Tests), the dotnet tool manifest, and the
-  # legacy WPF project's inline versions. Minor/patch bumps arrive as one grouped PR a week; majors
-  # come one per PR so they get a proper look. CI (ci.yml) builds and tests each PR on all three OSes.
+  # Directory.Packages.props (Common, Desktop, Tests) and the dotnet tool manifest (vpk - keep it in
+  # step with the Velopack package). Minor/patch bumps arrive as one grouped PR a week; majors come one
+  # per PR so they get a proper look. CI (ci.yml) builds and tests each PR on all three OSes.
   - package-ecosystem: nuget
     directory: /
     schedule:
@@ -11,16 +11,6 @@ updates:
     groups:
       nuget-minor-and-patch:
         update-types: [minor, patch]
-    ignore:
-      # Squirrel.Windows and the packages it pins. They ship only in the legacy WPF app, which is
-      # being replaced (see the cross-platform plan); bumping them risks breaking its updater.
-      - dependency-name: squirrel.windows
-      - dependency-name: SharpCompress
-      - dependency-name: NuGet.CommandLine
-      - dependency-name: Splat
-      - dependency-name: Mono.Cecil
-      - dependency-name: DeltaCompressionDotNet
-      - dependency-name: MSBuildTasks
 
   - package-ecosystem: github-actions
     directory: /
@@ -30,7 +20,5 @@ updates:
       github-actions:
         patterns: ["*"]
 
-  - package-ecosystem: gitsubmodule
-    directory: /
-    schedule:
-      interval: weekly
+# The Heroes.ReplayParser submodule is deliberately left out: it stays pinned at the commit it's on,
+# since newer versions of it break the uploader. Update it by hand, only after testing.

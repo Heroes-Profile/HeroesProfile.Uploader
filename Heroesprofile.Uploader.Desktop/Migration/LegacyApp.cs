@@ -114,8 +114,13 @@ namespace Heroesprofile.Uploader.Desktop.Migration
                 return;
             }
             try {
+                // Shortcuts log themselves as they go; only mention the folder when something in it went.
+                var before = Directory.EnumerateFileSystemEntries(root).Count();
                 RemoveInstall(root);
-                _log.Info("Tidied up what was left of the old uploader");
+                var after = Directory.Exists(root) ? Directory.EnumerateFileSystemEntries(root).Count() : 0;
+                if (after < before) {
+                    _log.Info($"Tidied up what was left of the old uploader in {root}");
+                }
             }
             catch (Exception ex) {
                 _log.Warn(ex, "Could not tidy up what's left of the old uploader");

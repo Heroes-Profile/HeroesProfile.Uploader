@@ -58,6 +58,7 @@ namespace Heroesprofile.Uploader.Desktop.Updates
             try {
                 var manager = CreateManager(config);
                 if (!manager.IsInstalled) {
+                    _log.Info("Not an installed copy, so it can't update itself - only looking for a newer release.");
                     return new Result { Outcome = Outcome.NotInstalled };
                 }
 
@@ -68,8 +69,11 @@ namespace Heroesprofile.Uploader.Desktop.Updates
                     return new Result { Outcome = Outcome.ReadyToRestart, Version = pending.Version.ToString() };
                 }
 
+                _log.Info($"Checking {config.UpdateRepository} for updates ({(config.AllowPreReleases ? "betas included" : "full releases only")}); " +
+                    $"this is {manager.CurrentVersion}");
                 var update = await manager.CheckForUpdatesAsync();
                 if (update == null) {
+                    _log.Info("No update - this is the newest release" + (config.AllowPreReleases ? "." : " (turn on \"Allow beta updates\" for betas)."));
                     return new Result { Outcome = Outcome.NoUpdate };
                 }
 

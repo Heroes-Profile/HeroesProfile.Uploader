@@ -19,7 +19,8 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
         public SettingsWindow()
         {
             InitializeComponent();
-            KeyDown += OnKeyDown;
+            // Tunnel, so the window sees Ctrl+Z before a focused text box takes it as Undo.
+            AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
             Closing += OnClosing;
         }
 

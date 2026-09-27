@@ -129,6 +129,25 @@ heroesprofile-uploader scan --dry-run                 # just list what would upl
 heroesprofile-uploader run --prefix /path/to/prefix   # use a different prefix than the config file
 ```
 
+## Checking your download
+
+Every release has a `SHA256SUMS` file listing the AppImage's and tarball's checksums, and
+`SHA256SUMS.asc`, a signature over it made with the project's release key:
+
+- **Key:** [heroesprofile-uploader.asc](heroesprofile-uploader.asc) (Heroes Profile Uploader Releases)
+- **Fingerprint:** `B559 8B38 AB5A 6EB8 B9E7  3CE0 F614 3744 E68A 9BFA`
+
+Download `SHA256SUMS` and `SHA256SUMS.asc` into the folder with your download, then:
+
+```sh
+gpg --import heroesprofile-uploader.asc                 # once
+gpg --verify SHA256SUMS.asc SHA256SUMS                  # "Good signature from Heroes Profile Uploader Releases"
+sha256sum -c --ignore-missing SHA256SUMS                # your file: OK
+```
+
+Check that the fingerprint `gpg` prints matches the one above. The AppImage's own updates are checked
+automatically, so this is only for the file you download yourself.
+
 ## Files
 
 | What | Where |

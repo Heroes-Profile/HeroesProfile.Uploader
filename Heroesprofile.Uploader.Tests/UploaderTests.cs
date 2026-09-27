@@ -91,6 +91,35 @@ public sealed class UploaderTests : IDisposable
     }
 
     [Fact]
+    public async Task The_postmatch_check_runs_in_the_background_and_keeps_asking_while_the_site_parses()
+    {
+        // Never "true" - that would open a real browser.
+        var parsing = Enumerable.Repeat(Json("false"), 50);
+        var server = new FakeServer(new[] {
+            Json("""{ "exists": false }"""),
+            Json($$"""{ "fingerprint": "{{Fingerprint}}", "replayID": 123, "status": "Success" }"""),
+        }.Concat(parsing).ToArray());
+        var uploader = UploaderFor(server);
+        uploader.PostMatchWaitTime = TimeSpan.FromMilliseconds(600);
+        uploader.PostMatchPollInterval = TimeSpan.FromMilliseconds(50);
+        var file = Replay();
+
+        var upload = System.Diagnostics.Stopwatch.StartNew();
+        await uploader.Upload(null!, file, PostMatchPage: true);
+        upload.Stop();
+
+        // The upload queue isn't held up while the site parses the replay...
+        Assert.Equal(UploadStatus.Success, file.UploadStatus);
+        Assert.True(upload.Elapsed < uploader.PostMatchWaitTime, $"Upload waited {upload.ElapsedMilliseconds}ms for the postmatch check");
+
+        // ...but the check carries on after it.
+        await Task.Delay(uploader.PostMatchWaitTime + TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
+        var checks = server.Requests.ToArray().Where(r => r.Uri.AbsolutePath.EndsWith("/replays/parsed")).ToList();
+        Assert.True(checks.Count > 3, $"only {checks.Count} parsed checks");
+        Assert.All(checks, r => Assert.Contains("replayID=123", r.Uri.Query));
+    }
+
+    [Fact]
     public async Task A_replay_already_on_Heroes_Profile_is_a_duplicate_and_is_not_uploaded()
     {
         var server = new FakeServer(Json("""{ "exists": true }"""));

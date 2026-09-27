@@ -21,6 +21,12 @@ namespace Heroesprofile.Uploader.Desktop
         /// <summary>The replay folder watcher to use on <paramref name="platform"/>: settled on Linux/macOS, plain on Windows.</summary>
         public static Monitor ForPlatform(IPlatform platform) => platform.UseSettledMonitor ? new SettledMonitor() : new Monitor();
 
+        /// <summary>
+        /// <see cref="Manager.LiveFileSettleTime"/> for <paramref name="platform"/>: the same problem for the battle
+        /// lobby (pre-match page) and storm saves. The game writes those in a few milliseconds, so a short wait does.
+        /// </summary>
+        public static TimeSpan LiveFileSettleTimeFor(IPlatform platform) => platform.UseSettledMonitor ? TimeSpan.FromMilliseconds(500) : TimeSpan.Zero;
+
         private static readonly Logger _log = LogManager.GetCurrentClassLogger();
 
         // How long the file size must stay unchanged before we consider the write finished.

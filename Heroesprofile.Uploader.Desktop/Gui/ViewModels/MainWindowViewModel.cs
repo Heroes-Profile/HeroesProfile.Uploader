@@ -207,6 +207,7 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
                 PreMatchPage = Config.PreMatchPage,
                 PostMatchPage = Config.PostMatchPage,
                 DeleteAfterUpload = Config.DeleteAfterUpload,
+                LiveFileSettleTime = SettledMonitor.LiveFileSettleTimeFor(Platform),
             };
             WebhookNotifier.WebhookUrl = Config.WebhookUrl;
             Manager.Twitch.Key = Config.TwitchUploaderKey;

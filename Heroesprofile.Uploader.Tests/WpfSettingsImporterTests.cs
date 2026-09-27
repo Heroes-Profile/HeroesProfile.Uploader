@@ -82,7 +82,7 @@ public class WpfSettingsImporterTests
             FakeUnprotect);
 
         Assert.True(config.AutoUpdate);
-        Assert.Equal(700, config.WindowWidth);
+        Assert.Equal(760, config.WindowWidth);
         Assert.Equal(DeleteFiles.None, config.DeleteAfterUpload);
         Assert.Equal(AppConfig.DarkTheme, config.Theme);
     }

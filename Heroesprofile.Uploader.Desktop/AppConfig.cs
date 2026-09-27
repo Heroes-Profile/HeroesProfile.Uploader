@@ -109,10 +109,12 @@ namespace Heroesprofile.Uploader.Desktop
         public bool MinimizeToTray { get; set; }
         public bool StartOnLogin { get; set; }
 
-        // Main window placement, remembered between runs. Same defaults as the WPF app.
+        // Main window placement, remembered between runs. Same defaults as the WPF app, except 60 wider
+        // to make room for the replay id column: the longest map's file name
+        // ("... Tomb of the Spider Queen.StormReplay") still shows in full.
         public int WindowLeft { get; set; } = 400;
         public int WindowTop { get; set; } = 400;
-        public double WindowWidth { get; set; } = 700;
+        public double WindowWidth { get; set; } = 760;
         public double WindowHeight { get; set; } = 600;
 
         // Theme 2 is laid out for a narrower window, so it remembers its own size (PR #53's default);

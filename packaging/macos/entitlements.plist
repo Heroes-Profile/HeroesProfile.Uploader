@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Hardened-runtime exceptions the .NET runtime needs in a signed, notarized app (release-desktop.yml
+  passes this to vpk pack as its entitlements file). JIT: the runtime compiles code at run time.
+  Library validation off: the app loads its own native libraries (SkiaSharp, HarfBuzz) and
+  Velopack's, which aren't all signed by our Team ID. Drop any that notarized builds turn out not
+  to need.
+-->
+<plist version="1.0">
+<dict>
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+  <true/>
+  <key>com.apple.security.cs.disable-library-validation</key>
+  <true/>
+</dict>
+</plist>

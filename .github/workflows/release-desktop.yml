@@ -7,7 +7,14 @@ name: Release (Desktop)
 #
 # Manual only, and a DRAFT unless you choose otherwise: drafts are invisible to update clients, so a
 # test build can't reach anyone by accident. Choose "prerelease" only for builds testers should get.
-# Nothing is signed yet (see the cross-platform plan, Phase 7).
+#
+# Signing: each OS signs only once its account is set up in the repo's "release-signing" environment
+# (each value is listed below); until then that OS's build is unsigned, exactly as before.
+#   Windows - Azure Artifact Signing (vars AZURE_CLIENT_ID, AZURE_TENANT_ID, ARTIFACT_SIGNING_ENDPOINT,
+#             ARTIFACT_SIGNING_ACCOUNT, ARTIFACT_SIGNING_PROFILE)
+#   macOS   - Developer ID + notarization (var APPLE_TEAM_ID; secrets MACOS_CERTIFICATES_P12,
+#             MACOS_CERTIFICATES_PASSWORD, APPLE_API_KEY_P8; vars APPLE_API_KEY_ID, APPLE_API_ISSUER)
+#   Linux   - GPG-signed SHA256SUMS (secrets LINUX_GPG_PRIVATE_KEY, LINUX_GPG_PASSPHRASE)
 on:
   workflow_dispatch:
     inputs:
@@ -39,6 +46,8 @@ env:
   # %LOCALAPPDATA%\Heroesprofile.Uploader, next to (not over) the old WPF app's %LOCALAPPDATA%\Heroesprofile.
   PACK_ID: Heroesprofile.Uploader
   PACK_TITLE: Heroes Profile Uploader
+  # The legal entity every signature is issued to.
+  PUBLISHER: Skill Tree Development LLC
   MAIN_EXE: heroesprofile-uploader
 
 jobs:
@@ -83,11 +92,19 @@ jobs:
             rid: osx-x64
             channel: osx-x64
     runs-on: ${{ matrix.os }}
+    # Holds the signing credentials; restrict it to trusted branches/tags (and add reviewers) in the
+    # repo's Settings -> Environments.
+    environment: release-signing
+    permissions:
+      contents: read
+      id-token: write # Azure sign-in without a stored secret (OIDC)
     defaults:
       run:
         shell: bash
     env:
       VERSION: ${{ needs.version.outputs.version }}
+      SIGN_WINDOWS: ${{ startsWith(matrix.rid, 'win-') && vars.ARTIFACT_SIGNING_ACCOUNT != '' }}
+      SIGN_MACOS: ${{ startsWith(matrix.rid, 'osx-') && vars.APPLE_TEAM_ID != '' }}
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -135,7 +152,56 @@ jobs:
           --channel ${{ matrix.channel }} --pre --token "$GH_TOKEN" -o releases
           || echo "No previous release for ${{ matrix.channel }} - full package only."
 
+      # --- Windows signing: Azure Artifact Signing, signed in with OIDC (no stored secret). ---
+      - name: Azure sign-in
+        if: env.SIGN_WINDOWS == 'true'
+        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          # The app only has a role on the signing account, not the subscription - which is all signing needs.
+          allow-no-subscriptions: true
+
+      - name: Windows signing settings
+        if: env.SIGN_WINDOWS == 'true'
+        env:
+          ENDPOINT: ${{ vars.ARTIFACT_SIGNING_ENDPOINT }}
+          ACCOUNT: ${{ vars.ARTIFACT_SIGNING_ACCOUNT }}
+          PROFILE: ${{ vars.ARTIFACT_SIGNING_PROFILE }}
+        run: |
+          jq -n --arg e "$ENDPOINT" --arg a "$ACCOUNT" --arg p "$PROFILE" \
+            '{Endpoint: $e, CodeSigningAccountName: $a, CertificateProfileName: $p}' > "$RUNNER_TEMP/signing.json"
+
+      # --- macOS signing: Developer ID certificates in a throwaway keychain, notarized with an App
+      # Store Connect API key. The keychain and key file are deleted at the end of the job. ---
+      - name: macOS signing keychain
+        if: env.SIGN_MACOS == 'true'
+        env:
+          CERTIFICATES_P12: ${{ secrets.MACOS_CERTIFICATES_P12 }}
+          CERTIFICATES_PASSWORD: ${{ secrets.MACOS_CERTIFICATES_PASSWORD }}
+          API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+          API_KEY_ID: ${{ vars.APPLE_API_KEY_ID }}
+          API_ISSUER: ${{ vars.APPLE_API_ISSUER }}
+        run: |
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          password=$(openssl rand -hex 16)
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 3600 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          echo "$CERTIFICATES_P12" | base64 --decode > "$RUNNER_TEMP/certificates.p12"
+          security import "$RUNNER_TEMP/certificates.p12" -k "$keychain" -P "$CERTIFICATES_PASSWORD" -T /usr/bin/codesign -T /usr/bin/productsign
+          rm "$RUNNER_TEMP/certificates.p12"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$password" "$keychain" > /dev/null
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          echo "$API_KEY_P8" | base64 --decode > "$RUNNER_TEMP/api-key.p8"
+          xcrun notarytool store-credentials heroesprofile-notary --key "$RUNNER_TEMP/api-key.p8" \
+            --key-id "$API_KEY_ID" --issuer "$API_ISSUER" --keychain "$keychain"
+          rm "$RUNNER_TEMP/api-key.p8"
+          echo "KEYCHAIN=$keychain" >> "$GITHUB_ENV"
+
       - name: Pack
+        env:
+          TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
         run: |
           args=(--packId "$PACK_ID" --packVersion "$VERSION" --packTitle "$PACK_TITLE" --packAuthors "Heroes Profile"
                 --packDir publish --runtime ${{ matrix.rid }} --icon "${{ steps.icon.outputs.path }}" -o releases)
@@ -145,8 +211,57 @@ jobs:
             osx-*) args+=(--mainExe "$MAIN_EXE" --channel ${{ matrix.channel }} --bundleId com.heroesprofile.uploader) ;;
             *)     args+=(--mainExe "$MAIN_EXE" --channel ${{ matrix.channel }}) ;;
           esac
+          # Signs the app, Setup.exe/Update.exe (Windows) or the .app and .pkg (macOS, then notarizes
+          # and staples them) - every file users download and every update package.
+          if [ "$SIGN_WINDOWS" = "true" ]; then
+            args+=(--azureTrustedSignFile "$RUNNER_TEMP/signing.json")
+          fi
+          if [ "$SIGN_MACOS" = "true" ]; then
+            args+=(--signAppIdentity "Developer ID Application: $PUBLISHER ($TEAM_ID)"
+                   --signInstallIdentity "Developer ID Installer: $PUBLISHER ($TEAM_ID)"
+                   --signEntitlements packaging/macos/entitlements.plist
+                   --notaryProfile heroesprofile-notary --keychain "$KEYCHAIN")
+          fi
           dotnet vpk pack "${args[@]}"
           ls -la releases
+
+      # A release that claims to be signed must really be: fail the build otherwise.
+      - name: Verify Windows signatures
+        if: env.SIGN_WINDOWS == 'true'
+        shell: pwsh
+        run: |
+          $failed = $false
+          New-Item -ItemType Directory -Force check | Out-Null
+          Expand-Archive (Get-ChildItem releases/*-Portable.zip | Select-Object -First 1) check -Force
+          # Ours only - the runtime's own .exe files (createdump.exe) stay signed by Microsoft.
+          $files = @(Get-ChildItem releases/*-Setup.exe) + @(Get-ChildItem check/*.exe) +
+                   @(Get-ChildItem check -Recurse -Include "$env:MAIN_EXE.exe", Update.exe)
+          foreach ($f in $files) {
+            $s = Get-AuthenticodeSignature $f.FullName
+            "{0}: {1} - {2} - timestamped: {3}" -f $f.Name, $s.Status, $s.SignerCertificate.Subject, ($null -ne $s.TimeStamperCertificate)
+            if ($s.Status -ne 'Valid' -or $s.SignerCertificate.Subject -notlike "*$env:PUBLISHER*" -or $null -eq $s.TimeStamperCertificate) { $failed = $true }
+          }
+          if ($failed) { throw "Some files aren't validly signed and timestamped by $env:PUBLISHER" }
+
+      - name: Verify macOS signatures
+        if: env.SIGN_MACOS == 'true'
+        run: |
+          mkdir -p check && ditto -x -k releases/*-Portable.zip check
+          app=$(find check -maxdepth 2 -name "*.app" | head -1)
+          codesign --verify --deep --strict --verbose=2 "$app"
+          assessment=$(spctl --assess --type execute -vv "$app" 2>&1)
+          echo "$assessment"
+          grep -q "source=Notarized Developer ID" <<< "$assessment"
+          xcrun stapler validate "$app"
+          pkg=$(ls releases/*-Setup.pkg | head -1)
+          signature=$(pkgutil --check-signature "$pkg")
+          echo "$signature"
+          grep -q "$PUBLISHER" <<< "$signature"
+          spctl --assess --type install -vv "$pkg"
+
+      - name: Remove the signing keychain
+        if: always() && env.SIGN_MACOS == 'true'
+        run: security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true
 
       # Headless/systemd Linux users run the plain single-file binary (packaging/linux/README.md).
       - name: Linux tarball
@@ -169,10 +284,12 @@ jobs:
   upload:
     needs: [version, build]
     runs-on: ubuntu-latest
+    environment: release-signing
     permissions:
       contents: write
     env:
       VERSION: ${{ needs.version.outputs.version }}
+      SIGN_LINUX: ${{ secrets.LINUX_GPG_PRIVATE_KEY != '' }}
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -194,6 +311,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE: ${{ inputs.release || 'draft' }}
+          LINUX_GPG_PRIVATE_KEY: ${{ secrets.LINUX_GPG_PRIVATE_KEY }}
+          LINUX_GPG_PASSPHRASE: ${{ secrets.LINUX_GPG_PASSPHRASE }}
         run: |
           # One draft at a time: remove earlier beta drafts (tag vX.Y.Z-beta.N) before uploading this
           # build. Only drafts - published releases (prereleases included) are never touched, and drafts
@@ -218,10 +337,22 @@ jobs:
           cp release-linux/releases/*.AppImage .
           sha256sum *.AppImage HeroesProfileUploader-linux-x64.tar.gz > SHA256SUMS
           cat SHA256SUMS
+          extra=()
+          if [ "$SIGN_LINUX" = "true" ]; then
+            # Detached signature with the project's release key (published with its fingerprint), so
+            # anyone can check the Linux downloads: gpg --verify SHA256SUMS.asc && sha256sum -c SHA256SUMS
+            export GNUPGHOME="$RUNNER_TEMP/gnupg"
+            mkdir -m 700 "$GNUPGHOME"
+            echo "$LINUX_GPG_PRIVATE_KEY" | gpg --batch --import
+            echo "$LINUX_GPG_PASSPHRASE" | gpg --batch --pinentry-mode loopback --passphrase-fd 0 --armor --detach-sign -o SHA256SUMS.asc SHA256SUMS
+            gpg --verify SHA256SUMS.asc SHA256SUMS
+            rm -rf "$GNUPGHOME"
+            extra+=(SHA256SUMS.asc)
+          fi
           # The website links to .../releases/latest/download/HeroesProfileUploaderSetup.exe (the WPF
           # app's installer name); a copy under that name keeps those links working.
           cp release-win/releases/*-win-Setup.exe HeroesProfileUploaderSetup.exe
-          gh release upload "v$VERSION" HeroesProfileUploader-linux-x64.tar.gz SHA256SUMS HeroesProfileUploaderSetup.exe --clobber
+          gh release upload "v$VERSION" HeroesProfileUploader-linux-x64.tar.gz SHA256SUMS HeroesProfileUploaderSetup.exe "${extra[@]}" --clobber
           # The release description: which of all these files to download on which OS.
           sed "s|INSTALL_URL|https://github.com/${{ github.repository }}/blob/${{ github.sha }}/packaging/INSTALL.md|"             packaging/release-notes.md > release-notes.md
           gh release edit "v$VERSION" --notes-file release-notes.md
@@ -231,7 +362,9 @@ jobs:
           RELEASE: ${{ inputs.release || 'draft' }}
         run: |
           {
-            echo "## v$VERSION ($RELEASE, unsigned)"
+            echo "## v$VERSION ($RELEASE)"
+            echo
+            echo "Signed: Windows ${{ vars.ARTIFACT_SIGNING_ACCOUNT != '' && 'yes' || 'no' }}, macOS ${{ vars.APPLE_TEAM_ID != '' && 'yes' || 'no' }}, Linux checksums $SIGN_LINUX"
             echo
             echo "Release: https://github.com/${{ github.repository }}/releases/tag/v$VERSION"
             echo

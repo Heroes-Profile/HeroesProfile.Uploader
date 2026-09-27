@@ -4,5 +4,6 @@
   </Folder>
   <Project Path="Heroesprofile.Uploader.Common/Heroesprofile.Uploader.Common.csproj" />
   <Project Path="Heroesprofile.Uploader.Desktop/Heroesprofile.Uploader.Desktop.csproj" />
+  <Project Path="Heroesprofile.Uploader.RankCapture/Heroesprofile.Uploader.RankCapture.csproj" />
   <Project Path="Heroesprofile.Uploader.Tests/Heroesprofile.Uploader.Tests.csproj" />
 </Solution>

@@ -39,6 +39,19 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
             }
         }
 
+        /// <summary>Turning rank reading on asks first: it captures the game window and, during the beta, uploads part of it.</summary>
+        private async void ReadRanks_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not CheckBox { IsChecked: true }) {
+                return;
+            }
+            var answer = await MessageDialog.ShowAsync(this, "Read ranks from the loading screen",
+                SettingsWindowViewModel.RankReadingConsent, "Turn on", "Cancel");
+            if (answer != "Turn on") {
+                ViewModel.ReadRanks = false;
+            }
+        }
+
         private async void BrowseReplayPath_Click(object sender, RoutedEventArgs e)
         {
             var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions {

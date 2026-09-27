@@ -98,6 +98,13 @@ jobs:
           - os: windows-latest
             rid: win-x64
             channel: win
+          # The "Ranks" build: the same Windows app plus the opt-in rank reader
+          # (Heroesprofile.Uploader.RankCapture), on its own update channel so a normal install is never
+          # moved onto it. Only this entry sets publish-args.
+          - os: windows-latest
+            rid: win-x64
+            channel: win-ranks
+            publish-args: -p:IncludeRankCapture=true
           - os: ubuntu-latest
             rid: linux-x64
             channel: linux
@@ -139,7 +146,18 @@ jobs:
       - name: Publish
         run: >
           dotnet publish Heroesprofile.Uploader.Desktop -c Release -r ${{ matrix.rid }} --self-contained
-          -p:Version=$VERSION -p:DebugType=none -p:RestoreLockedMode=false -o publish
+          -p:Version=$VERSION -p:DebugType=none -p:RestoreLockedMode=false ${{ matrix.publish-args }} -o publish
+
+      # The normal builds must never carry the rank reader's screen-capture code (it's what lets
+      # privacy-minded users pick them); the Ranks build must.
+      - name: Check the rank reader is only in the Ranks build
+        run: |
+          found=$(find publish -iname '*RankCapture*' | head -1)
+          if [ "${{ matrix.channel }}" = "win-ranks" ]; then
+            [ -n "$found" ] || { echo "::error::The Ranks build is missing Heroesprofile.Uploader.RankCapture"; exit 1; }
+          else
+            [ -z "$found" ] || { echo "::error::$found is in the ${{ matrix.channel }} build - rank capture must only ship in the Ranks build"; exit 1; }
+          fi
 
       - name: Icon
         id: icon
@@ -222,8 +240,9 @@ jobs:
           args=(--packId "$PACK_ID" --packVersion "$VERSION" --packTitle "$PACK_TITLE" --packAuthors "Heroes Profile"
                 --packDir publish --runtime ${{ matrix.rid }} --icon "${{ steps.icon.outputs.path }}" -o releases)
           case "${{ matrix.rid }}" in
-            # Windows stays on vpk's default channel ("win").
-            win-*) args+=(--mainExe "$MAIN_EXE.exe") ;;
+            # The normal Windows build stays on vpk's default channel ("win"); the Ranks build has its own.
+            win-*) args+=(--mainExe "$MAIN_EXE.exe")
+                   if [ "${{ matrix.channel }}" != "win" ]; then args+=(--channel ${{ matrix.channel }}); fi ;;
             osx-*) args+=(--mainExe "$MAIN_EXE" --channel ${{ matrix.channel }} --bundleId com.heroesprofile.uploader) ;;
             *)     args+=(--mainExe "$MAIN_EXE" --channel ${{ matrix.channel }}) ;;
           esac
@@ -341,7 +360,7 @@ jobs:
 
           # Named like every earlier release: just the tag, e.g. v3.0.0-beta.2.
           flags=(--merge --tag "v$VERSION" --releaseName "v$VERSION")
-          for channel in win linux osx-arm64 osx-x64; do
+          for channel in win win-ranks linux osx-arm64 osx-x64; do
             dotnet vpk upload github --repoUrl "https://github.com/${{ github.repository }}" --token "$GH_TOKEN" \
               --channel "$channel" -o "release-$channel/releases" "${flags[@]}"
           done

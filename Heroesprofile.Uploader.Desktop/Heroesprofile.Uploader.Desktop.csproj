@@ -27,6 +27,20 @@
     <ProjectReference Include="..\Heroesprofile.Uploader.Common\Heroesprofile.Uploader.Common.csproj" />
   </ItemGroup>
 
+  <!--
+    The "Ranks" build: -p:IncludeRankCapture=true adds the opt-in rank reader (Heroesprofile.Uploader.RankCapture,
+    Windows only) and defines RANK_CAPTURE for the one place that hooks it up (RankReading.cs). Without it -
+    the normal build, and every build on Linux/macOS - none of that project is referenced or shipped.
+  -->
+  <PropertyGroup Condition="'$(IncludeRankCapture)' == 'true'">
+    <TargetFramework>net10.0-windows10.0.22621.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <DefineConstants>$(DefineConstants);RANK_CAPTURE</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(IncludeRankCapture)' == 'true'">
+    <ProjectReference Include="..\Heroesprofile.Uploader.RankCapture\Heroesprofile.Uploader.RankCapture.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <InternalsVisibleTo Include="Heroesprofile.Uploader.Tests" />
   </ItemGroup>

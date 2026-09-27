@@ -56,6 +56,7 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
             selectedTheme = Array.Find(Themes, t => t.Value == config.Theme) ?? Themes[1];
             selectedDesign = Array.Find(Designs, d => d.Value == config.Design) ?? Designs[0];
             allowPreReleases = config.AllowPreReleases;
+            readRanks = RankReading.IsAvailable && config.ReadRanks;
             showPreReleases = config.AllowPreReleases;
             twitchUploaderKey = config.TwitchUploaderKey ?? "";
             webhookUrl = config.WebhookUrl ?? "";
@@ -124,6 +125,24 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
 
         /// <summary>This window follows the Design choice too (Theme 2's control styling).</summary>
         public bool IsTheme2 => SelectedDesign?.Value == AppConfig.Theme2Design;
+
+        // Rank reading - only the Ranks build offers it (RankReading.IsAvailable)
+
+        public bool SupportsRankReading => RankReading.IsAvailable;
+
+        public const string RankReadingConsent =
+            "While a game's loading screen is showing, the uploader will capture the Heroes of the Storm " +
+            "window and read each player's rank from it. It only looks at the game window, only during the " +
+            "loading screen, and never reads or changes the game itself.\n\n" +
+            "After the game, the players' ranks are sent to Heroes Profile with that game's replay.\n\n" +
+            "While rank reading is in beta, the part of the loading screen showing the ten player cards is " +
+            "also uploaded to Heroes Profile, to help build and test it.\n\n" +
+            "Turn on rank reading?";
+
+        [ObservableProperty]
+        private bool readRanks;
+
+        partial void OnReadRanksChanged(bool value) => _main.ApplyReadRanks(value);
 
         /// <summary>WPF keeps "Allow beta updates" hidden unless it's already on, or Ctrl+Z is pressed.</summary>
         [ObservableProperty]

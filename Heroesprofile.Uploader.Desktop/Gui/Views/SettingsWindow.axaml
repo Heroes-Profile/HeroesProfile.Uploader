@@ -71,6 +71,14 @@
       <TextBlock FontSize="10" TextWrapping="Wrap" Foreground="{DynamicResource StatusUploadFailedBrush}"
                  Text="{Binding WebhookError}"
                  IsVisible="{Binding WebhookError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+      <!-- Only in the Ranks build -->
+      <StackPanel Spacing="8" IsVisible="{Binding SupportsRankReading}">
+        <TextBlock Classes="heading" Text="Rank reading (Beta)" Margin="0,16,0,0" />
+        <TextBlock Classes="hint"
+                   Text="Reads each player's Storm League rank from the game's loading screen and sends it to Heroes Profile with the game's replay, so matches show real ranks. Only the game window is captured, only during the loading screen." />
+        <CheckBox Content="Read ranks from the loading screen" IsChecked="{Binding ReadRanks}" Click="ReadRanks_Click" />
+      </StackPanel>
     </StackPanel>
   </Grid>
 </Window>

@@ -3,6 +3,7 @@
 | Your computer | Download | Or, without installing |
 |---|---|---|
 | **Windows** | `Heroesprofile.Uploader-win-Setup.exe` | `Heroesprofile.Uploader-win-Portable.zip` |
+| **Windows, with rank reading** (beta, opt-in) | `Heroesprofile.Uploader-win-ranks-Setup.exe` | `Heroesprofile.Uploader-win-ranks-Portable.zip` |
 | **Mac with Apple Silicon** (M1 and later) | `Heroesprofile.Uploader-osx-arm64-Setup.pkg` | `Heroesprofile.Uploader-osx-arm64-Portable.zip` |
 | **Mac with Intel** | `Heroesprofile.Uploader-osx-x64-Setup.pkg` | `Heroesprofile.Uploader-osx-x64-Portable.zip` |
 | **Linux** (desktop) | `Heroesprofile.Uploader.AppImage` | |

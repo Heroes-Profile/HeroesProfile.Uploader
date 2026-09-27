@@ -56,6 +56,13 @@ namespace Heroesprofile.Uploader.Common
         /// <summary>The Twitch extension feed. Shared across games; each lobby starts a new one.</summary>
         public TwitchLiveSession Twitch { get; }
 
+        /// <summary>
+        /// Called with each game's parsed lobby (players, battletags, teams) - for features that run
+        /// alongside the pre-match page, like the opt-in rank reader of the Ranks build (see
+        /// Manager.SetLobbyReader). Null when nothing needs it.
+        /// </summary>
+        public Action<Replay> LobbyParsed { get; set; }
+
         public LiveProcessor(bool PreMatchPage, TwitchLiveSession twitch = null)
         {
             this.PreMatchPage = PreMatchPage;
@@ -64,7 +71,7 @@ namespace Heroesprofile.Uploader.Common
 
         public async Task StartProcessing(string battleLobbyPath)
         {
-            if (!PreMatchPage && !Twitch.Enabled) {
+            if (!PreMatchPage && !Twitch.Enabled && LobbyParsed == null) {
                 return;
             }
 
@@ -82,6 +89,15 @@ namespace Heroesprofile.Uploader.Common
                 // usually means the game was still writing the file when the watcher fired
                 _log.Warn("No players parsed out of the battlelobby, skipping prematch");
                 return;
+            }
+
+            if (LobbyParsed != null) {
+                try {
+                    LobbyParsed(replayData);
+                }
+                catch (Exception ex) {
+                    _log.Error(ex, "Lobby reader failed");
+                }
             }
 
             if (PreMatchPage) {

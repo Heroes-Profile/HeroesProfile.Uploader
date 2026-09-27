@@ -184,6 +184,12 @@ namespace Heroesprofile.Uploader.Desktop
         /// <summary>Also consider prerelease GitHub releases (test builds) when checking for updates.</summary>
         public bool AllowPreReleases { get; set; }
 
+        /// <summary>
+        /// "Read ranks from the loading screen" - opt-in, and only offered by the Ranks build (see
+        /// RankReading); the normal build keeps whatever is here and ignores it.
+        /// </summary>
+        public bool ReadRanks { get; set; }
+
         public static string ConfigPath => Path.Combine(Platforms.Current.ConfigDir, "config.json");
         public static string DataDir => Platforms.Current.DataDir;
 

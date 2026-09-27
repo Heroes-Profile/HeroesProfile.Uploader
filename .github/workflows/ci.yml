@@ -34,7 +34,9 @@ jobs:
       # CI=true (set by Actions) turns on RestoreLockedMode, so this fails if any packages.lock.json
       # is out of date, and NuGetAudit fails it on any known-vulnerable package.
       - name: Restore
-        run: dotnet restore Heroesprofile.Uploader.Tests
+        run: |
+          dotnet restore Heroesprofile.Uploader.Tests
+          dotnet restore Heroesprofile.Uploader.RankCapture
 
       - name: Build
         run: dotnet build Heroesprofile.Uploader.Tests --no-restore -c Release
@@ -42,10 +44,16 @@ jobs:
       - name: Test
         run: dotnet test --project Heroesprofile.Uploader.Tests --no-build -c Release
 
+      # The Ranks build (opt-in rank reader, Windows only) - so a break in it shows up here, not at
+      # release time. A different target framework than the lock files describe, hence not locked.
+      - name: Build the Ranks variant
+        if: runner.os == 'Windows'
+        run: dotnet build Heroesprofile.Uploader.Desktop -c Release -p:IncludeRankCapture=true -p:RestoreLockedMode=false
+
       - name: Check formatting
         if: runner.os == 'Linux'
         run: |
-          for project in Heroesprofile.Uploader.Common Heroesprofile.Uploader.Desktop Heroesprofile.Uploader.Tests; do
+          for project in Heroesprofile.Uploader.Common Heroesprofile.Uploader.Desktop Heroesprofile.Uploader.Tests Heroesprofile.Uploader.RankCapture; do
             dotnet format whitespace "$project/$project.csproj" --no-restore --verify-no-changes
           done
 

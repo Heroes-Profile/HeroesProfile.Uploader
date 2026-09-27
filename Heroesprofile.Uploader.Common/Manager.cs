@@ -86,7 +86,45 @@ namespace Heroesprofile.Uploader.Common
         public TwitchLiveSession Twitch { get; } = new TwitchLiveSession();
 
         /// <summary>Either live feature needs the battle lobby watched.</summary>
-        private bool WatchesLiveGames => PreMatchPage || Twitch.Enabled;
+        private bool WatchesLiveGames => PreMatchPage || Twitch.Enabled || _lobbyReader != null;
+
+        private Action<Replay> _lobbyReader;
+        private Action<Replay> _stormSaveReader;
+
+        /// <summary>
+        /// Something to call with each game's parsed lobby, or null for none. The normal app never sets
+        /// one; the Ranks build sets its rank reader here while rank reading is switched on. Takes effect
+        /// straight away, like <see cref="SetTwitchEnabled"/>.
+        /// </summary>
+        public void SetLobbyReader(Action<Replay> reader)
+        {
+            if (_lobbyReader == reader) {
+                return;
+            }
+            _lobbyReader = reader;
+
+            if (_initialized) {
+                RestartLiveWatchers();
+            }
+        }
+
+        /// <summary>
+        /// Something to call with each storm save of the game in progress, parsed (players, map and game mode
+        /// - the lobby file has no mode), or null for none. The game writes the first one as the match
+        /// starts. The Ranks build's rank reader uses it to drop what it captured in anything but a Storm
+        /// League game. Takes effect straight away.
+        /// </summary>
+        public void SetStormSaveReader(Action<Replay> reader)
+        {
+            if (_stormSaveReader == reader) {
+                return;
+            }
+            _stormSaveReader = reader;
+
+            if (_initialized) {
+                RestartLiveWatchers();
+            }
+        }
 
 
         private string _status = "";
@@ -188,7 +226,7 @@ namespace Heroesprofile.Uploader.Common
                 _live_monitor.TempBattleLobbyCreated += async (_, e) => {
 
                     _live_monitor.StopBattleLobbyWatcher();
-                    _liveProcessor = new LiveProcessor(PreMatchPage, Twitch);
+                    _liveProcessor = new LiveProcessor(PreMatchPage, Twitch) { LobbyParsed = _lobbyReader };
 
                     var tmpPath = Path.GetTempFileName();
                     try {
@@ -247,11 +285,11 @@ namespace Heroesprofile.Uploader.Common
 
         /// <summary>
         /// The game writes a .StormSave as it goes — after heroes load and as talents
-        /// are picked. Only the Twitch extension reads them.
+        /// are picked. The Twitch extension reads them, and so does the storm save reader if one is set.
         /// </summary>
         private void StartStormSaveWatcherEvent()
         {
-            if (!Twitch.Enabled) {
+            if (!Twitch.Enabled && _stormSaveReader == null) {
                 return;
             }
 
@@ -262,6 +300,14 @@ namespace Heroesprofile.Uploader.Common
                     await EnsureFileAvailable(e.Data, testWrite: false);
                     await WaitUntilSettled(e.Data);
                     await SafeCopy(e.Data, tmpPath, true);
+                    if (_stormSaveReader is Action<Replay> reader) {
+                        try {
+                            reader(TwitchLiveSession.ParseLiveFile(tmpPath, isFinalReplay: false));
+                        }
+                        catch (Exception ex) {
+                            _log.Warn(ex, $"Storm save reader failed on '{e.Data}'");
+                        }
+                    }
                     await Twitch.UpdateFromStormSave(tmpPath);
                 }
                 catch (Exception ex) {

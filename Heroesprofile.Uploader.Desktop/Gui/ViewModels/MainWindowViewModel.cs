@@ -226,6 +226,7 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
                 $"twitchExtension={Config.TwitchExtension}, webhook={(string.IsNullOrWhiteSpace(Config.WebhookUrl) ? "off" : "on")}");
 
             // Common.Uploader, spelled out - see RunCommand for why the plain name resolves wrong here.
+            RankReading.Apply(Manager, Config.ReadRanks);
             Manager.Start(SettledMonitor.ForPlatform(Platform), new LiveMonitor(), new Analyzer(), new Common.Uploader(), new LiveProcessor(Manager.PreMatchPage, Manager.Twitch));
 
             RefreshStatus();
@@ -394,6 +395,14 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
                     StartManager();
                 }
             }
+        }
+
+        /// <summary>Settings' "Read ranks from the loading screen" (Ranks build only) - takes effect straight away.</summary>
+        public void ApplyReadRanks(bool on)
+        {
+            Config.ReadRanks = on;
+            RankReading.Apply(Manager, on);
+            _log.Info($"Rank reading {(on ? "on" : "off")}");
         }
 
         /// <summary>Settings' Design choice - switches the main window's layout straight away.</summary>

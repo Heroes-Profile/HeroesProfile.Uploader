@@ -5,8 +5,9 @@ name: Release (Desktop)
 # plus a Linux tarball for headless/systemd use. Installed copies update themselves from these
 # releases (Heroesprofile.Uploader.Desktop/Updates/AppUpdater.cs).
 #
-# Manual only, and a DRAFT unless you choose otherwise: drafts are invisible to update clients, so a
-# test build can't reach anyone by accident. Choose "prerelease" only for builds testers should get.
+# Runs by hand (Run workflow), and on every code push to the working branch (see `push` below). Either
+# way it's a DRAFT unless you choose "prerelease" when running it by hand: drafts are invisible to update
+# clients, so a build only reaches testers once you publish it (or choose "prerelease").
 #
 # Signing: each OS signs only once its account is set up in the repo's "release-signing" environment
 # (each value is listed below); until then that OS's build is unsigned, exactly as before.
@@ -31,12 +32,27 @@ on:
         default: draft
         type: choice
         options: [draft, prerelease]
-  # TEMPORARY - remove before merging to master. GitHub only offers "Run workflow" for workflows that
-  # exist on the default branch, so this lets it run from this branch meanwhile: only when this file
-  # changes, and always as a draft (a push has no inputs, so `release` is empty).
+  # TEMPORARY - remove before merging to master. Every push to the working branch that changes the
+  # app (not just docs, tests or other workflows) builds a fresh beta DRAFT, replacing the previous one
+  # (a push has no inputs, so `release` is empty = draft). Publish it on GitHub when it's good to go.
+  # It also lets the workflow run at all before it's on master: GitHub only offers "Run workflow" for
+  # workflows that exist on the default branch.
   push:
     branches: [OSAgnosticUpdate]
-    paths: [.github/workflows/release-desktop.yml]
+    paths-ignore:
+      - '**/*.md'
+      - 'Heroesprofile.Uploader.Tests/**'
+      - '.github/workflows/ci.yml'
+      - '.github/dependabot.yml'
+      - '.editorconfig'
+      - 'LICENSE'
+
+# One release build at a time: a push while one is running waits for it (never cancels it - a build
+# stopped halfway through uploading would leave a half-filled draft), and only the newest waiting run
+# is kept.
+concurrency:
+  group: release-desktop-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: read

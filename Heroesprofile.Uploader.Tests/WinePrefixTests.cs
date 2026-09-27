@@ -45,6 +45,17 @@ public sealed class WinePrefixTests : IDisposable
     }
 
     [Fact]
+    public void Finds_the_prefix_temp_folder_from_the_accounts_folder_inside_it()
+    {
+        // Picking the Accounts folder instead of the prefix must still find the battle lobby, or the
+        // pre-match page and Twitch extension silently never fire.
+        var accounts = Make("pfx", "drive_c", "users", "steamuser", "Documents", "Heroes of the Storm", "Accounts");
+        var temp = Make("pfx", "drive_c", "users", "steamuser", "AppData", "Local", "Temp");
+
+        Assert.Equal(temp, WinePrefix.FindTemp(accounts));
+    }
+
+    [Fact]
     public void Returns_null_when_nothing_matches()
     {
         Make("drive_c", "users", "steamuser", "Documents");

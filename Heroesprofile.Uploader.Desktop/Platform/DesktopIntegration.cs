@@ -74,12 +74,16 @@ namespace Heroesprofile.Uploader.Desktop.Platform
         /// <summary>
         /// Null if the running executable can be installed, otherwise why not. `dotnet run`/`dotnet build`
         /// output is an apphost with the managed .dll (and the rest of the app) next to it, so copying
-        /// the apphost alone would be broken. The single-file publish has no such .dll. Inside an
-        /// AppImage the running executable is that same single-file binary, so it installs as a plain
-        /// executable that doesn't need the AppImage (or FUSE) afterwards.
+        /// the apphost alone would be broken. The single-file publish (the tarball) has no such .dll.
+        /// The AppImage always qualifies: nothing is copied - the menu entry runs the .AppImage file,
+        /// which Velopack updates in place - and Velopack builds it from the regular (not single-file)
+        /// publish, so the .dll check would wrongly refuse it.
         /// </summary>
         public static string WhyNotInstallable()
         {
+            if (RunningAppImage != null) {
+                return null;
+            }
             var exe = Environment.ProcessPath;
             if (string.IsNullOrEmpty(exe) || exe.EndsWith("dotnet", StringComparison.OrdinalIgnoreCase) ||
                 File.Exists(Path.Combine(Path.GetDirectoryName(exe), Path.GetFileName(exe) + ".dll"))) {

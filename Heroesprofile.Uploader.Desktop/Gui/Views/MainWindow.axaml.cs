@@ -20,6 +20,9 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
 
         private MainWindowViewModel ViewModel => (MainWindowViewModel)DataContext;
 
+        // The design whose size the window currently has - each design remembers its own (AppConfig).
+        private string _shownDesign;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -36,8 +39,13 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
                 return;
             }
             var config = ViewModel.Config;
-            Width = Math.Max(config.WindowWidth, MinWidth);
-            Height = Math.Max(config.WindowHeight, MinHeight);
+            _shownDesign = ViewModel.Design;
+            ApplySize(config.WindowSizeFor(_shownDesign));
+            ViewModel.PropertyChanged += (_, e) => {
+                if (e.PropertyName == nameof(MainWindowViewModel.Design)) {
+                    SwitchSize();
+                }
+            };
 
             var position = new PixelPoint(config.WindowLeft, config.WindowTop);
             if (Screens.ScreenFromPoint(position) != null) {
@@ -56,9 +64,29 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
             var config = ViewModel.Config;
             config.WindowLeft = Position.X;
             config.WindowTop = Position.Y;
-            config.WindowWidth = Width;
-            config.WindowHeight = Height;
+            config.RememberWindowSize(_shownDesign, Width, Height);
             ViewModel.SaveConfig();
+        }
+
+        private void ApplySize((double Width, double Height) size)
+        {
+            // Each design has its own minimum width (Theme 2 is laid out narrower).
+            MinWidth = ViewModel.MinWindowWidth;
+            Width = Math.Max(size.Width, MinWidth);
+            Height = Math.Max(size.Height, MinHeight);
+        }
+
+        /// <summary>Settings' Design changed: keep the old design's size, take the new one's.</summary>
+        private void SwitchSize()
+        {
+            var config = ViewModel.Config;
+            if (WindowState == WindowState.Normal && IsVisible) {
+                config.RememberWindowSize(_shownDesign, Width, Height);
+            }
+            _shownDesign = ViewModel.Design;
+            if (WindowState == WindowState.Normal) {
+                ApplySize(config.WindowSizeFor(_shownDesign));
+            }
         }
 
         private void OnWindowPropertyChanged(object sender, AvaloniaPropertyChangedEventArgs e)
@@ -107,8 +135,10 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
             // once, up front, and point at the setting.
             if (ViewModel?.ReplayFolderError is string error) {
                 var choice = await MessageDialog.ShowAsync(this, "Replay folder not found",
-                    $"{error}\n\nOpen Settings and select the Heroes of the Storm \"Accounts\" folder" +
-                    (OperatingSystem.IsLinux() ? " (or the Wine/Proton prefix it's in)" : "") + ".",
+                    // Linux leads with the prefix, like Settings: it's the easy pick, and the replays are found from it.
+                    $"{error}\n\n" + (OperatingSystem.IsLinux()
+                        ? "Open Settings and select your Wine/Proton prefix (the folder containing drive_c), or the Heroes of the Storm \"Accounts\" folder itself."
+                        : "Open Settings and select the Heroes of the Storm \"Accounts\" folder."),
                     "Open Settings", "Later");
                 if (choice == "Open Settings") {
                     await OpenSettingsAsync();
@@ -116,20 +146,17 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
             }
         }
 
-        private void Logo_PointerReleased(object sender, PointerReleasedEventArgs e)
-        {
-            ViewModel.OpenWebsiteCommand.Execute(null);
-        }
+        /// <summary>The logo (Theme 1) or brand mark (Theme 2): opens heroesprofile.com.</summary>
+        public void OpenWebsite() => ViewModel?.OpenWebsiteCommand.Execute(null);
 
-        private async void OpenSettings_Click(object sender, RoutedEventArgs e) => await OpenSettingsAsync();
-
-        private async System.Threading.Tasks.Task OpenSettingsAsync()
+        public async System.Threading.Tasks.Task OpenSettingsAsync()
         {
             var dialog = new SettingsWindow { DataContext = new SettingsWindowViewModel(ViewModel) };
             await dialog.ShowDialog(this);
         }
 
-        private void RestartNow_Click(object sender, RoutedEventArgs e)
+        /// <summary>The update banner's "Restart now." link.</summary>
+        public void RestartNow()
         {
             // Minimized to the tray right now (hidden, not just iconified) - relaunch the same way so the
             // new process doesn't suddenly pop a window the user had tucked away.

@@ -65,6 +65,23 @@ namespace Heroesprofile.Uploader.Desktop
             };
         }
 
+        public const string Theme1Design = "Theme1";
+        public const string Theme2Design = "Theme2";
+
+        private string _design = Theme1Design;
+
+        /// <summary>
+        /// Which main-window layout to show: <see cref="Theme1Design"/>, laid out after the WPF app
+        /// (the default), or <see cref="Theme2Design"/>, the design the Linux app (PR #53) shipped with.
+        /// Independent of <see cref="Theme"/>, which picks light or dark for either. Unknown values load
+        /// as Theme 1.
+        /// </summary>
+        public string Design
+        {
+            get => _design;
+            set => _design = value == Theme2Design ? Theme2Design : Theme1Design;
+        }
+
         public bool TwitchExtension { get; set; }
 
         /// <summary>
@@ -98,8 +115,34 @@ namespace Heroesprofile.Uploader.Desktop
         public double WindowWidth { get; set; } = 700;
         public double WindowHeight { get; set; } = 600;
 
-        /// <summary>NLog level name: Trace/Debug/Info/Warn/Error/Fatal. Defaults to "Info".</summary>
-        public string LogLevel { get; set; } = "Info";
+        // Theme 2 is laid out for a narrower window, so it remembers its own size (PR #53's default);
+        // the position is shared. WindowWidth/WindowHeight above are Theme 1's, as imported from WPF.
+        public double Theme2WindowWidth { get; set; } = 450;
+        public double Theme2WindowHeight { get; set; } = 600;
+
+        /// <summary>The remembered window size for <paramref name="design"/>.</summary>
+        public (double Width, double Height) WindowSizeFor(string design) => design == Theme2Design
+            ? (Theme2WindowWidth, Theme2WindowHeight)
+            : (WindowWidth, WindowHeight);
+
+        public void RememberWindowSize(string design, double width, double height)
+        {
+            if (design == Theme2Design) {
+                Theme2WindowWidth = width;
+                Theme2WindowHeight = height;
+            } else {
+                WindowWidth = width;
+                WindowHeight = height;
+            }
+        }
+
+        /// <summary>
+        /// NLog level name for the log file. The file always gets at least Debug - each replay found and
+        /// its upload result, the battle lobby, the match pages - as the WPF app's did, since that's what
+        /// bug reports need; "Trace" adds more. (Earlier builds saved "Info" here, which is why lower
+        /// levels can't turn it down.)
+        /// </summary>
+        public string LogLevel { get; set; } = "Debug";
 
         public const string DefaultUpdateRepository = "Heroes-Profile/HeroesProfile.Uploader";
 

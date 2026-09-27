@@ -34,6 +34,39 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
         /// <summary>WPF's title: "Heroesprofile.com Uploader v2.9" (patch and prerelease only when there is one).</summary>
         public string WindowTitle { get; } = $"Heroesprofile.com Uploader {VersionString(ReleaseVersion.Current())}";
 
+        /// <summary>Theme 2's footer shows the version (Theme 1 has it in the title only, as in WPF).</summary>
+        public string VersionText { get; } = VersionString(ReleaseVersion.Current());
+
+        /// <summary>Main-window layout: <see cref="AppConfig.Theme1Design"/> or <see cref="AppConfig.Theme2Design"/>.</summary>
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsTheme2), nameof(MinWindowWidth))]
+        private string design;
+
+        public bool IsTheme2 => Design == AppConfig.Theme2Design;
+
+        /// <summary>Theme 2 was designed for a narrower window (PR #53's 360px minimum).</summary>
+        public double MinWindowWidth => IsTheme2 ? 360 : 480;
+
+        /// <summary>Theme 2's stats grid - the same counts as <see cref="StatusCounts"/>, in PR #53's order and labels.</summary>
+        public ObservableCollection<StatusCountViewModel> StatChips { get; } =
+            new ObservableCollection<StatusCountViewModel>(StatusCountViewModel.ChipOrder.Select(s => new StatusCountViewModel(s, ReplayRowViewModel.ShortLabel(s))));
+
+        /// <summary>Theme 2: "1,234 replays" under the list.</summary>
+        [ObservableProperty]
+        private string listCaption = "0 replays";
+
+        /// <summary>Theme 2's header status colour: uploading (in progress) or with failed uploads.</summary>
+        [ObservableProperty]
+        private bool isUploading;
+
+        public string FailedUploadsText => FailedCount == 1 ? "1 upload failed" : $"{FailedCount:N0} uploads failed";
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(FailedUploadsText))]
+        private int failedCount;
+
+        public string PauseButtonTooltip => IsPaused ? "Resume uploading" : "Pause uploading";
+
         [ObservableProperty]
         private ObservableCollection<ReplayRowViewModel> rows = new ObservableCollection<ReplayRowViewModel>();
 
@@ -106,6 +139,7 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
         public MainWindowViewModel()
         {
             Config = LoadConfigSafely();
+            design = Config.Design;
 
             // Assign backing fields directly (not the generated properties) so this initial sync
             // doesn't itself trigger the OnXChanged handlers below, which persist to config.json.
@@ -181,6 +215,8 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
 
             _bridge = new ReplayListBridge(Manager);
             Rows = _bridge.Rows;
+            Rows.CollectionChanged += (_, __) => UpdateListCaption();
+            UpdateListCaption();
 
             Manager.PropertyChanged += (_, e) => Dispatcher.UIThread.Post(() => OnManagerPropertyChanged(e.PropertyName));
 
@@ -205,16 +241,28 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
         private void RefreshStatus()
         {
             var totals = Manager?.Aggregates;
-            foreach (var line in StatusCounts) {
+            foreach (var line in StatusCounts.Concat(StatChips)) {
                 line.Count = totals != null && totals.TryGetValue(line.Status, out var n) ? n : 0;
             }
             StatusText = Manager == null ? Heroesprofile.Uploader.Common.Manager.IdleStatus
                 : IsPaused ? "Paused"
                 : Manager.Status;
-            HasFailedUploads = StatusCounts.Any(l => l.Status == UploadStatus.UploadError && l.Count > 0);
+            // Fully qualified: the "Manager" property on this class shadows the "Manager" type name.
+            IsUploading = !IsPaused && Manager?.Status == Heroesprofile.Uploader.Common.Manager.UploadingStatus;
+            FailedCount = StatusCounts.Where(l => l.Status == UploadStatus.UploadError).Sum(l => l.Count);
+            HasFailedUploads = FailedCount > 0;
         }
 
-        partial void OnIsPausedChanged(bool value) => RefreshStatus();
+        private void UpdateListCaption()
+        {
+            ListCaption = Rows.Count == 1 ? "1 replay" : $"{Rows.Count:N0} replays";
+        }
+
+        partial void OnIsPausedChanged(bool value)
+        {
+            OnPropertyChanged(nameof(PauseButtonTooltip));
+            RefreshStatus();
+        }
 
         /// <summary>Shows "Retry failed uploads" - only while there's something to retry, so the panel otherwise looks as in WPF.</summary>
         [ObservableProperty]
@@ -227,6 +275,11 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
             Manager?.RetryFailed();
         }
 
+        /// <summary>
+        /// Not offered anywhere in the GUI any more: the Theme 2 header button and the tray menu's
+        /// "Pause uploading" item are commented out, not deleted.
+        /// Pausing replay uploads makes it easier for upload abusers to pause between games to remove losses from upload queue.
+        /// </summary>
         [RelayCommand]
         private void TogglePause()
         {
@@ -342,6 +395,13 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
             }
         }
 
+        /// <summary>Settings' Design choice - switches the main window's layout straight away.</summary>
+        public void ApplyDesign(string value)
+        {
+            Config.Design = value;
+            Design = Config.Design;
+        }
+
         public void ApplyTheme(string theme)
         {
             Config.Theme = theme;
@@ -425,10 +485,9 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
                     break;
 
                 case AppUpdater.Outcome.NotInstalled:
-                    // A copy Velopack can't update (the Linux tarball, a dev build): point at the release instead.
-                    if (manual) {
-                        await ReportNewerReleaseAsync();
-                    }
+                    // A copy Velopack can't update (the Linux tarball, a dev build): point at the release
+                    // instead - on the automatic check too, or tarball users would never hear of updates.
+                    await ReportNewerReleaseAsync(manual);
                     break;
 
                 default: // Failed - already logged.
@@ -439,20 +498,31 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
             }
         }
 
-        private async Task ReportNewerReleaseAsync()
+        /// <summary>
+        /// Looks for a newer GitHub release and shows the "Update available" link if there is one. Only
+        /// the manual check (<paramref name="manual"/>) also says "up to date" or reports a failure.
+        /// </summary>
+        private async Task ReportNewerReleaseAsync(bool manual)
         {
             try {
                 var release = await new ReleaseChecker().FindNewerAsync(Config.UpdateRepository, Config.AllowPreReleases);
                 if (release == null) {
-                    UpdateStatusText = "You're up to date.";
+                    if (manual) {
+                        UpdateStatusText = "You're up to date.";
+                    }
                 } else {
+                    if (_updateReleaseUrl != release.Url) {
+                        _log.Info($"Update available: v{release.Version} ({release.Url}) - this copy can't install it itself.");
+                    }
                     _updateReleaseUrl = release.Url;
                     UpdateStatusText = $"Update available: v{release.Version} — click to open the release page.";
                 }
             }
             catch (Exception ex) {
                 _log.Warn(ex, "Update check failed");
-                UpdateStatusText = "Couldn't check for updates - see log.";
+                if (manual) {
+                    UpdateStatusText = "Couldn't check for updates - see log.";
+                }
             }
         }
 

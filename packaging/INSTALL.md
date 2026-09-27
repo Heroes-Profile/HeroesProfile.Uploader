@@ -52,9 +52,10 @@ minimized when you log in.
    `drive_c`). See [Where is my prefix?](linux/README.md#where-is-my-prefix)
 4. Tick **Show in app menu** to add it to your app launcher.
 
-**No desktop, or running it as a background service?** Use
-`HeroesProfileUploader-linux-x64.tar.gz` instead; see [the Linux guide](linux/README.md). That version
-doesn't update itself.
+**Prefer a plain program?** `HeroesProfileUploader-linux-x64.tar.gz` holds the same app as a single
+executable: run it with no arguments for the normal window, on any x86_64 distro. It's also the one to
+use with no desktop, as a background service; see [the Linux guide](linux/README.md). It doesn't update
+itself: when a new version is out it shows an "Update available" link (the service logs it instead).
 
 ## Where things are kept
 

@@ -6,6 +6,7 @@ using Xunit;
 namespace Heroesprofile.Uploader.Tests;
 
 /// <summary>The main window shows replays and counts exactly as the WPF app's converters did.</summary>
+[Collection(StoredTwitchKey.Collection)]
 public class MainWindowPresentationTests
 {
     [Theory]
@@ -88,5 +89,67 @@ public class MainWindowPresentationTests
     public void New_installs_default_to_the_dark_theme_like_the_WPF_app()
     {
         Assert.Equal(AppConfig.DarkTheme, new AppConfig().Theme);
+    }
+
+    [Fact]
+    public void Theme_2_splits_a_replay_name_into_time_and_map()
+    {
+        var row = new ReplayRowViewModel(new ReplayFile("2026-09-20 21.14.03 Cursed Hollow.StormReplay"));
+
+        Assert.Equal("2026-09-20 21.14.03", row.TimeText);
+        Assert.Equal("Cursed Hollow", row.MapText);
+    }
+
+    [Fact]
+    public void Theme_2_shows_a_renamed_replay_under_its_whole_name()
+    {
+        var file = new ReplayFile("my best game.StormReplay") { Created = new DateTime(2026, 9, 1, 20, 5, 9) };
+        var row = new ReplayRowViewModel(file);
+
+        Assert.Equal("2026-09-01 20.05.09", row.TimeText);
+        Assert.Equal("my best game", row.MapText);
+    }
+
+    [Theory]
+    [InlineData(UploadStatus.None, "Queued")]
+    [InlineData(UploadStatus.PtrRegion, "PTR")]
+    [InlineData(UploadStatus.AiDetected, "AI detected")]
+    [InlineData(UploadStatus.Brawl, "Brawl")]
+    public void Theme_2_badges_use_short_labels(UploadStatus status, string expected)
+    {
+        Assert.Equal(expected, ReplayRowViewModel.ShortLabel(status));
+    }
+
+    [Theory]
+    [InlineData(null, AppConfig.Theme1Design)]
+    [InlineData("", AppConfig.Theme1Design)]
+    [InlineData("nonsense", AppConfig.Theme1Design)]
+    [InlineData(AppConfig.Theme1Design, AppConfig.Theme1Design)]
+    [InlineData(AppConfig.Theme2Design, AppConfig.Theme2Design)]
+    public void Design_is_theme_1_unless_theme_2_is_chosen(string? stored, string expected)
+    {
+        Assert.Equal(expected, new AppConfig { Design = stored }.Design);
+        Assert.Equal(AppConfig.Theme1Design, new AppConfig().Design);
+    }
+
+    [Fact]
+    public void Design_survives_a_save_and_load()
+    {
+        var json = new AppConfig { Design = AppConfig.Theme2Design }.ToJson();
+
+        Assert.Equal(AppConfig.Theme2Design, AppConfig.FromJson(json).Design);
+    }
+
+    [Fact]
+    public void Each_design_remembers_its_own_window_size()
+    {
+        var config = new AppConfig();
+        Assert.Equal((700.0, 600.0), config.WindowSizeFor(AppConfig.Theme1Design));
+        Assert.Equal((450.0, 600.0), config.WindowSizeFor(AppConfig.Theme2Design));
+
+        config.RememberWindowSize(AppConfig.Theme2Design, 400, 700);
+
+        Assert.Equal((400.0, 700.0), config.WindowSizeFor(AppConfig.Theme2Design));
+        Assert.Equal((700.0, 600.0), config.WindowSizeFor(AppConfig.Theme1Design));
     }
 }

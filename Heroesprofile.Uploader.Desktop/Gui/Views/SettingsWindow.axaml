@@ -6,7 +6,8 @@
         Title="Settings"
         Icon="/Gui/Assets/app-icon.png"
         SizeToContent="WidthAndHeight" CanResize="False"
-        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Classes.theme2="{Binding IsTheme2}">
   <!-- Laid out after the WPF app's SettingsWindow.xaml, section for section and word for word. -->
 
   <Window.Styles>
@@ -35,6 +36,10 @@
     <StackPanel Grid.Column="1" Grid.Row="0" Margin="20,20,20,0" Spacing="8" MinWidth="150">
       <TextBlock Classes="heading" Text="Theme" />
       <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding SelectedTheme}" HorizontalAlignment="Stretch" />
+
+      <TextBlock Classes="heading" Text="Design" Margin="0,8,0,0" />
+      <ComboBox ItemsSource="{Binding Designs}" SelectedItem="{Binding SelectedDesign}" HorizontalAlignment="Stretch"
+                ToolTip.Tip="The main window's layout. Theme 2 is the design the Linux uploader started with." />
 
       <StackPanel Margin="0,40,0,0" IsVisible="{Binding ShowPreReleases}">
         <CheckBox Content="Allow beta updates" FontWeight="SemiBold" IsChecked="{Binding AllowPreReleases}" />

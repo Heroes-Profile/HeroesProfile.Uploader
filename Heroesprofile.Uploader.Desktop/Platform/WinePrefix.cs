@@ -27,7 +27,9 @@ namespace Heroesprofile.Uploader.Desktop.Platform
 
         /// <summary>
         /// drive_c/users/*/AppData/Local/Temp, where the game writes the .battlelobby file the
-        /// pre-match page and Twitch extension read. Null if there isn't one.
+        /// pre-match page and Twitch extension read. Null if there isn't one. <paramref name="path"/> is
+        /// normally the prefix, but may be a folder inside it - typically the "Accounts" folder, which is
+        /// also accepted as the replay path: the prefix is then the folder above its drive_c.
         /// </summary>
         public static string FindTemp(string path)
         {
@@ -35,7 +37,19 @@ namespace Heroesprofile.Uploader.Desktop.Platform
                 return null;
             }
 
-            return FindUnderUsers(path, "AppData", "Local", "Temp");
+            return FindUnderUsers(path, "AppData", "Local", "Temp")
+                ?? (ContainingPrefix(path) is string prefix ? FindUnderUsers(prefix, "AppData", "Local", "Temp") : null);
+        }
+
+        /// <summary>The Wine prefix <paramref name="path"/> is inside (the parent of its drive_c), or null.</summary>
+        private static string ContainingPrefix(string path)
+        {
+            for (var dir = new DirectoryInfo(path); dir?.Parent != null; dir = dir.Parent) {
+                if (dir.Name == "drive_c") {
+                    return dir.Parent.FullName;
+                }
+            }
+            return null;
         }
 
         private static string FindUnderUsers(string path, params string[] relativeSegments)

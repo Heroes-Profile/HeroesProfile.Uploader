@@ -16,9 +16,9 @@ namespace Heroesprofile.Uploader.Desktop
         public static string LogFilePath => Path.Combine(AppConfig.DataDir, "logs", "log.txt");
 
         /// <param name="fileLevel">
-        /// Minimum level written to the log file - the GUI's Settings "Log level" field. The console
-        /// target always stays at Info+, matching the CLI's original behaviour (systemd captures it
-        /// via journald regardless of this setting).
+        /// Minimum level written to the log file: Debug unless config.json's LogLevel asks for Trace (see
+        /// AppConfig.LogLevel). The console target always stays at Info+, matching the CLI's original
+        /// behaviour (systemd captures it via journald regardless of this setting).
         /// </param>
         public static void Configure(LogLevel fileLevel = null)
         {
@@ -47,10 +47,10 @@ namespace Heroesprofile.Uploader.Desktop
             LogManager.Configuration = config;
         }
 
-        /// <summary>Parses a config "logLevel" string (as saved by the settings dialog), defaulting to Info.</summary>
+        /// <summary>Parses config.json's "LogLevel" string, defaulting to Debug. Throws on an unknown name.</summary>
         public static LogLevel ParseLevel(string name)
         {
-            return LogLevel.FromString(string.IsNullOrWhiteSpace(name) ? "Info" : name);
+            return LogLevel.FromString(string.IsNullOrWhiteSpace(name) ? "Debug" : name);
         }
     }
 }

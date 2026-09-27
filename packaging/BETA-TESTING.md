@@ -44,5 +44,5 @@ folder).
   goes away once the app is signed.
 - **Don't run it alongside the current Windows uploader:** both would upload every game. The new app
   warns you if the old one is running, and offers to uninstall it.
-- **Linux tarball:** the headless `.tar.gz` version doesn't update itself; it logs when a newer
-  release is out.
+- **Linux tarball:** the `.tar.gz` program doesn't update itself; it shows an "Update available" link
+  when a newer release is out (as a service, it logs it).

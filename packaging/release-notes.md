@@ -6,12 +6,14 @@
 | **Mac with Apple Silicon** (M1 and later) | `Heroesprofile.Uploader-osx-arm64-Setup.pkg` | `Heroesprofile.Uploader-osx-arm64-Portable.zip` |
 | **Mac with Intel** | `Heroesprofile.Uploader-osx-x64-Setup.pkg` | `Heroesprofile.Uploader-osx-x64-Portable.zip` |
 | **Linux** (desktop) | `Heroesprofile.Uploader.AppImage` | |
-| **Linux** (headless / systemd) | `HeroesProfileUploader-linux-x64.tar.gz` | |
+| **Linux** (plain program, or headless / systemd) | `HeroesProfileUploader-linux-x64.tar.gz` | |
 
 Not sure which Mac you have? Apple menu → **About This Mac**: "Chip: Apple M…" is Apple Silicon,
 "Processor: Intel…" is Intel.
 
-Everything updates itself except the Linux tarball, which only logs when a newer release is out.
+Both Linux downloads run on any x86_64 distro. The tarball's program is the same desktop app as the
+AppImage (run it with no arguments), just without updating itself: it shows an "Update available" link
+instead. Everything else updates itself.
 
 **Everything else** (`.nupkg`, `releases.*.json`, `RELEASES`, `SHA256SUMS`,
 `HeroesProfileUploaderSetup.exe`) is used by automatic updates and existing download links; you don't

@@ -86,6 +86,7 @@ namespace Heroesprofile.Uploader.Desktop
             if (folders == null) {
                 return false;
             }
+            WarnIfNoBattleLobby(platform, folders);
             Apply(folders);
             return true;
         }
@@ -107,13 +108,17 @@ namespace Heroesprofile.Uploader.Desktop
                 throw new ConfigError($"{error} {hint}");
             }
 
+            WarnIfNoBattleLobby(platform, folders);
+            Apply(folders);
+            return folders;
+        }
+
+        private static void WarnIfNoBattleLobby(IPlatform platform, Folders folders)
+        {
             if (platform.ReplayPathIsWinePrefix && folders.BattleLobby == null) {
                 _log.Warn("Could not find the prefix's temp folder (drive_c/users/*/AppData/Local/Temp). " +
                     "The pre-match page and Twitch extension won't see the battle lobby, but replay uploads are unaffected.");
             }
-
-            Apply(folders);
-            return folders;
         }
     }
 }

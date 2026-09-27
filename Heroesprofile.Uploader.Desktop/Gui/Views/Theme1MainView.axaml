@@ -1,0 +1,94 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:Heroesprofile.Uploader.Desktop.Gui.ViewModels"
+             x:Class="Heroesprofile.Uploader.Desktop.Gui.Views.Theme1MainView"
+             x:DataType="vm:MainWindowViewModel">
+  <!-- Theme 1: laid out after the WPF app's MainWindow.xaml, row for row. -->
+
+  <UserControl.Styles>
+    <!-- WPF's UploadColorConverter buckets, as classes so the colours follow theme switches -->
+    <Style Selector="TextBlock.success">
+      <Setter Property="Foreground" Value="{DynamicResource StatusUploadSuccessBrush}" />
+    </Style>
+    <Style Selector="TextBlock.inProgress">
+      <Setter Property="Foreground" Value="{DynamicResource StatusUploadInProgressBrush}" />
+    </Style>
+    <Style Selector="TextBlock.neutral">
+      <Setter Property="Foreground" Value="{DynamicResource StatusUploadNeutralBrush}" />
+    </Style>
+    <Style Selector="TextBlock.failed">
+      <Setter Property="Foreground" Value="{DynamicResource StatusUploadFailedBrush}" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid Margin="20,0,20,20" ColumnDefinitions="*,Auto" RowDefinitions="102,*,Auto">
+
+    <!-- Logo, clicking it opens heroesprofile.com -->
+    <Image Grid.ColumnSpan="2" Margin="0,0,131,0" Source="/Gui/Assets/uploader-logo.png"
+           RenderOptions.BitmapInterpolationMode="HighQuality" Cursor="Hand"
+           PointerReleased="Logo_PointerReleased" />
+
+    <ListBox Grid.Row="1" ItemsSource="{Binding Rows}">
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="vm:ReplayRowViewModel">
+          <DockPanel LastChildFill="True">
+            <TextBlock DockPanel.Dock="Right" Text="{Binding StatusText}"
+                       Classes.success="{Binding IsSuccess}" Classes.inProgress="{Binding IsInProgress}"
+                       Classes.neutral="{Binding IsNeutral}" Classes.failed="{Binding IsFailed}" />
+            <TextBlock DockPanel.Dock="Left" Text="{Binding FileName}" />
+            <TextBlock DockPanel.Dock="Left" Text="✘" Foreground="{DynamicResource FileDeletedIconBrush}"
+                       IsVisible="{Binding Deleted}"
+                       ToolTip.Tip="This replay has been deleted by uploader according to your settings" />
+          </DockPanel>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+
+    <DockPanel Grid.Row="1" Grid.Column="1" Margin="12,0,0,0" LastChildFill="False">
+
+      <StackPanel DockPanel.Dock="Top" Margin="0,8,0,0" Spacing="4">
+        <TextBlock Text="{Binding StatusText}" FontWeight="Bold" Margin="0,0,0,6" />
+        <ItemsControl ItemsSource="{Binding StatusCounts}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:StatusCountViewModel">
+              <TextBlock Text="{Binding Text}" IsVisible="{Binding IsVisible}" Margin="0,2" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Button Content="Retry failed uploads" HorizontalAlignment="Left" Margin="0,6,0,0"
+                Command="{Binding RetryFailedCommand}" IsVisible="{Binding HasFailedUploads}"
+                ToolTip.Tip="Try the uploads that failed again now (they're also retried every time the uploader starts)" />
+      </StackPanel>
+
+      <StackPanel DockPanel.Dock="Bottom" MaxWidth="180">
+        <CheckBox Content="{Binding StartOnLoginLabel}" IsChecked="{Binding StartOnLogin}"
+                  IsVisible="{Binding SupportsStartOnLogin}" Margin="0,8,8,0" />
+        <CheckBox Content="{Binding MinimizeToTrayLabel}" IsChecked="{Binding MinimizeToTray}" Margin="0,8,8,0" />
+        <CheckBox Content="Show in app menu" IsChecked="{Binding ShowInAppMenu}"
+                  IsVisible="{Binding SupportsAppMenuEntry}" Margin="0,8,8,0" />
+        <CheckBox Content="Prematch Page" IsChecked="{Binding PreMatchPage}" Margin="0,0,8,0" />
+        <CheckBox Content="Postmatch Page" IsChecked="{Binding PostMatchPage}" Margin="0,0,8,0" />
+        <CheckBox Content="Twitch Extension (Beta)" IsChecked="{Binding TwitchExtension}" Margin="0,0,8,0"
+                  ToolTip.Tip="Show your viewers your lobby, heroes and talents live. Set your uploader key in Settings." />
+        <TextBlock Text="{Binding TwitchStatus}" Classes="hint" MaxWidth="160" HorizontalAlignment="Left" />
+        <Button Content="Settings" HorizontalAlignment="Stretch" Margin="0,8,0,0" Click="OpenSettings_Click"
+                ToolTip.Tip="Replay folder, webhook and theme" />
+        <Button Content="Show log" HorizontalAlignment="Stretch" Margin="0,4,0,0" Command="{Binding ShowLogCommand}" />
+        <Button Content="Check for update" HorizontalAlignment="Stretch" Margin="0,4,0,0" Command="{Binding CheckForUpdateCommand}" />
+        <Button Classes="link" HorizontalAlignment="Left" Margin="0,4,0,0" Command="{Binding OpenUpdateCommand}"
+                IsVisible="{Binding UpdateStatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+          <TextBlock Text="{Binding UpdateStatusText}" Classes="hint" MaxWidth="160" TextDecorations="{x:Null}" />
+        </Button>
+      </StackPanel>
+    </DockPanel>
+
+    <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Margin="0,12,0,0" Orientation="Horizontal"
+                IsVisible="{Binding ShowRestartBanner}">
+      <TextBlock Foreground="{DynamicResource UpdateAvailableTextBrush}" VerticalAlignment="Center"
+                 Text="❗ An update is downloaded and will be installed when you restart the uploader. " />
+      <Button Classes="link" Click="RestartNow_Click" VerticalAlignment="Center">
+        <TextBlock Text="Restart now." />
+      </Button>
+    </StackPanel>
+  </Grid>
+</UserControl>

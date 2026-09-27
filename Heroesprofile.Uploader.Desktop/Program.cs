@@ -3,6 +3,7 @@ using Heroesprofile.Uploader.Desktop.Platform;
 using NLog;
 using System;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Velopack;
 
@@ -58,7 +59,7 @@ namespace Heroesprofile.Uploader.Desktop
             try {
                 switch (command) {
                     case null: {
-                        ConfigureLoggingForCommand();
+                        ConfigureLoggingForCommand("gui");
                         // Just restarted by an update: the old instance may still be on its way out, so
                         // wait for it rather than handing over to it.
                         using var instance = SingleInstance.TryAcquire(waitForPrevious: restartedAfterUpdate);
@@ -73,7 +74,7 @@ namespace Heroesprofile.Uploader.Desktop
                     }
 
                     case "run":
-                        ConfigureLoggingForCommand();
+                        ConfigureLoggingForCommand("run");
                         if (OperatingSystem.IsLinux()) {
                             DesktopIntegration.RefreshInstalledCopyIfStale();
                         }
@@ -85,7 +86,7 @@ namespace Heroesprofile.Uploader.Desktop
                             PrintHelp();
                             return 1;
                         }
-                        ConfigureLoggingForCommand();
+                        ConfigureLoggingForCommand("scan");
                         return ScanCommand.Execute(replayPathOverride).GetAwaiter().GetResult();
 
                     case "install":
@@ -146,20 +147,30 @@ namespace Heroesprofile.Uploader.Desktop
         }
 
         /// <summary>
-        /// Sets up NLog at the configured log level before a command (or the GUI) starts, so its
-        /// own "no prefix configured"-style messages are logged too. Falls back to Info if the
-        /// config can't be read yet - the command re-loads it right after and reports the real error.
+        /// Sets up NLog before a command (or the GUI) starts, so its own "no prefix configured"-style
+        /// messages are logged too, then logs what's running where - the first thing a bug report's log
+        /// needs to say. The file gets Debug and up (see <see cref="AppConfig.LogLevel"/>), whatever the
+        /// config says, even if it can't be read yet - the command re-loads it right after and reports
+        /// the real error.
         /// </summary>
-        private static void ConfigureLoggingForCommand()
+        private static void ConfigureLoggingForCommand(string mode)
         {
-            LogLevel level;
+            var level = LogLevel.Debug;
             try {
-                level = Logging.ParseLevel(AppConfig.Load().LogLevel);
+                var configured = Logging.ParseLevel(AppConfig.Load().LogLevel);
+                if (configured < level) {
+                    level = configured;
+                }
             }
-            catch (ConfigError) {
-                level = LogLevel.Info;
+            catch (Exception ex) when (ex is ConfigError or ArgumentException) {
+                // Unreadable config or an unknown level name: keep Debug.
             }
             Logging.Configure(level);
+
+            LogManager.GetCurrentClassLogger().Info(
+                $"Heroes Profile Uploader {ReleaseVersion.Current()} ({mode}) on {Platforms.Current.Name}: " +
+                $"{RuntimeInformation.OSDescription} {RuntimeInformation.OSArchitecture}, .NET {Environment.Version}, " +
+                $"running {Environment.ProcessPath}");
         }
 
         private static string GetOptionValue(string[] args, string name)

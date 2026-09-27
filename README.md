@@ -13,7 +13,7 @@ One app for **Windows, macOS and Linux**. Download it from the
 |---|---|
 | Windows | `Heroesprofile.Uploader-win-Setup.exe` |
 | macOS | the `.pkg` for your Mac: `osx-arm64` for Apple Silicon (M1 and later), `osx-x64` for Intel |
-| Linux | the `.AppImage`; or `HeroesProfileUploader-linux-x64.tar.gz` for a headless/systemd setup |
+| Linux | the `.AppImage`; or `HeroesProfileUploader-linux-x64.tar.gz`, the same app as a plain program (also for headless/systemd setups) |
 
 Nothing else needs installing (no .NET), and it updates itself. See
 [packaging/INSTALL.md](packaging/INSTALL.md) for step-by-step instructions, including opening the app

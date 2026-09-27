@@ -7,25 +7,30 @@
     <!-- Simple rather than Fluent: its plain controls are much closer to the WPF app's look. -->
     <SimpleTheme />
     <StyleInclude Source="avares://heroesprofile-uploader/Gui/Theme/Styles.axaml" />
+    <!-- Theme 2 (Settings -> Design); after Styles.axaml so it wins inside a Theme 2 window -->
+    <StyleInclude Source="avares://heroesprofile-uploader/Gui/Theme/Theme2.axaml" />
   </Application.Styles>
 
   <Application.Resources>
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>
         <ResourceInclude Source="avares://heroesprofile-uploader/Gui/Theme/Colors.axaml" />
+        <ResourceInclude Source="avares://heroesprofile-uploader/Gui/Theme/Theme2Colors.axaml" />
       </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>
   </Application.Resources>
 
   <!-- Only shown while the main window is hidden (minimized to tray), like the WPF app's NotifyIcon.
-       Clicking the icon itself reopens the window, as in WPF; the menu adds pause, log and quit. -->
+       Clicking the icon itself reopens the window, as in WPF; the menu adds log and quit. -->
   <TrayIcon.Icons>
     <TrayIcons>
       <TrayIcon ToolTipText="Heroesprofile.com Uploader" IsVisible="False" Icon="/Gui/Assets/app-icon.png" Clicked="TrayIcon_Clicked">
         <TrayIcon.Menu>
           <NativeMenu>
             <NativeMenuItem Header="Open" Click="TrayOpen_Click" />
+            <!-- Removed: Pausing replay uploads makes it easier for upload abusers to pause between games to remove losses from upload queue.
             <NativeMenuItem Header="Pause uploading" Click="TrayPause_Click" />
+            -->
             <NativeMenuItem Header="Show log" Click="TrayOpenLog_Click" />
             <NativeMenuItemSeparator />
             <NativeMenuItem Header="Quit" Click="TrayQuit_Click" />

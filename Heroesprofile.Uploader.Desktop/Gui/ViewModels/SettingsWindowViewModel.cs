@@ -40,6 +40,12 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
             new ThemeChoice("Follow system", AppConfig.SystemTheme),
         };
 
+        /// <summary>The two main-window layouts (see AppConfig.Design). Placeholder names for now.</summary>
+        public ThemeChoice[] Designs { get; } = {
+            new ThemeChoice("Theme 1", AppConfig.Theme1Design),
+            new ThemeChoice("Theme 2", AppConfig.Theme2Design),
+        };
+
         private readonly MainWindowViewModel _main;
 
         public SettingsWindowViewModel(MainWindowViewModel main)
@@ -48,6 +54,7 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
             var config = main.Config;
             replayPath = config.ReplayPath ?? "";
             selectedTheme = Array.Find(Themes, t => t.Value == config.Theme) ?? Themes[1];
+            selectedDesign = Array.Find(Designs, d => d.Value == config.Design) ?? Designs[0];
             allowPreReleases = config.AllowPreReleases;
             showPreReleases = config.AllowPreReleases;
             twitchUploaderKey = config.TwitchUploaderKey ?? "";
@@ -103,6 +110,20 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
                 _main.ApplyTheme(value.Value);
             }
         }
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsTheme2))]
+        private ThemeChoice selectedDesign;
+
+        partial void OnSelectedDesignChanged(ThemeChoice value)
+        {
+            if (value != null) {
+                _main.ApplyDesign(value.Value);
+            }
+        }
+
+        /// <summary>This window follows the Design choice too (Theme 2's control styling).</summary>
+        public bool IsTheme2 => SelectedDesign?.Value == AppConfig.Theme2Design;
 
         /// <summary>WPF keeps "Allow beta updates" hidden unless it's already on, or Ctrl+Z is pressed.</summary>
         [ObservableProperty]

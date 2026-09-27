@@ -55,11 +55,12 @@ namespace Heroesprofile.Uploader.Desktop.Gui
                         _trayIcon.IsVisible = !_window.IsVisible;
                     }
                 };
-                _viewModel.PropertyChanged += (_, e) => {
-                    if (e.PropertyName == nameof(MainWindowViewModel.IsPaused)) {
-                        SyncTrayPauseLabel();
-                    }
-                };
+                // Tray "Pause uploading" item removed (see MainWindowViewModel.TogglePause for why).
+                //_viewModel.PropertyChanged += (_, e) => {
+                //    if (e.PropertyName == nameof(MainWindowViewModel.IsPaused)) {
+                //        SyncTrayPauseLabel();
+                //    }
+                //};
 
                 desktop.Exit += (_, __) => _viewModel.Manager?.Stop();
 
@@ -108,10 +109,11 @@ namespace Heroesprofile.Uploader.Desktop.Gui
             _window.RestoreFromTray();
         }
 
-        private void TrayPause_Click(object sender, System.EventArgs e)
-        {
-            _viewModel.TogglePauseCommand.Execute(null);
-        }
+        // Pausing replay uploads makes it easier for upload abusers to pause between games to remove losses from upload queue.
+        //private void TrayPause_Click(object sender, System.EventArgs e)
+        //{
+        //    _viewModel.TogglePauseCommand.Execute(null);
+        //}
 
         private void TrayOpenLog_Click(object sender, System.EventArgs e)
         {
@@ -123,17 +125,15 @@ namespace Heroesprofile.Uploader.Desktop.Gui
             _window.QuitForReal();
         }
 
-        /// <summary>
-        /// NativeMenuItem, nested inside a NativeMenu, doesn't get an x:Name-generated field the way a
-        /// regular visual-tree control does - so it's found by position instead. Order matches App.axaml:
-        /// Open(0), Pause(1), Show log(2), separator(3), Quit(4).
-        /// </summary>
-        private void SyncTrayPauseLabel()
-        {
-            if (_trayIcon.Menu.Items[1] is NativeMenuItem pauseItem) {
-                pauseItem.Header = _viewModel.IsPaused ? "Resume uploading" : "Pause uploading";
-            }
-        }
+        // Goes with the removed tray item. If it comes back: this finds it by position (NativeMenuItem
+        // gets no x:Name field), so Items[1] must be the pause item again - order in App.axaml was
+        // Open(0), Pause(1), Show log(2), separator(3), Quit(4).
+        //private void SyncTrayPauseLabel()
+        //{
+        //    if (_trayIcon.Menu.Items[1] is NativeMenuItem pauseItem) {
+        //        pauseItem.Header = _viewModel.IsPaused ? "Resume uploading" : "Pause uploading";
+        //    }
+        //}
 
         public static ThemeVariant ThemeVariantFor(string theme)
         {

@@ -341,7 +341,6 @@ jobs:
 
           # Named like every earlier release: just the tag, e.g. v3.0.0-beta.2.
           flags=(--merge --tag "v$VERSION" --releaseName "v$VERSION")
-          if [ "$RELEASE" = "prerelease" ]; then flags+=(--publish --pre); fi
           for channel in win linux osx-arm64 osx-x64; do
             dotnet vpk upload github --repoUrl "https://github.com/${{ github.repository }}" --token "$GH_TOKEN" \
               --channel "$channel" -o "release-$channel/releases" "${flags[@]}"
@@ -371,7 +370,14 @@ jobs:
           gh release upload "v$VERSION" HeroesProfileUploader-linux-x64.tar.gz SHA256SUMS HeroesProfileUploaderSetup.exe "${extra[@]}" --clobber
           # The release description: which of all these files to download on which OS.
           sed "s|INSTALL_URL|https://github.com/${{ github.repository }}/blob/${{ github.sha }}/packaging/INSTALL.md|"             packaging/release-notes.md > release-notes.md
-          gh release edit "v$VERSION" --notes-file release-notes.md
+          # Pin the tag to the commit this was built from: a draft has no tag yet, and without a target
+          # publishing it would tag the default branch (master) instead.
+          gh release edit "v$VERSION" --notes-file release-notes.md --target "${{ github.sha }}"
+          # Everything goes up as a draft first (above), so a prerelease is only published - and its tag
+          # created, at that commit - once all its files and notes are in place.
+          if [ "$RELEASE" = "prerelease" ]; then
+            gh release edit "v$VERSION" --draft=false --prerelease --latest=false
+          fi
 
       - name: Summary
         env:

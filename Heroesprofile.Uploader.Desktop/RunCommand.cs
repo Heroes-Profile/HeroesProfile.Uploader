@@ -35,6 +35,7 @@ namespace Heroesprofile.Uploader.Desktop
                 PreMatchPage = config.PreMatchPage,
                 PostMatchPage = config.PostMatchPage,
                 DeleteAfterUpload = config.DeleteAfterUpload,
+                LiveFileSettleTime = SettledMonitor.LiveFileSettleTimeFor(Platforms.Current),
             };
 
             _log.Info($"Starting on {Platforms.Current.Name}: replayPath={config.ReplayPath}, accounts={folders.Accounts}, " +

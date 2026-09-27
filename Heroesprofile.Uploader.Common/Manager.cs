@@ -73,6 +73,15 @@ namespace Heroesprofile.Uploader.Common
         public bool PreMatchPage { get; set; }
         public bool PostMatchPage { get; set; }
 
+        /// <summary>
+        /// How long a battle lobby or storm save has to stop growing before it's read. Zero (the default)
+        /// skips the wait: on Windows the game holds the file open while writing it, so EnsureFileAvailable
+        /// already waits. Linux and macOS have no mandatory locking, so there that check passes on a
+        /// half-written file - the Desktop app sets this for them, as SettledMonitor does for replays.
+        /// </summary>
+        public TimeSpan LiveFileSettleTime { get; set; } = TimeSpan.Zero;
+        private static readonly TimeSpan LiveFileSettleMaxWait = TimeSpan.FromSeconds(30);
+
         /// <summary>Live lobby, hero and talent data for the Heroes Profile Twitch extension.</summary>
         public TwitchLiveSession Twitch { get; } = new TwitchLiveSession();
 
@@ -184,6 +193,7 @@ namespace Heroesprofile.Uploader.Common
                     var tmpPath = Path.GetTempFileName();
                     try {
                         await EnsureFileAvailable(e.Data);
+                        await WaitUntilSettled(e.Data);
                         await SafeCopy(e.Data, tmpPath, true);
                         await _liveProcessor.StartProcessing(tmpPath);
                     }
@@ -250,6 +260,7 @@ namespace Heroesprofile.Uploader.Common
                 try {
                     // Created fires before the game has finished writing it.
                     await EnsureFileAvailable(e.Data, testWrite: false);
+                    await WaitUntilSettled(e.Data);
                     await SafeCopy(e.Data, tmpPath, true);
                     await Twitch.UpdateFromStormSave(tmpPath);
                 }
@@ -451,6 +462,40 @@ namespace Heroesprofile.Uploader.Common
                     return;
                 }
             }
+        }
+
+        /// <summary>
+        /// Wait until the file's size has stayed the same for <see cref="LiveFileSettleTime"/>. Gives up
+        /// after <see cref="LiveFileSettleMaxWait"/> and lets the caller read it anyway.
+        /// </summary>
+        internal async Task WaitUntilSettled(string filename)
+        {
+            if (LiveFileSettleTime <= TimeSpan.Zero) {
+                return;
+            }
+
+            var overall = Stopwatch.StartNew();
+            var stableSince = Stopwatch.StartNew();
+            long lastLength = -1;
+            while (overall.Elapsed < LiveFileSettleMaxWait) {
+                long length;
+                try {
+                    length = new FileInfo(filename).Length;
+                }
+                catch (IOException) {
+                    // still being created by the game - count it as changing
+                    length = -1;
+                }
+
+                if (length != lastLength) {
+                    lastLength = length;
+                    stableSince.Restart();
+                } else if (stableSince.Elapsed >= LiveFileSettleTime) {
+                    return;
+                }
+                await Task.Delay(100);
+            }
+            _log.Warn($"'{filename}' didn't stop changing within {LiveFileSettleMaxWait.TotalSeconds}s, reading it anyway");
         }
 
         /// <summary>

@@ -42,6 +42,10 @@ namespace Heroesprofile.Uploader.Common
         private readonly HttpClient _client;
         private readonly TimeSpan _throttleDelay;
 
+        /// <summary>How long to keep asking whether the site has parsed an upload before giving up on the postmatch page.</summary>
+        internal TimeSpan PostMatchWaitTime { get; set; } = TimeSpan.FromSeconds(60);
+        internal TimeSpan PostMatchPollInterval { get; set; } = TimeSpan.FromSeconds(2);
+
         /// <summary>
         /// New instance of replay uploader
         /// </summary>
@@ -110,7 +114,16 @@ namespace Heroesprofile.Uploader.Common
                     var fileAge = DateTime.Now - File.GetLastWriteTime(file);
                     _log.Debug($"Postmatch check: replayID={replayID}, PostMatchPage={PostMatchPage}, fileAge={fileAge.TotalSeconds:F1}s");
                     if (fileAge <= TimeSpan.FromSeconds(60) && PostMatchPage && replayID != 0) {
-                        await postMatchAnalysis(replayID);
+                        // In the background: the site can take a while to parse the replay, and the
+                        // upload queue shouldn't wait on it
+                        Task.Run(async () => {
+                            try {
+                                await postMatchAnalysis(replayID);
+                            }
+                            catch (Exception ex) {
+                                _log.Error(ex, "Postmatch failed");
+                            }
+                        }).Forget();
                     }
                 }
                 catch (Exception ex) {
@@ -146,7 +159,7 @@ namespace Heroesprofile.Uploader.Common
             timer.Start();
             var checks = 0;
             var lastResponse = "none";
-            while (timer.ElapsedMilliseconds < 15000) {
+            while (timer.Elapsed < PostMatchWaitTime) {
                 checks++;
                 try {
                     using (var reply = await _client.GetAsync(parsedUrl)) {
@@ -179,7 +192,7 @@ namespace Heroesprofile.Uploader.Common
                     lastResponse = ex is HttpRequestException http ? $"{http.HttpRequestError}" : "Timeout";
                     _log.Warn(ex, $"Parsed check for replay {replayID} failed ({lastResponse})");
                 }
-                await Task.Delay(1000);
+                await Task.Delay(PostMatchPollInterval);
             }
             timer.Stop();
             _log.Warn($"Replay {replayID} was not parsed after {checks} checks over {timer.ElapsedMilliseconds}ms (last response: {lastResponse}), postmatch page not opened");

@@ -160,12 +160,12 @@ public class MainWindowPresentationTests
     public void Each_design_remembers_its_own_window_size()
     {
         var config = new AppConfig();
-        Assert.Equal((700.0, 600.0), config.WindowSizeFor(AppConfig.Theme1Design));
+        Assert.Equal((760.0, 600.0), config.WindowSizeFor(AppConfig.Theme1Design));
         Assert.Equal((450.0, 600.0), config.WindowSizeFor(AppConfig.Theme2Design));
 
         config.RememberWindowSize(AppConfig.Theme2Design, 400, 700);
 
         Assert.Equal((400.0, 700.0), config.WindowSizeFor(AppConfig.Theme2Design));
-        Assert.Equal((700.0, 600.0), config.WindowSizeFor(AppConfig.Theme1Design));
+        Assert.Equal((760.0, 600.0), config.WindowSizeFor(AppConfig.Theme1Design));
     }
 }

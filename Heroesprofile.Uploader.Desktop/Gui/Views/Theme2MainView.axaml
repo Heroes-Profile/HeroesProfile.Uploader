@@ -113,7 +113,7 @@
     <DockPanel Grid.Row="2">
       <TextBlock DockPanel.Dock="Bottom" Text="{Binding ListCaption}" FontSize="10" Foreground="{DynamicResource AppTextTertiaryBrush}"
                  Padding="12,5" />
-      <ListBox ItemsSource="{Binding Rows}">
+      <ListBox ItemsSource="{Binding Rows}" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
         <ListBox.ItemsPanel>
           <ItemsPanelTemplate>
             <VirtualizingStackPanel />
@@ -122,15 +122,21 @@
         <ListBox.ItemTemplate>
           <DataTemplate x:DataType="vm:ReplayRowViewModel">
             <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="12,5">
-              <Grid ColumnDefinitions="Auto,*,Auto">
+              <!-- Fixed-width id and status columns, so both line up from row to row -->
+              <Grid ColumnDefinitions="Auto,*,72,100">
                 <TextBlock Text="{Binding TimeText}" FontFamily="Consolas, Menlo, monospace" FontSize="10.5"
                            Foreground="{DynamicResource AppTextTertiaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" Margin="0,0,8,0">
+                <DockPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
+                  <TextBlock DockPanel.Dock="Right" Text="✘" FontSize="11" Margin="4,0,0,0" Foreground="{DynamicResource StatusErrorBrush}"
+                             IsVisible="{Binding Deleted}" ToolTip.Tip="This replay has been deleted by uploader according to your settings" />
                   <TextBlock Text="{Binding MapText}" FontSize="11.5" TextTrimming="CharacterEllipsis" />
-                  <TextBlock Text="✘" FontSize="11" Foreground="{DynamicResource StatusErrorBrush}" IsVisible="{Binding Deleted}"
-                             ToolTip.Tip="This replay has been deleted by uploader according to your settings" />
-                </StackPanel>
-                <Border Grid.Column="2" Classes="badge" gui:StatusClass.Status="{Binding UploadStatus}"
+                </DockPanel>
+                <!-- Heroes Profile's replay id, linking to the match page (blank until it's known) -->
+                <Button Grid.Column="2" Classes="link-btn" Command="{Binding OpenMatchCommand}" IsVisible="{Binding HasReplayId}"
+                        HorizontalAlignment="Left" VerticalAlignment="Center" ToolTip.Tip="{Binding MatchUrl}">
+                  <TextBlock Text="{Binding ReplayIdText}" FontSize="10.5" TextDecorations="Underline" />
+                </Button>
+                <Border Grid.Column="3" Classes="badge" gui:StatusClass.Status="{Binding UploadStatus}" HorizontalAlignment="Left"
                         CornerRadius="9" Padding="7,2" VerticalAlignment="Center">
                   <StackPanel Orientation="Horizontal" Spacing="4">
                     <Ellipse Classes="dot" gui:StatusClass.Status="{Binding UploadStatus}" Width="5" Height="5" VerticalAlignment="Center" />

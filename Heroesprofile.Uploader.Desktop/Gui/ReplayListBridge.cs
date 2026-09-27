@@ -40,7 +40,8 @@ namespace Heroesprofile.Uploader.Desktop.Gui
             _manager = manager;
             manager.Files.CollectionChanged += (_, e) => Dispatcher.UIThread.Post(() => OnCollectionChanged(e));
             manager.Files.ItemPropertyChanged += (sender, e) => {
-                if (e.PropertyName != nameof(ReplayFile.UploadStatus) && e.PropertyName != nameof(ReplayFile.Deleted)) {
+                if (e.PropertyName != nameof(ReplayFile.UploadStatus) && e.PropertyName != nameof(ReplayFile.Deleted) &&
+                    e.PropertyName != nameof(ReplayFile.ReplayId)) {
                     return;
                 }
                 var file = (ReplayFile)sender;

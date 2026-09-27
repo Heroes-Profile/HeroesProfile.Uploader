@@ -68,11 +68,24 @@ namespace Heroesprofile.Uploader.Common
         public async Task Upload(Replay replay_results, ReplayFile file, bool PostMatchPage)
         {
             file.UploadStatus = UploadStatus.InProgress;
-            if (file.Fingerprint != null && await CheckDuplicate(file.Fingerprint)) {
+            var duplicate = file.Fingerprint != null ? await CheckDuplicate(file.Fingerprint) : (Exists: false, ReplayId: 0);
+            if (duplicate.Exists) {
                 _log.Debug($"File {file} marked as duplicate");
+                SetReplayId(file, duplicate.ReplayId);
                 file.UploadStatus = UploadStatus.Duplicate;
             } else {
-                file.UploadStatus = await Upload(replay_results, file.Fingerprint, file.Filename, PostMatchPage);
+                var (status, replayId) = await UploadFile(replay_results, file.Fingerprint, file.Filename, PostMatchPage);
+                // Before the status: the status change is what the list refreshes on
+                SetReplayId(file, replayId);
+                file.UploadStatus = status;
+            }
+        }
+
+        // An id of 0 means the server didn't send one (an older server's duplicate check) - keep what's known.
+        private static void SetReplayId(ReplayFile file, int replayId)
+        {
+            if (replayId > 0) {
+                file.ReplayId = replayId;
             }
         }
 
@@ -81,7 +94,11 @@ namespace Heroesprofile.Uploader.Common
         /// </summary>
         /// <param name="file">Path to file</param>
         /// <returns>Upload result</returns>
-        public async Task<UploadStatus> Upload(Replay replay_results, string fingerprint, string file, bool PostMatchPage)
+        public async Task<UploadStatus> Upload(Replay replay_results, string fingerprint, string file, bool PostMatchPage) =>
+            (await UploadFile(replay_results, fingerprint, file, PostMatchPage)).Status;
+
+        /// <summary>Uploads the replay; its upload status and its id on Heroes Profile (0 if there isn't one).</summary>
+        private async Task<(UploadStatus Status, int ReplayId)> UploadFile(Replay replay_results, string fingerprint, string file, bool PostMatchPage)
         {
             Assembly assembly = Assembly.GetExecutingAssembly();
             AssemblyName assemblyName = assembly.GetName();
@@ -98,10 +115,10 @@ namespace Heroesprofile.Uploader.Common
                     using (var reply = await _client.PostAsync($"{HeroesProfileApiEndpoint}/upload/heroesprofile/desktop?fingerprint={fingerprint}&version={assemblyVersion}", form)) {
                         if (!reply.IsSuccessStatusCode) {
                             if (await WaitIfThrottled(reply.StatusCode)) {
-                                return await Upload(replay_results, fingerprint, file, PostMatchPage);
+                                return await UploadFile(replay_results, fingerprint, file, PostMatchPage);
                             }
                             _log.Warn($"Error uploading file '{file}': HTTP {(int)reply.StatusCode} {Describe(await reply.Content.ReadAsStringAsync())}");
-                            return UploadStatus.UploadError;
+                            return (UploadStatus.UploadError, 0);
                         }
                         response = await reply.Content.ReadAsStringAsync();
                     }
@@ -134,21 +151,21 @@ namespace Heroesprofile.Uploader.Common
                 if (!string.IsNullOrEmpty(result.Status)) {
                     if (Enum.TryParse<UploadStatus>((string)result.Status, out UploadStatus status)) {
                         _log.Debug($"Uploaded file '{file}': {status}");
-                        return status;
+                        return (status, result.ReplayId);
                     } else {
                         _log.Error($"Unknown upload status '{file}': {result.Status}");
-                        return UploadStatus.UploadError;
+                        return (UploadStatus.UploadError, 0);
                     }
                 } else {
                     _log.Warn($"Error uploading file '{file}': {response}");
-                    return UploadStatus.UploadError;
+                    return (UploadStatus.UploadError, 0);
                 }
 
 
             }
             catch (Exception ex) when (IsNetworkFailure(ex)) {
                 _log.Warn(ex, $"Error uploading file '{file}'");
-                return UploadStatus.UploadError;
+                return (UploadStatus.UploadError, 0);
             }
         }
 
@@ -213,10 +230,11 @@ namespace Heroesprofile.Uploader.Common
         }
 
         /// <summary>
-        /// Check replay fingerprint against database to detect duplicate
+        /// Check replay fingerprint against database to detect duplicate. The server also sends the
+        /// replay's id when it has it (its "replayID" field - 0 here when it's missing or null).
         /// </summary>
         /// <param name="fingerprint"></param>
-        private async Task<bool> CheckDuplicate(string fingerprint)
+        private async Task<(bool Exists, int ReplayId)> CheckDuplicate(string fingerprint)
         {
             try {
                 using (var reply = await _client.GetAsync($"{HeroesProfileApiEndpoint}/replays/fingerprints/{fingerprint}")) {
@@ -225,15 +243,16 @@ namespace Heroesprofile.Uploader.Common
                             return await CheckDuplicate(fingerprint);
                         }
                         _log.Warn($"Error checking fingerprint '{fingerprint}': HTTP {(int)reply.StatusCode}");
-                        return false;
+                        return (false, 0);
                     }
                     var json = JObject.Parse(await reply.Content.ReadAsStringAsync());
-                    return (bool)json["exists"];
+                    var replayId = json["replayID"]?.Type == JTokenType.Integer ? (int)json["replayID"] : 0;
+                    return ((bool)json["exists"], replayId);
                 }
             }
             catch (Exception ex) when (IsNetworkFailure(ex)) {
                 _log.Warn(ex, $"Error checking fingerprint '{fingerprint}'");
-                return false;
+                return (false, 0);
             }
         }
 

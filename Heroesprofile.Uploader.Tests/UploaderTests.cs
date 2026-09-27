@@ -120,6 +120,33 @@ public sealed class UploaderTests : IDisposable
     }
 
     [Fact]
+    public async Task An_upload_keeps_the_replays_id_for_its_match_page()
+    {
+        var server = new FakeServer(Json("""{ "exists": false }"""),
+            Json($$"""{ "fingerprint": "{{Fingerprint}}", "replayID": 65484996, "status": "Success" }"""));
+        var file = Replay();
+
+        await UploaderFor(server).Upload(null!, file, PostMatchPage: false);
+
+        Assert.Equal(65484996, file.ReplayId);
+    }
+
+    [Theory]
+    [InlineData("""{ "exists": true, "replayID": 65484996 }""", 65484996)]
+    [InlineData("""{ "exists": true, "replayID": null }""", 0)]
+    [InlineData("""{ "exists": true }""", 0)] // a server from before it sent the id
+    public async Task A_duplicate_keeps_the_id_the_server_sends(string response, int expected)
+    {
+        var server = new FakeServer(Json(response));
+        var file = Replay();
+
+        await UploaderFor(server).Upload(null!, file, PostMatchPage: false);
+
+        Assert.Equal(UploadStatus.Duplicate, file.UploadStatus);
+        Assert.Equal(expected, file.ReplayId);
+    }
+
+    [Fact]
     public async Task A_replay_already_on_Heroes_Profile_is_a_duplicate_and_is_not_uploaded()
     {
         var server = new FakeServer(Json("""{ "exists": true }"""));

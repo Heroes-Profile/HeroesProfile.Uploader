@@ -1,6 +1,9 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Heroesprofile.Uploader.Common;
+using NLog;
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -14,6 +17,8 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
     /// </summary>
     public partial class ReplayRowViewModel : ObservableObject
     {
+        private static readonly Logger _log = LogManager.GetCurrentClassLogger();
+
         private const string TimeFormat = "yyyy-MM-dd HH.mm.ss";
 
         public ReplayFile File { get; }
@@ -36,12 +41,38 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
         [ObservableProperty]
         private bool deleted;
 
+        /// <summary>The replay's id on Heroes Profile, shown as a link to its match page; 0 = not known.</summary>
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(HasReplayId), nameof(ReplayIdText), nameof(MatchUrl))]
+        private int replayId;
+
+        public bool HasReplayId => ReplayId > 0;
+        public string ReplayIdText => HasReplayId ? ReplayId.ToString(CultureInfo.InvariantCulture) : "";
+        public string MatchUrl => HasReplayId ? MatchUrlFor(ReplayId) : null;
+
+        public static string MatchUrlFor(int replayId) => $"https://www.heroesprofile.com/Match/Single/{replayId}";
+
+        [RelayCommand]
+        private void OpenMatch()
+        {
+            if (!HasReplayId) {
+                return;
+            }
+            try {
+                Process.Start(new ProcessStartInfo(MatchUrl) { UseShellExecute = true });
+            }
+            catch (Exception ex) {
+                _log.Warn(ex, $"Could not open {MatchUrl}");
+            }
+        }
+
         public ReplayRowViewModel(ReplayFile file)
         {
             File = file;
             FileName = Path.GetFileName(file.Filename ?? "");
             uploadStatus = file.UploadStatus;
             deleted = file.Deleted;
+            replayId = file.ReplayId;
             (TimeText, MapText) = SplitName(file);
         }
 
@@ -95,6 +126,7 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
         {
             UploadStatus = File.UploadStatus;
             Deleted = File.Deleted;
+            ReplayId = File.ReplayId;
         }
     }
 }

@@ -28,18 +28,29 @@
            RenderOptions.BitmapInterpolationMode="HighQuality" Cursor="Hand"
            PointerReleased="Logo_PointerReleased" />
 
-    <ListBox Grid.Row="1" ItemsSource="{Binding Rows}">
+    <!-- Rows fit the list's width (no sideways scrolling): a long file name is shortened with "…" so
+         the replay id and status stay in view -->
+    <ListBox Grid.Row="1" ItemsSource="{Binding Rows}" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
       <ListBox.ItemTemplate>
         <DataTemplate x:DataType="vm:ReplayRowViewModel">
-          <DockPanel LastChildFill="True">
-            <TextBlock DockPanel.Dock="Right" Text="{Binding StatusText}"
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <DockPanel>
+              <TextBlock DockPanel.Dock="Right" Text="✘" Foreground="{DynamicResource FileDeletedIconBrush}"
+                         IsVisible="{Binding Deleted}"
+                         ToolTip.Tip="This replay has been deleted by uploader according to your settings" />
+              <TextBlock Text="{Binding FileName}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding FileName}" />
+            </DockPanel>
+            <!-- Heroes Profile's replay id, linking to the match page (blank until it's known) -->
+            <Panel Grid.Column="1" Width="80" Margin="8,0">
+              <Button Classes="link" Command="{Binding OpenMatchCommand}" IsVisible="{Binding HasReplayId}"
+                      HorizontalAlignment="Left" ToolTip.Tip="{Binding MatchUrl}">
+                <TextBlock Text="{Binding ReplayIdText}" />
+              </Button>
+            </Panel>
+            <TextBlock Grid.Column="2" Text="{Binding StatusText}" MinWidth="80"
                        Classes.success="{Binding IsSuccess}" Classes.inProgress="{Binding IsInProgress}"
                        Classes.neutral="{Binding IsNeutral}" Classes.failed="{Binding IsFailed}" />
-            <TextBlock DockPanel.Dock="Left" Text="{Binding FileName}" />
-            <TextBlock DockPanel.Dock="Left" Text="✘" Foreground="{DynamicResource FileDeletedIconBrush}"
-                       IsVisible="{Binding Deleted}"
-                       ToolTip.Tip="This replay has been deleted by uploader according to your settings" />
-          </DockPanel>
+          </Grid>
         </DataTemplate>
       </ListBox.ItemTemplate>
     </ListBox>

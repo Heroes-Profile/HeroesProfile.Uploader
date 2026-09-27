@@ -92,6 +92,22 @@ public class MainWindowPresentationTests
     }
 
     [Fact]
+    public void A_row_links_its_replay_id_to_the_match_page_once_known()
+    {
+        var file = new ReplayFile("2026-09-20 21.14.03 Cursed Hollow.StormReplay");
+        var row = new ReplayRowViewModel(file);
+        Assert.False(row.HasReplayId);
+        Assert.Null(row.MatchUrl);
+
+        file.ReplayId = 65484996;
+        row.RefreshFromFile();
+
+        Assert.True(row.HasReplayId);
+        Assert.Equal("65484996", row.ReplayIdText);
+        Assert.Equal("https://www.heroesprofile.com/Match/Single/65484996", row.MatchUrl);
+    }
+
+    [Fact]
     public void Theme_2_splits_a_replay_name_into_time_and_map()
     {
         var row = new ReplayRowViewModel(new ReplayFile("2026-09-20 21.14.03 Cursed Hollow.StormReplay"));

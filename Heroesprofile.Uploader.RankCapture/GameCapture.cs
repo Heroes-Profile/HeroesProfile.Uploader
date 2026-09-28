@@ -23,10 +23,12 @@ namespace Heroesprofile.Uploader.RankCapture
     {
         private static readonly Logger _log = LogManager.GetCurrentClassLogger();
 
-        private static readonly TimeSpan Interval = TimeSpan.FromSeconds(3);
-        private static readonly TimeSpan CaptureFor = TimeSpan.FromSeconds(30);
+        // On a fast PC the loading screen is up for only ~6 s (ranks ~3-6 s after the lobby file, 4K,
+        // 2026-09-28), so a frame a second catches several of it; 15 s still covers slower loads.
+        private static readonly TimeSpan Interval = TimeSpan.FromSeconds(1);
+        private static readonly TimeSpan CaptureFor = TimeSpan.FromSeconds(15);
         private static readonly TimeSpan MaxWait = TimeSpan.FromMinutes(6); // a slow load plus the ~80 s to the first storm save
-        private const int FramesKept = 10;
+        private const int FramesKept = 15;
 
         // The 10 player cards sit along the left and right edges of the loading screen; a quarter of the
         // width on each side covers them with room to spare (exact positions come from the samples).

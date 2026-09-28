@@ -8,7 +8,7 @@ namespace Heroesprofile.Uploader.RankCapture
     /// <summary>
     /// The Ranks build's rank reader, hooked up through Manager.SetLobbyReader/SetStormSaveReader while "Read
     /// ranks from the loading screen" is on. Per game:
-    /// lobby file (the loading screen appears) → capture the game window for its first 30 seconds (in
+    /// lobby file (the loading screen appears) → capture the game window for its first 15 seconds (in
     /// memory) → first storm save (~80 s into the match; it carries the game mode) → Storm League: send the
     /// loading screen's card strips as samples (beta); any other mode: drop them.
     /// Reading the ranks themselves comes later, built from those samples.

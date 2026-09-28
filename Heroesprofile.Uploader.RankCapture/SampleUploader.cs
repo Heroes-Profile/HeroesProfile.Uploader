@@ -46,7 +46,8 @@ namespace Heroesprofile.Uploader.RankCapture
                 map = stormSave.Map,
                 gameVersion = stormSave.ReplayVersion,
                 lobbyAt = game.LobbyAt,
-                matchStartedAt = DateTime.UtcNow,
+                // When the first storm save came (~80 s into the match), not when the match started.
+                firstStormSaveAt = DateTime.UtcNow,
                 players = (game.Lobby.Players ?? Array.Empty<Player>()).Where(p => p != null).Select(p => new {
                     name = p.Name,
                     battletag = p.BattleTag,

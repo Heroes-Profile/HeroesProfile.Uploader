@@ -241,7 +241,9 @@ jobs:
                 --packDir publish --runtime ${{ matrix.rid }} --icon "${{ steps.icon.outputs.path }}" -o releases)
           case "${{ matrix.rid }}" in
             # The normal Windows build stays on vpk's default channel ("win"); the Ranks build has its own.
-            win-*) args+=(--mainExe "$MAIN_EXE.exe")
+            # The install/update window shows packaging/splash.png (heroesprofile.com's look: its logo,
+            # near-black, Ruslan Display) with a progress bar in the site's light teal.
+            win-*) args+=(--mainExe "$MAIN_EXE.exe" --splashImage packaging/splash.png --splashProgressColor "#00d5d5")
                    if [ "${{ matrix.channel }}" != "win" ]; then args+=(--channel ${{ matrix.channel }}); fi ;;
             osx-*) args+=(--mainExe "$MAIN_EXE" --channel ${{ matrix.channel }} --bundleId com.heroesprofile.uploader) ;;
             *)     args+=(--mainExe "$MAIN_EXE" --channel ${{ matrix.channel }}) ;;

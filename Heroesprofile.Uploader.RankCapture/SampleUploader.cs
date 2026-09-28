@@ -56,33 +56,69 @@ namespace Heroesprofile.Uploader.RankCapture
                 frames = frames.Select((f, i) => new { index = i, capturedAt = f.At, width = f.Width, height = f.Height }),
             };
 
+            // One request per frame (its two strips, a few MB) keeps each well under the site's PHP
+            // post_max_size (12 MB) - all of a game's frames together can be more. The shared sample id puts
+            // them in one folder on the server.
+            var sampleId = Guid.NewGuid().ToString();
+            var metaJson = JsonConvert.SerializeObject(meta);
+            var sent = 0;
+            for (var i = 0; i < frames.Count && Collecting; i++) {
+                if (await SendFrameAsync(sampleId, metaJson, i, frames[i])) {
+                    sent++;
+                }
+            }
+            if (sent > 0) {
+                _log.Info($"Rank reading: sent {sent} of {frames.Count} loading-screen samples for this Storm League game");
+            }
+        }
+
+        /// <summary>Sends one frame; false if it didn't go (and why is logged).</summary>
+        private static async Task<bool> SendFrameAsync(string sampleId, string metaJson, int index, CapturedFrame frame)
+        {
             try {
                 using var form = new MultipartFormDataContent {
-                    { new StringContent(JsonConvert.SerializeObject(meta)), "meta" },
+                    { new StringContent(sampleId), "sample" },
+                    { new StringContent(metaJson), "meta" },
+                    { Png(frame.LeftPng), "frames[]", $"frame-{index}-left.png" },
+                    { Png(frame.RightPng), "frames[]", $"frame-{index}-right.png" },
                 };
-                for (var i = 0; i < frames.Count; i++) {
-                    form.Add(Png(frames[i].LeftPng), "frames[]", $"frame-{i}-left.png");
-                    form.Add(Png(frames[i].RightPng), "frames[]", $"frame-{i}-right.png");
-                }
 
                 using var reply = await _client.PostAsync(Endpoint, form);
                 var body = await reply.Content.ReadAsStringAsync();
-                if (!reply.IsSuccessStatusCode) {
-                    _log.Warn($"Rank reading: sample upload failed: HTTP {(int)reply.StatusCode}");
-                    return;
+
+                JObject json;
+                try {
+                    json = JObject.Parse(body);
+                }
+                catch (JsonException) {
+                    // Not our endpoint's answer: a proxy or PHP itself (e.g. its post size limit) answered.
+                    _log.Warn($"Rank reading: sample upload got a non-JSON answer: HTTP {(int)reply.StatusCode} {Describe(body)}");
+                    return false;
                 }
 
-                var collect = JObject.Parse(body)["collect"];
-                if (collect != null && collect.Type == JTokenType.Boolean && !(bool)collect) {
+                if (json["collect"] is JToken collect && collect.Type == JTokenType.Boolean && !(bool)collect) {
                     Collecting = false;
-                    _log.Info("Rank reading: Heroes Profile has enough loading-screen samples - not sending any more");
-                } else {
-                    _log.Info($"Rank reading: sent {frames.Count} loading-screen samples for this Storm League game");
+                    _log.Info("Rank reading: Heroes Profile isn't collecting loading-screen samples right now - not sending any more");
                 }
+                if (!reply.IsSuccessStatusCode || json["stored"]?.Type != JTokenType.Boolean || !(bool)json["stored"]) {
+                    if (Collecting) {
+                        _log.Warn($"Rank reading: sample upload refused: HTTP {(int)reply.StatusCode} {Describe(body)}");
+                    }
+                    return false;
+                }
+                return true;
             }
             catch (Exception ex) {
                 _log.Warn(ex, "Rank reading: sample upload failed");
+                return false;
             }
+        }
+
+        /// <summary>A response body for the log: enough to see what answered, not a whole page.</summary>
+        private static string Describe(string body)
+        {
+            var oneLine = (body ?? "").Replace("\r", " ").Replace("\n", " ").Trim();
+            return oneLine.Length > 300 ? oneLine.Substring(0, 300) + "..." : oneLine;
         }
 
         private static ByteArrayContent Png(byte[] bytes)

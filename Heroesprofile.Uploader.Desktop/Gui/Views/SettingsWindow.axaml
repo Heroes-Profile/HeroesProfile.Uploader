@@ -78,6 +78,10 @@
         <TextBlock Classes="hint"
                    Text="Reads each player's Storm League rank from the game's loading screen and sends it to Heroes Profile with the game's replay, so matches show real ranks. Only the game window is captured, only during the loading screen." />
         <CheckBox Content="Read ranks from the loading screen" IsChecked="{Binding ReadRanks}" Click="ReadRanks_Click" />
+        <CheckBox Content="Show Windows' outline around the game while it's captured" IsChecked="{Binding ShowCaptureOutline}"
+                  IsEnabled="{Binding ReadRanks}" />
+        <TextBlock Classes="hint"
+                   Text="Windows 11 captures without its yellow outline unless this is ticked. Windows 10 always shows it. Takes effect from the next game." />
       </StackPanel>
     </StackPanel>
   </Grid>

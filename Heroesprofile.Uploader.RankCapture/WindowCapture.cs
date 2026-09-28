@@ -39,7 +39,7 @@ namespace Heroesprofile.Uploader.RankCapture
         private long _lastFrameTicks;
         private int _busy;
 
-        private WindowCapture(IntPtr window, TimeSpan interval, Action<SoftwareBitmap> onFrame)
+        private WindowCapture(IntPtr window, TimeSpan interval, bool showOutline, Action<SoftwareBitmap> onFrame)
         {
             Interval = interval;
             _onFrame = onFrame;
@@ -51,6 +51,11 @@ namespace Heroesprofile.Uploader.RankCapture
             _session = _pool.CreateCaptureSession(_item);
             if (Windows.Foundation.Metadata.ApiInformation.IsPropertyPresent(typeof(GraphicsCaptureSession).FullName, nameof(GraphicsCaptureSession.IsCursorCaptureEnabled))) {
                 _session.IsCursorCaptureEnabled = false;
+            }
+            // Windows draws a yellow outline around anything being captured. Windows 11 lets an app turn it
+            // off once it has borderless access (EnsureBorderlessAccessAsync); Windows 10 always shows it.
+            if (!showOutline && _borderlessAllowed && CanHideOutline) {
+                _session.IsBorderRequired = false;
             }
             _session.StartCapture();
         }
@@ -71,9 +76,41 @@ namespace Heroesprofile.Uploader.RankCapture
             return IntPtr.Zero;
         }
 
-        /// <summary>Starts capturing <paramref name="window"/>, calling <paramref name="onFrame"/> (on a worker thread) at most every <paramref name="interval"/>.</summary>
-        public static WindowCapture Start(IntPtr window, TimeSpan interval, Action<SoftwareBitmap> onFrame) =>
-            new WindowCapture(window, interval, onFrame);
+        /// <summary>
+        /// Starts capturing <paramref name="window"/>, calling <paramref name="onFrame"/> (on a worker thread)
+        /// at most every <paramref name="interval"/>. <paramref name="showOutline"/> false hides Windows'
+        /// capture outline where it can (Windows 11, after <see cref="EnsureBorderlessAccessAsync"/>).
+        /// </summary>
+        public static WindowCapture Start(IntPtr window, TimeSpan interval, bool showOutline, Action<SoftwareBitmap> onFrame) =>
+            new WindowCapture(window, interval, showOutline, onFrame);
+
+        /// <summary>Whether this Windows can capture without the yellow outline (Windows 11 and later).</summary>
+        public static bool CanHideOutline =>
+            Windows.Foundation.Metadata.ApiInformation.IsPropertyPresent("Windows.Graphics.Capture.GraphicsCaptureSession", "IsBorderRequired");
+
+        private static bool _borderlessAllowed;
+
+        /// <summary>
+        /// Asks Windows (once per run) to allow capture without the outline. A desktop app like this gets it
+        /// without the user being asked; false where Windows can't (Windows 10) or says no.
+        /// </summary>
+        public static async Task<bool> EnsureBorderlessAccessAsync()
+        {
+            if (_borderlessAllowed || !CanHideOutline) {
+                return _borderlessAllowed;
+            }
+            try {
+                var status = await GraphicsCaptureAccess.RequestAccessAsync(GraphicsCaptureAccessKind.Borderless);
+                _borderlessAllowed = status == Windows.Security.Authorization.AppCapabilityAccess.AppCapabilityAccessStatus.Allowed;
+                if (!_borderlessAllowed) {
+                    _log.Info($"Rank reading: Windows won't allow capture without its outline ({status})");
+                }
+            }
+            catch (Exception ex) {
+                _log.Debug($"Rank reading: couldn't ask for capture without the outline: {ex.Message}");
+            }
+            return _borderlessAllowed;
+        }
 
         private async void OnFrameArrived(Direct3D11CaptureFramePool sender, object args)
         {

@@ -27,10 +27,17 @@ namespace Heroesprofile.Uploader.Desktop
             manager.SetLobbyReader(on ? RankCapture.RankReader.OnLobby : null);
             manager.SetStormSaveReader(on ? RankCapture.RankReader.OnStormSave : null);
         }
+
+        /// <summary>Show Windows' capture outline around the game (from the next game on).</summary>
+        public static void SetShowOutline(bool show) => RankCapture.RankReader.ShowOutline = show;
 #else
         public const bool IsAvailable = false;
 
         public static void Apply(Manager manager, bool on)
+        {
+        }
+
+        public static void SetShowOutline(bool show)
         {
         }
 #endif

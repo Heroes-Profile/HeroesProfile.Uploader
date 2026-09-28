@@ -10,19 +10,23 @@ using Windows.Graphics.Imaging;
 namespace Heroesprofile.Uploader.RankCapture
 {
     /// <summary>
-    /// One game, from its lobby file to its first storm save. Captures the game window every few seconds -
-    /// the draft (in draft modes) and then the loading screen - and keeps only the player-card strips of
-    /// the last <see cref="FramesKept"/> frames, in memory. The first storm save marks the end of the loading
-    /// screen, so those last frames are the loading screen's; <see cref="RankReader"/> then sends them (Storm
-    /// League) or drops them (any other mode). Gives up and drops everything after <see cref="MaxWait"/>.
+    /// One game, from its lobby file to its first storm save. The game writes the lobby file as the loading
+    /// screen appears (not at the draft), and the ranks are up within seconds; no file marks the match
+    /// starting, and the first storm save only comes about 80 seconds into the match (measured 2026-09-27).
+    /// So this captures the game window every <see cref="Interval"/> for the first <see cref="CaptureFor"/>
+    /// after the lobby file - the loading screen, with room for slow PCs - keeping only the player-card
+    /// strips, in memory, then stops capturing. The frames wait for the first storm save, whose game mode
+    /// decides whether <see cref="RankReader"/> sends them (Storm League) or drops them. Everything is dropped
+    /// if no storm save comes within <see cref="MaxWait"/>.
     /// </summary>
     internal sealed class GameCapture : IDisposable
     {
         private static readonly Logger _log = LogManager.GetCurrentClassLogger();
 
         private static readonly TimeSpan Interval = TimeSpan.FromSeconds(3);
-        private static readonly TimeSpan MaxWait = TimeSpan.FromMinutes(8); // a full draft plus a slow load
-        private const int FramesKept = 5;
+        private static readonly TimeSpan CaptureFor = TimeSpan.FromSeconds(30);
+        private static readonly TimeSpan MaxWait = TimeSpan.FromMinutes(6); // a slow load plus the ~80 s to the first storm save
+        private const int FramesKept = 10;
 
         // The 10 player cards sit along the left and right edges of the loading screen; a quarter of the
         // width on each side covers them with room to spare (exact positions come from the samples).
@@ -76,15 +80,29 @@ namespace Heroesprofile.Uploader.RankCapture
                     }
                 }
 
+                var showOutline = RankReader.ShowOutline;
+                if (!showOutline) {
+                    await WindowCapture.EnsureBorderlessAccessAsync();
+                }
+
                 lock (_lock) {
                     if (_stop.IsCancellationRequested) {
                         return;
                     }
-                    _capture = WindowCapture.Start(window, Interval, OnFrame);
+                    _capture = WindowCapture.Start(window, Interval, showOutline, OnFrame);
                 }
-                _log.Debug("Rank reading: capturing the game window until the match starts");
+                _log.Debug($"Rank reading: capturing the loading screen for {CaptureFor.TotalSeconds:0} seconds");
 
-                await Task.Delay(MaxWait, _stop.Token);
+                await Task.Delay(CaptureFor, _stop.Token);
+                int kept;
+                lock (_lock) {
+                    _capture?.Dispose();
+                    _capture = null;
+                    kept = _frames.Count;
+                }
+                _log.Debug($"Rank reading: loading screen captured ({kept} frames) - waiting for the match's game mode");
+
+                await Task.Delay(MaxWait - CaptureFor, _stop.Token);
                 _log.Info($"Rank reading: no match start within {MaxWait.TotalMinutes} minutes of the lobby - dropping what was captured");
                 Dispose();
             }

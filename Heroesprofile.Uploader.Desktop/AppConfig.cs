@@ -190,6 +190,12 @@ namespace Heroesprofile.Uploader.Desktop
         /// </summary>
         public bool ReadRanks { get; set; }
 
+        /// <summary>
+        /// Ranks build: show Windows' yellow outline around the game while rank reading captures it. Off by
+        /// default; Windows 10 always shows it regardless.
+        /// </summary>
+        public bool ShowCaptureOutline { get; set; }
+
         public static string ConfigPath => Path.Combine(Platforms.Current.ConfigDir, "config.json");
         public static string DataDir => Platforms.Current.DataDir;
 

@@ -57,6 +57,7 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
             selectedDesign = Array.Find(Designs, d => d.Value == config.Design) ?? Designs[0];
             allowPreReleases = config.AllowPreReleases;
             readRanks = RankReading.IsAvailable && config.ReadRanks;
+            showCaptureOutline = config.ShowCaptureOutline;
             showPreReleases = config.AllowPreReleases;
             twitchUploaderKey = config.TwitchUploaderKey ?? "";
             webhookUrl = config.WebhookUrl ?? "";
@@ -143,6 +144,12 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
         private bool readRanks;
 
         partial void OnReadRanksChanged(bool value) => _main.ApplyReadRanks(value);
+
+        /// <summary>Windows 11 can capture without its yellow outline; this shows it anyway.</summary>
+        [ObservableProperty]
+        private bool showCaptureOutline;
+
+        partial void OnShowCaptureOutlineChanged(bool value) => _main.ApplyShowCaptureOutline(value);
 
         /// <summary>WPF keeps "Allow beta updates" hidden unless it's already on, or Ctrl+Z is pressed.</summary>
         [ObservableProperty]

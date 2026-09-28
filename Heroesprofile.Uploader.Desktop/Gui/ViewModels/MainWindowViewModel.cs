@@ -226,6 +226,7 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
                 $"twitchExtension={Config.TwitchExtension}, webhook={(string.IsNullOrWhiteSpace(Config.WebhookUrl) ? "off" : "on")}");
 
             // Common.Uploader, spelled out - see RunCommand for why the plain name resolves wrong here.
+            RankReading.SetShowOutline(Config.ShowCaptureOutline);
             RankReading.Apply(Manager, Config.ReadRanks);
             Manager.Start(SettledMonitor.ForPlatform(Platform), new LiveMonitor(), new Analyzer(), new Common.Uploader(), new LiveProcessor(Manager.PreMatchPage, Manager.Twitch));
 
@@ -403,6 +404,13 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
             Config.ReadRanks = on;
             RankReading.Apply(Manager, on);
             _log.Info($"Rank reading {(on ? "on" : "off")}");
+        }
+
+        /// <summary>Settings' "Show Windows' outline..." (Ranks build only) - from the next game on.</summary>
+        public void ApplyShowCaptureOutline(bool show)
+        {
+            Config.ShowCaptureOutline = show;
+            RankReading.SetShowOutline(show);
         }
 
         /// <summary>Settings' Design choice - switches the main window's layout straight away.</summary>

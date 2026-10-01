@@ -456,6 +456,32 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
             }
         }
 
+        /// <summary>
+        /// Opens the folder the game saves replays to: Accounts/&lt;id&gt;/&lt;region-toon&gt;/Replays/Multiplayer
+        /// when there's just one, otherwise the Accounts folder itself.
+        /// </summary>
+        [RelayCommand]
+        private void OpenReplayFolder()
+        {
+            var accounts = ReplayLocation.Current;
+            try {
+                if (!Directory.Exists(accounts)) {
+                    _log.Warn($"Replay folder {accounts} doesn't exist - set it in Settings.");
+                    return;
+                }
+                var multiplayer = Directory.GetDirectories(accounts)
+                    .SelectMany(Directory.GetDirectories)
+                    .Select(toon => Path.Combine(toon, "Replays", "Multiplayer"))
+                    .Where(Directory.Exists)
+                    .ToList();
+                var dir = multiplayer.Count == 1 ? multiplayer[0] : accounts;
+                Process.Start(new ProcessStartInfo(dir) { UseShellExecute = true });
+            }
+            catch (Exception ex) {
+                _log.Warn(ex, $"Could not open the replay folder {accounts}");
+            }
+        }
+
         /// <summary>Opens heroesprofile.com - the WPF app's logo click.</summary>
         [RelayCommand]
         private void OpenWebsite() => OpenUrl("https://www.heroesprofile.com/");

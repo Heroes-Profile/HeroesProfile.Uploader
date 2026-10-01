@@ -4,7 +4,7 @@
         x:Class="Heroesprofile.Uploader.Desktop.Gui.Views.SettingsWindow"
         x:DataType="vm:SettingsWindowViewModel"
         Title="Settings"
-        Icon="/Gui/Assets/app-icon.png"
+        Icon="/Gui/Assets/app-icon.ico"
         SizeToContent="WidthAndHeight" CanResize="False"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         Classes.theme2="{Binding IsTheme2}">

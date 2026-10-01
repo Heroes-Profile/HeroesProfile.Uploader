@@ -1,7 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="Heroesprofile.Uploader.Desktop.Gui.Views.MessageDialog"
-        Icon="/Gui/Assets/app-icon.png"
+        Icon="/Gui/Assets/app-icon.ico"
         SizeToContent="WidthAndHeight" CanResize="False"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
   <!-- A plain message box, standing in for WPF's MessageBox.Show. -->

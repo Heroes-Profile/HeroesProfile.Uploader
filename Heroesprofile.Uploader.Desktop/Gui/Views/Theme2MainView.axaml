@@ -159,6 +159,7 @@
           <WrapPanel ItemSpacing="6" LineSpacing="6">
             <Button Content="Settings" Click="OpenSettings_Click" />
             <Button Content="Show log" Command="{Binding ShowLogCommand}" />
+            <Button Content="Replay folder" Command="{Binding OpenReplayFolderCommand}" />
             <Button Content="Check for update" Command="{Binding CheckForUpdateCommand}" />
           </WrapPanel>
           <TextBlock Grid.Column="1" Text="{Binding VersionText}" FontSize="11" VerticalAlignment="Center" Margin="8,0,0,0"

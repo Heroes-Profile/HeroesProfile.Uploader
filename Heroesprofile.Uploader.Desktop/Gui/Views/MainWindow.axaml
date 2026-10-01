@@ -5,7 +5,7 @@
         x:Class="Heroesprofile.Uploader.Desktop.Gui.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="{Binding WindowTitle}"
-        Icon="/Gui/Assets/app-icon.png"
+        Icon="/Gui/Assets/app-icon.ico"
         Classes.theme2="{Binding IsTheme2}"
         MinHeight="400">
   <!--

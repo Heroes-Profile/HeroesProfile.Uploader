@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Platform;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Heroesprofile.Uploader.Desktop.Gui.ViewModels;
@@ -47,6 +48,12 @@ namespace Heroesprofile.Uploader.Desktop.Gui
                 // for a Window's children, so the tray icon is fetched via the attached-property
                 // getter instead.
                 _trayIcon = TrayIcon.GetIcons(this)[0];
+
+                // The PNG in App.axaml is 486x432, which Windows squashes into a blurry 16/24 px tray icon;
+                // the .ico (the WPF app's) has hand-made 16-48 px sizes Windows picks from, so it stays sharp.
+                if (OperatingSystem.IsWindows()) {
+                    _trayIcon.Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://heroesprofile-uploader/Gui/Assets/app-icon.ico")));
+                }
 
                 // Tray icon shows only while the window is hidden - mirrors the Windows app's own
                 // NotifyIcon.Visible toggling in MainWindow.xaml.cs/App.xaml.cs.

@@ -20,7 +20,8 @@ namespace Heroesprofile.Uploader.Desktop.Platform
         private static readonly Logger _log = LogManager.GetCurrentClassLogger();
 
         private const string AppId = "heroesprofile-uploader";
-        private const string IconResourceName = "heroesprofile-uploader-icon.png";
+        // The icon theme sizes embedded from Gui/Assets/icons (simplified logo up to 24 px, full from 32).
+        private static readonly int[] IconSizes = { 16, 22, 24, 32, 48, 64, 128, 256, 512 };
 
         private static string Home => Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
@@ -67,9 +68,9 @@ namespace Heroesprofile.Uploader.Desktop.Platform
         public static bool IsAppMenuEntryInstalled => File.Exists(DesktopEntryPath);
         private static string DesktopEntryPath => Path.Combine(DataHome, "applications", $"{AppId}.desktop");
         private static string AutostartEntryPath => Path.Combine(ConfigHome, "autostart", $"{AppId}.desktop");
-        // Actual asset is 486x432; this is the closest standard hicolor bucket, and desktop
-        // environments scale it down for the menu/taskbar without visible loss.
-        private static string IconPath => Path.Combine(DataHome, "icons", "hicolor", "512x512", "apps", $"{AppId}.png");
+        private static string IconThemeDir => Path.Combine(DataHome, "icons", "hicolor");
+        private static string IconPath(int size) => Path.Combine(IconThemeDir, $"{size}x{size}", "apps", $"{AppId}.png");
+        private static string ScalableIconPath => Path.Combine(IconThemeDir, "scalable", "apps", $"{AppId}.svg");
 
         /// <summary>
         /// Null if the running executable can be installed, otherwise why not. `dotnet run`/`dotnet build`
@@ -112,11 +113,10 @@ namespace Heroesprofile.Uploader.Desktop.Platform
                 launch = InstalledExePath;
             }
 
-            Directory.CreateDirectory(Path.GetDirectoryName(IconPath));
-            using (var resource = Assembly.GetExecutingAssembly().GetManifestResourceStream(IconResourceName))
-            using (var dest = File.Create(IconPath)) {
-                resource.CopyTo(dest);
+            foreach (var size in IconSizes) {
+                WriteIcon($"icons/{size}.png", IconPath(size));
             }
+            WriteIcon("icons/heroesprofile-uploader.svg", ScalableIconPath);
 
             Directory.CreateDirectory(Path.GetDirectoryName(DesktopEntryPath));
             File.WriteAllText(DesktopEntryPath, DesktopEntryContents(launch, minimized: false));
@@ -136,12 +136,23 @@ namespace Heroesprofile.Uploader.Desktop.Platform
         public static void RemoveAppMenuEntry()
         {
             DeleteIfExists(DesktopEntryPath);
-            DeleteIfExists(IconPath);
+            foreach (var size in IconSizes) {
+                DeleteIfExists(IconPath(size));
+            }
+            DeleteIfExists(ScalableIconPath);
             if (IsRunningInstalledCopy) {
                 DeleteAfterExit(InstalledExePath);
             } else {
                 DeleteIfExists(InstalledExePath);
             }
+        }
+
+        private static void WriteIcon(string resourceName, string path)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            using var resource = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName);
+            using var dest = File.Create(path);
+            resource.CopyTo(dest);
         }
 
         /// <summary>True when this process is the ~/.local/bin copy.</summary>

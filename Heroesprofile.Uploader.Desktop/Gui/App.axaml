@@ -24,7 +24,7 @@
        Clicking the icon itself reopens the window, as in WPF; the menu adds log and quit. -->
   <TrayIcon.Icons>
     <TrayIcons>
-      <TrayIcon ToolTipText="Heroesprofile.com Uploader" IsVisible="False" Icon="/Gui/Assets/app-icon.png" Clicked="TrayIcon_Clicked">
+      <TrayIcon ToolTipText="Heroesprofile.com Uploader" IsVisible="False" Icon="/Gui/Assets/icons/tray.png" Clicked="TrayIcon_Clicked">
         <TrayIcon.Menu>
           <NativeMenu>
             <NativeMenuItem Header="Open" Click="TrayOpen_Click" />

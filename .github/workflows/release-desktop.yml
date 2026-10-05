@@ -164,16 +164,10 @@ jobs:
         run: |
           case "${{ matrix.rid }}" in
             win-*)   echo "path=Heroesprofile.Uploader.Desktop/Gui/Assets/app-icon.ico" >> "$GITHUB_OUTPUT" ;;
-            linux-*) echo "path=Heroesprofile.Uploader.Desktop/Gui/Assets/app-icon.png" >> "$GITHUB_OUTPUT" ;;
+            linux-*) echo "path=Heroesprofile.Uploader.Desktop/Gui/Assets/icons/256.png" >> "$GITHUB_OUTPUT" ;;
             osx-*)
-              # macOS wants an .icns; build one from the PNG (padded square first, so it isn't stretched).
-              mkdir -p icon.iconset
-              sips --padToHeightWidth 486 486 Heroesprofile.Uploader.Desktop/Gui/Assets/app-icon.png --out square.png
-              for s in 16 32 128 256 512; do
-                sips -z $s $s square.png --out "icon.iconset/icon_${s}x${s}.png"
-                sips -z $((s * 2)) $((s * 2)) square.png --out "icon.iconset/icon_${s}x${s}@2x.png"
-              done
-              iconutil -c icns icon.iconset -o app.icns
+              # macOS wants an .icns; the iconset's sizes are each rendered from the vector logo.
+              iconutil -c icns packaging/macos/AppIcon.iconset -o app.icns
               echo "path=app.icns" >> "$GITHUB_OUTPUT" ;;
           esac
 

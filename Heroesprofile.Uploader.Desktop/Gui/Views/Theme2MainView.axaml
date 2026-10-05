@@ -22,7 +22,7 @@
           <StackPanel Orientation="Horizontal" Spacing="8" Cursor="Hand" Background="Transparent"
                       PointerReleased="Logo_PointerReleased" ToolTip.Tip="Open heroesprofile.com">
             <!-- The Heroes Profile logo, in place of PR #53's plain green hexagon -->
-            <Image Source="/Gui/Assets/app-icon.png" Width="26" Height="26" VerticalAlignment="Center"
+            <Image Source="/Gui/Assets/icons/64.png" Width="26" Height="26" VerticalAlignment="Center"
                    RenderOptions.BitmapInterpolationMode="HighQuality" />
             <StackPanel VerticalAlignment="Center">
               <TextBlock Text="Heroes Profile Uploader" FontSize="12" FontWeight="Medium" />

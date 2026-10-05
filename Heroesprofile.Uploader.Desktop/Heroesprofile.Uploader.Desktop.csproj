@@ -56,9 +56,9 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Gui\Assets\**" />
-    <!-- Same file, also embedded under a plain reflection-friendly name so the CLI `install`
-         command can extract it (for ~/.local/share/icons/...) without pulling in Avalonia. -->
-    <EmbeddedResource Include="Gui\Assets\app-icon.png" LogicalName="heroesprofile-uploader-icon.png" />
+    <!-- The icon sizes, also embedded under plain reflection-friendly names so the CLI `install`
+         command can extract them (for ~/.local/share/icons/hicolor/...) without pulling in Avalonia. -->
+    <EmbeddedResource Include="Gui\Assets\icons\*.png;Gui\Assets\icons\*.svg" LogicalName="icons/%(Filename)%(Extension)" />
   </ItemGroup>
 
 

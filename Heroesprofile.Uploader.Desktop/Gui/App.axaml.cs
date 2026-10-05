@@ -49,10 +49,14 @@ namespace Heroesprofile.Uploader.Desktop.Gui
                 // getter instead.
                 _trayIcon = TrayIcon.GetIcons(this)[0];
 
-                // The PNG in App.axaml is 486x432, which Windows squashes into a blurry 16/24 px tray icon;
-                // the .ico (the WPF app's) has hand-made 16-48 px sizes Windows picks from, so it stays sharp.
+                // App.axaml's tray.png is the simplified logo (Linux panels scale it down). Windows picks
+                // the exact 16/20/24 px size for its DPI from the .ico, so it stays sharp; the macOS menu
+                // bar wants a black "template" image it tints to match a light or dark menu bar.
                 if (OperatingSystem.IsWindows()) {
                     _trayIcon.Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://heroesprofile-uploader/Gui/Assets/app-icon.ico")));
+                } else if (OperatingSystem.IsMacOS()) {
+                    _trayIcon.Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://heroesprofile-uploader/Gui/Assets/icons/tray-mac-template.png")));
+                    MacOSProperties.SetIsTemplateIcon(_trayIcon, true);
                 }
 
                 // Tray icon shows only while the window is hidden - mirrors the Windows app's own

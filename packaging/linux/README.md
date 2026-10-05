@@ -184,7 +184,7 @@ The AppImage (how `.github/workflows/release-desktop.yml` builds it):
 dotnet tool restore
 dotnet publish Heroesprofile.Uploader.Desktop -c Release -r linux-x64 --self-contained -o publish
 dotnet vpk pack --packId Heroesprofile.Uploader --packVersion 3.0.0 --packDir publish --runtime linux-x64 \
-  --channel linux --mainExe heroesprofile-uploader --icon Heroesprofile.Uploader.Desktop/Gui/Assets/app-icon.png -o releases
+  --channel linux --mainExe heroesprofile-uploader --icon Heroesprofile.Uploader.Desktop/Gui/Assets/icons/256.png -o releases
 ```
 
 The plain program for the tarball:

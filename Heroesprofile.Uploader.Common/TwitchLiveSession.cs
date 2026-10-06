@@ -259,7 +259,7 @@ namespace Heroesprofile.Uploader.Common
                     var message = $"Connected to {channel}.";
                     message += active ? " The extension is active." : " The extension is not active — see your Heroes Profile account.";
                     if (!playerLinked) {
-                        message += " Connect your Battle.net account there too, so your team is shown first.";
+                        message += " Connect your Battle.net account there too, so your team is labelled.";
                     }
                     return message;
                 }

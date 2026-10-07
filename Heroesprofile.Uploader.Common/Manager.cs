@@ -70,7 +70,28 @@ namespace Heroesprofile.Uploader.Common
             }
         }
 
-        public bool PreMatchPage { get; set; }
+        private bool _preMatchPage;
+
+        /// <summary>Opens the pre-match page for each game. Takes effect straight away.</summary>
+        public bool PreMatchPage
+        {
+            get {
+                return _preMatchPage;
+            }
+            set {
+                if (_preMatchPage == value) {
+                    return;
+                }
+                _preMatchPage = value;
+                if (_liveProcessor != null) {
+                    _liveProcessor.PreMatchPage = value;
+                }
+                if (_initialized && _live_monitor != null) {
+                    RestartLiveWatchers();
+                }
+            }
+        }
+
         public bool PostMatchPage { get; set; }
 
         /// <summary>
@@ -285,11 +306,12 @@ namespace Heroesprofile.Uploader.Common
 
         /// <summary>
         /// The game writes a .StormSave as it goes — after heroes load and as talents
-        /// are picked. The Twitch extension reads them, and so does the storm save reader if one is set.
+        /// are picked. The Twitch extension reads them, so does the storm save reader if one is set, and
+        /// the pre-match page takes the game mode from the first one.
         /// </summary>
         private void StartStormSaveWatcherEvent()
         {
-            if (!Twitch.Enabled && _stormSaveReader == null) {
+            if (!Twitch.Enabled && _stormSaveReader == null && !PreMatchPage) {
                 return;
             }
 
@@ -300,12 +322,26 @@ namespace Heroesprofile.Uploader.Common
                     await EnsureFileAvailable(e.Data, testWrite: false);
                     await WaitUntilSettled(e.Data);
                     await SafeCopy(e.Data, tmpPath, true);
-                    if (_stormSaveReader is Action<Replay> reader) {
+                    if (_stormSaveReader != null || PreMatchPage) {
+                        Replay save = null;
                         try {
-                            reader(TwitchLiveSession.ParseLiveFile(tmpPath, isFinalReplay: false));
+                            save = TwitchLiveSession.ParseLiveFile(tmpPath, isFinalReplay: false);
                         }
                         catch (Exception ex) {
-                            _log.Warn(ex, $"Storm save reader failed on '{e.Data}'");
+                            _log.Warn(ex, $"Could not read storm save '{e.Data}'");
+                        }
+                        if (save != null) {
+                            if (_stormSaveReader is Action<Replay> reader) {
+                                try {
+                                    reader(save);
+                                }
+                                catch (Exception ex) {
+                                    _log.Warn(ex, $"Storm save reader failed on '{e.Data}'");
+                                }
+                            }
+                            if (PreMatchPage && _liveProcessor != null) {
+                                await _liveProcessor.ReportGameMode(save);
+                            }
                         }
                     }
                     await Twitch.UpdateFromStormSave(tmpPath);

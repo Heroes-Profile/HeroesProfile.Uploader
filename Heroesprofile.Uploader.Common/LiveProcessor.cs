@@ -53,6 +53,10 @@ namespace Heroesprofile.Uploader.Common
 
         private Replay replayData;
 
+        /// <summary>The id the pre-match page was opened with, once the server has answered.</summary>
+        private int? _prematchID;
+        private int _gameModeReported;
+
         /// <summary>The Twitch extension feed. Shared across games; each lobby starts a new one.</summary>
         public TwitchLiveSession Twitch { get; }
 
@@ -140,6 +144,7 @@ namespace Heroesprofile.Uploader.Common
                     return;
                 }
 
+                _prematchID = value;
                 var pageUrl = $"{heresprofile}{preMatchURI}{value}";
                 _log.Debug($"Opening prematch page {pageUrl}");
                 try {
@@ -154,6 +159,48 @@ namespace Heroesprofile.Uploader.Common
             }
             catch (Exception ex) {
                 _log.Error(ex, $"Prematch failed ({apiUrl})");
+            }
+        }
+
+        /// <summary>
+        /// Tells the pre-match page which mode the game is, so it can switch its filter to it. The
+        /// battle lobby has no mode; the first storm save of the game does. Sent once per game - later
+        /// saves only retry if the first send failed.
+        /// </summary>
+        public async Task ReportGameMode(Replay stormSave)
+        {
+            if (!PreMatchPage || _prematchID == null || stormSave == null) {
+                return;
+            }
+
+            var mode = stormSave.GameMode;
+            if (mode != GameMode.QuickMatch && mode != GameMode.UnrankedDraft && mode != GameMode.StormLeague
+                && mode != GameMode.HeroLeague && mode != GameMode.TeamLeague && mode != GameMode.ARAM) {
+                return;
+            }
+
+            if (System.Threading.Interlocked.Exchange(ref _gameModeReported, 1) == 1) {
+                return;
+            }
+
+            var apiUrl = $"{heresprofileAPI}prematch/{_prematchID}/mode";
+            try {
+                var content = new FormUrlEncodedContent(new Dictionary<string, string> { { "mode", mode.ToString() } });
+                var response = await client.PostAsync(apiUrl, content);
+                if (!response.IsSuccessStatusCode) {
+                    var responseString = await response.Content.ReadAsStringAsync();
+                    _log.Warn($"Prematch game mode not accepted. HTTP {(int)response.StatusCode} from {apiUrl}, response string: {Describe(responseString)}");
+                    // A 4xx will not change on the next save; a server error might.
+                    if ((int)response.StatusCode >= 500) {
+                        _gameModeReported = 0;
+                    }
+                    return;
+                }
+                _log.Debug($"Reported game mode {mode} for prematch {_prematchID}");
+            }
+            catch (Exception ex) {
+                _log.Warn(ex, $"Could not report game mode ({apiUrl})");
+                _gameModeReported = 0;
             }
         }
 

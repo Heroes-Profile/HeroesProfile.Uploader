@@ -1,7 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Configurations>Debug;Release</Configurations>
     <AssemblyName>Heroesprofile.Uploader.Common</AssemblyName>
     <RootNamespace>Heroesprofile.Uploader.Common</RootNamespace>
@@ -10,9 +10,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
-    <PackageReference Include="Nito.AsyncEx.Coordination" Version="5.0.0-pre-05" />
-    <PackageReference Include="NLog" Version="4.5.11" />
+    <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="Nito.AsyncEx.Coordination" />
+    <PackageReference Include="NLog" />
   </ItemGroup>
 
   <ItemGroup>
@@ -21,6 +21,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Heroes.ReplayParser\Heroes.ReplayParser\Heroes.ReplayParser.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Heroesprofile.Uploader.Tests" />
   </ItemGroup>
   
 </Project>

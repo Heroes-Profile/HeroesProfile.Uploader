@@ -259,7 +259,7 @@ namespace Heroesprofile.Uploader.Common
                     var message = $"Connected to {channel}.";
                     message += active ? " The extension is active." : " The extension is not active — see your Heroes Profile account.";
                     if (!playerLinked) {
-                        message += " Connect your Battle.net account there too, so your team is shown first.";
+                        message += " Connect your Battle.net account there too, so your team is labelled.";
                     }
                     return message;
                 }
@@ -295,10 +295,12 @@ namespace Heroesprofile.Uploader.Common
         }
 
         /// <summary>
-        /// Just the parts the extension needs. A storm save names its files `save.*`
-        /// where a finished replay has `replay.*`; the events are named the same.
+        /// Just the parts the extension needs - details (heroes, map), attributes (game mode), init data and
+        /// tracker events. A storm save names its files `save.*` where a finished replay has `replay.*`; the
+        /// events are named the same. Also what Manager reads a storm save's game mode with, for the lobby
+        /// reader (see Manager.SetStormSaveReader).
         /// </summary>
-        private static Replay ParseLiveFile(string path, bool isFinalReplay)
+        public static Replay ParseLiveFile(string path, bool isFinalReplay)
         {
             var replay = new Replay();
             MpqHeader.ParseHeader(replay, path);

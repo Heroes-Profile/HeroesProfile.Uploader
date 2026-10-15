@@ -1,21 +1,105 @@
-MIT License
+Copyright (c) 2024 HeroesProfile. All rights reserved.
 
-Copyright (c) 2017 Roman Semenov
+HEROESPROFILE SOURCE AVAILABLE LICENSE
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+1. DEFINITIONS
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+   "Software" means all source code, object code, configuration files, scripts,
+   documentation, designs, algorithms, logic, and any other materials contained
+   in this repository, other than the third-party components listed in the
+   NOTICE file, which remain under their own licenses.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+   "Competing Product" means any website, application, service, tool, or product
+   that provides Heroes of the Storm statistics, replay analysis, player profiles,
+   leaderboards, match history, talent data, or any substantially similar
+   functionality to HeroesProfile (heroesprofile.com), or that finds, collects,
+   uploads, or sends Heroes of the Storm replay files or replay data to any
+   service other than HeroesProfile.
+
+   "Licensor" means HeroesProfile and its copyright holders.
+
+   "You" means the individual or entity exercising rights under this License.
+
+2. PERMITTED USE
+
+   Subject to the terms of this License, the Licensor grants You a limited,
+   non-exclusive, non-transferable, non-sublicensable right to:
+
+   a. View and read the Software for personal educational purposes.
+   b. Fork the repository and submit pull requests or contributions back to the
+      official HeroesProfile repository.
+   c. Notwithstanding section 3, install and use official HeroesProfile builds
+      of the Software, unmodified, to upload replays to HeroesProfile.
+
+3. RESTRICTIONS
+
+   You may NOT, without prior explicit written permission from the Licensor:
+
+   a. Copy, reproduce, or extract any portion of the Software — including but
+      not limited to source code, logic, algorithms, data structures, database
+      schemas, query patterns, UI designs, or workflows — for use in any
+      Competing Product.
+
+   b. Deploy, host, or operate any version of the Software, or any derivative
+      work based on the Software, as a public-facing or private service.
+
+   c. Use the logic, structure, or design of the Software as a reference or
+      blueprint to build a Competing Product, even if the resulting code is
+      independently written.
+
+   d. Sublicense, sell, rent, lease, or otherwise transfer rights to the
+      Software or any portion thereof to any third party.
+
+   e. Remove or alter any copyright, trademark, or attribution notices contained
+      in the Software.
+
+4. CONTRIBUTIONS
+
+   By submitting a pull request, patch, or any other contribution to this
+   repository, You agree that:
+
+   a. Your contribution is made voluntarily and without expectation of
+      compensation.
+   b. You grant the Licensor a perpetual, irrevocable, worldwide, royalty-free
+      license to use, modify, and incorporate your contribution into the Software
+      under any terms the Licensor chooses.
+   c. You represent that you have the right to make the contribution and that it
+      does not violate any third-party rights.
+
+5. INTELLECTUAL PROPERTY
+
+   All rights, title, and interest in and to the Software, including all
+   intellectual property rights, remain exclusively with the Licensor. This
+   License does not grant You any rights to trademarks, service marks, or trade
+   names of the Licensor.
+
+6. DISCLAIMER OF WARRANTIES
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. THE LICENSOR DOES NOT
+   WARRANT THAT THE SOFTWARE WILL BE ERROR-FREE OR UNINTERRUPTED.
+
+7. LIMITATION OF LIABILITY
+
+   IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY INDIRECT, INCIDENTAL,
+   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES ARISING OUT OF OR IN CONNECTION
+   WITH THIS LICENSE OR THE USE OF THE SOFTWARE, EVEN IF ADVISED OF THE
+   POSSIBILITY OF SUCH DAMAGES.
+
+8. TERMINATION
+
+   Any breach of this License immediately and automatically terminates your
+   rights under it. Upon termination, You must destroy all copies of the
+   Software in your possession.
+
+9. GOVERNING LAW
+
+   This License shall be governed by and construed in accordance with the laws
+   of the jurisdiction in which the Licensor is domiciled, without regard to
+   conflict of law principles.
+
+10. CONTACT
+
+    For permissions beyond the scope of this License, contact:
+    heroesprofile.com

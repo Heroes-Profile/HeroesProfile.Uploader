@@ -1,0 +1,20 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:Heroesprofile.Uploader.Desktop.Gui.ViewModels"
+        xmlns:views="clr-namespace:Heroesprofile.Uploader.Desktop.Gui.Views"
+        x:Class="Heroesprofile.Uploader.Desktop.Gui.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="{Binding WindowTitle}"
+        Icon="/Gui/Assets/app-icon.ico"
+        Classes.theme2="{Binding IsTheme2}"
+        MinHeight="400">
+  <!--
+    Hosts the two layouts the Design setting picks between (Settings -> Design): Theme 1, laid out
+    after the WPF app, and Theme 2, the Linux app's (PR #53) design. Both bind the same view model; the
+    hidden one isn't laid out, so its list realizes no rows.
+  -->
+  <Panel>
+    <views:Theme1MainView IsVisible="{Binding !IsTheme2}" />
+    <views:Theme2MainView IsVisible="{Binding IsTheme2}" />
+  </Panel>
+</Window>

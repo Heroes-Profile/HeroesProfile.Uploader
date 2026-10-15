@@ -1,0 +1,65 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- A windowed program, so Windows doesn't open a console window next to the GUI (on Linux and
+         macOS this makes no difference). The command-line modes reattach to the terminal they were
+         started from - see Program.AttachToParentConsole. -->
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Heroesprofile.Uploader.Desktop</RootNamespace>
+    <AssemblyName>heroesprofile-uploader</AssemblyName>
+    <!-- No dependency on the distro's libicu (missing or a different soname on many distros).
+         PredefinedCulturesOnly=false because NLog's JSON serializer looks up "en-US" at startup,
+         which throws in invariant mode otherwise. -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <PredefinedCulturesOnly>false</PredefinedCulturesOnly>
+    <!-- HeroesProfileVersion (Directory.Build.props) unless a build passes -p:Version - release-desktop.yml
+         does, adding a "-beta.N" suffix for test builds; a global property like that always wins. The
+         window title, the "version" command-line option and the update checks read it back (ReleaseVersion.Current). -->
+    <Version Condition="'$(Version)' == ''">$(HeroesProfileVersion)</Version>
+    <!-- For the single-file Linux tarball: Skia/HarfBuzz native libs are bundled and self-extracted on first run. -->
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <!-- The Windows .exe's own icon (Explorer, taskbar) - the same one the WPF app used. -->
+    <ApplicationIcon>Gui/Assets/app-icon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Heroesprofile.Uploader.Common\Heroesprofile.Uploader.Common.csproj" />
+  </ItemGroup>
+
+  <!--
+    The "Ranks" build: -p:IncludeRankCapture=true adds the opt-in rank reader (Heroesprofile.Uploader.RankCapture,
+    Windows only) and defines RANK_CAPTURE for the one place that hooks it up (RankReading.cs). Without it -
+    the normal build, and every build on Linux/macOS - none of that project is referenced or shipped.
+  -->
+  <PropertyGroup Condition="'$(IncludeRankCapture)' == 'true'">
+    <TargetFramework>net10.0-windows10.0.22621.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <DefineConstants>$(DefineConstants);RANK_CAPTURE</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(IncludeRankCapture)' == 'true'">
+    <ProjectReference Include="..\Heroesprofile.Uploader.RankCapture\Heroesprofile.Uploader.RankCapture.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Heroesprofile.Uploader.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Simple" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
+    <PackageReference Include="Velopack" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Gui\Assets\**" />
+    <!-- The icon sizes, also embedded under plain reflection-friendly names so the CLI `install`
+         command can extract them (for ~/.local/share/icons/hicolor/...) without pulling in Avalonia. -->
+    <EmbeddedResource Include="Gui\Assets\icons\*.png;Gui\Assets\icons\*.svg" LogicalName="icons/%(Filename)%(Extension)" />
+  </ItemGroup>
+
+
+</Project>

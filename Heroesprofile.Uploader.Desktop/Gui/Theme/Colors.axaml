@@ -1,0 +1,83 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+  <!--
+    The WPF app's two themes, ported colour for colour:
+      Light = Themes/Default/Default.xaml - stock system controls, so only our own brushes are set and
+              the Simple theme's light palette does the rest.
+      Dark  = Themes/MetroDark/* - its Color_0xx palette mapped onto the Simple theme's colour slots.
+    Avalonia re-resolves DynamicResource lookups against whichever dictionary matches the active
+    ThemeVariant, so switching theme is just setting Application.RequestedThemeVariant.
+    Our own keys keep the WPF names (DimmedTextBrush, StatusUpload*Brush, ...) so views read the same.
+  -->
+  <ResourceDictionary.ThemeDictionaries>
+
+    <ResourceDictionary x:Key="Light">
+      <!-- WPF's default font size (9pt) -->
+      <sys:Double x:Key="AppFontSize">12</sys:Double>
+
+      <SolidColorBrush x:Key="UpdateAvailableTextBrush" Color="Orange" />
+      <SolidColorBrush x:Key="FileDeletedIconBrush" Color="DarkRed" />
+      <SolidColorBrush x:Key="DimmedTextBrush" Color="DarkGray" />
+      <SolidColorBrush x:Key="FolderNotFoundBrush" Color="OrangeRed" />
+
+      <SolidColorBrush x:Key="StatusUploadInProgressBrush" Color="Orange" />
+      <SolidColorBrush x:Key="StatusUploadSuccessBrush" Color="Green" />
+      <SolidColorBrush x:Key="StatusUploadNeutralBrush" Color="DarkGray" />
+      <SolidColorBrush x:Key="StatusUploadFailedBrush" Color="Red" />
+    </ResourceDictionary>
+
+    <ResourceDictionary x:Key="Dark">
+      <!-- MetroDark sets 10pt Segoe UI on every control -->
+      <sys:Double x:Key="AppFontSize">13.333</sys:Double>
+
+      <!-- Simple theme slots, from MetroDark's Theme.Colors.xaml -->
+      <Color x:Key="ThemeBackgroundColor">#181818</Color>             <!-- Color_009: window, button, textbox, list backgrounds -->
+      <Color x:Key="ThemeForegroundColor">#BABABA</Color>             <!-- Color_002: text -->
+      <Color x:Key="ThemeForegroundLowColor">#565656</Color>          <!-- Color_005: disabled/dim text -->
+      <Color x:Key="ThemeForegroundMidColor">#858585</Color>          <!-- Color_003 -->
+      <Color x:Key="ThemeAccentColor">#6468DE</Color>                 <!-- Color_024: focus, checks, pressed -->
+      <Color x:Key="ThemeBorderLowColor">#454545</Color>              <!-- Color_006: button borders -->
+      <Color x:Key="ThemeBorderMidColor">#454545</Color>              <!-- Color_006: list and checkbox borders -->
+      <Color x:Key="ThemeBorderHighColor">#747474</Color>             <!-- Color_004: hover borders -->
+      <Color x:Key="ThemeControlLowColor">#181818</Color>             <!-- Color_009 -->
+      <Color x:Key="ThemeControlMidColor">#181818</Color>             <!-- Color_009: MetroDark buttons are flat -->
+      <Color x:Key="ThemeControlMidHighColor">#292929</Color>         <!-- Color_008 -->
+      <Color x:Key="ThemeControlHighColor">#454545</Color>            <!-- Color_006: hover background -->
+      <Color x:Key="ThemeControlVeryHighColor">#565656</Color>        <!-- Color_005 -->
+      <Color x:Key="ThemeControlHighlightLowColor">#266468DE</Color>  <!-- Color_027: selected item -->
+      <Color x:Key="ThemeControlHighlightMidColor">#266468DE</Color>  <!-- Color_027: pressed button -->
+      <Color x:Key="ThemeControlHighlightHighColor">#6468DE</Color>   <!-- Color_024 -->
+      <Color x:Key="ThemeDisabledColor">#565656</Color>               <!-- Color_005 -->
+
+      <!-- The Simple theme builds its brushes from these colours with StaticResource inside its own
+           dictionaries, so overriding a colour alone never reaches its brush - set both. -->
+      <SolidColorBrush x:Key="ThemeBackgroundBrush" Color="#181818" />
+      <SolidColorBrush x:Key="ThemeForegroundBrush" Color="#BABABA" />
+      <SolidColorBrush x:Key="ThemeForegroundLowBrush" Color="#565656" />
+      <SolidColorBrush x:Key="ThemeAccentBrush" Color="#6468DE" />
+      <SolidColorBrush x:Key="ThemeBorderLowBrush" Color="#454545" />
+      <SolidColorBrush x:Key="ThemeBorderMidBrush" Color="#454545" />
+      <SolidColorBrush x:Key="ThemeBorderHighBrush" Color="#747474" />
+      <SolidColorBrush x:Key="ThemeControlLowBrush" Color="#181818" />
+      <SolidColorBrush x:Key="ThemeControlMidBrush" Color="#181818" />
+      <SolidColorBrush x:Key="ThemeControlMidHighBrush" Color="#292929" />
+      <SolidColorBrush x:Key="ThemeControlHighBrush" Color="#454545" />
+      <SolidColorBrush x:Key="ThemeControlVeryHighBrush" Color="#565656" />
+      <SolidColorBrush x:Key="ThemeControlHighlightLowBrush" Color="#266468DE" />
+      <SolidColorBrush x:Key="ThemeControlHighlightMidBrush" Color="#266468DE" />
+      <SolidColorBrush x:Key="ThemeControlHighlightHighBrush" Color="#6468DE" />
+
+      <SolidColorBrush x:Key="UpdateAvailableTextBrush" Color="Orange" />
+      <SolidColorBrush x:Key="FileDeletedIconBrush" Color="DarkRed" />
+      <SolidColorBrush x:Key="DimmedTextBrush" Color="#565656" />      <!-- Color_005 -->
+      <SolidColorBrush x:Key="FolderNotFoundBrush" Color="OrangeRed" />
+
+      <SolidColorBrush x:Key="StatusUploadInProgressBrush" Color="#BB8E2E" /> <!-- Color_058 -->
+      <SolidColorBrush x:Key="StatusUploadSuccessBrush" Color="#037A54" />    <!-- Color_049 -->
+      <SolidColorBrush x:Key="StatusUploadNeutralBrush" Color="#565656" />    <!-- Color_005 -->
+      <SolidColorBrush x:Key="StatusUploadFailedBrush" Color="#D0284C" />     <!-- Color_028 -->
+    </ResourceDictionary>
+
+  </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>

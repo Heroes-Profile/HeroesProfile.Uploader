@@ -1,0 +1,163 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!--
+    Theme 2: the look the Linux app (PR #53) shipped with - flat panels, rounded controls, a green
+    accent and coloured status badges - using its palette (Theme2Colors.axaml). Included after
+    Styles.axaml, so these win where both apply. Styles for ordinary controls only apply inside a
+    window with the "theme2" class (set from the Design setting), leaving Theme 1 exactly as it was;
+    the named classes (btn, badge, chip, ...) are only used by Theme 2's views.
+  -->
+
+  <Style Selector="Window.theme2">
+    <Setter Property="Background" Value="{DynamicResource AppBackgroundBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource AppTextBrush}" />
+    <Setter Property="FontFamily" Value="Segoe UI, Ubuntu, Cantarell, $Default" />
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+
+  <!-- Ordinary controls inside a Theme 2 window (the main window and Settings) -->
+  <Style Selector="Window.theme2 Button">
+    <Setter Property="FontSize" Value="11.5" />
+    <Setter Property="Padding" Value="10,6" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+    <Setter Property="Background" Value="{DynamicResource AppBackgroundPanelBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource AppTextBrush}" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Window.theme2 TextBox">
+    <Setter Property="FontSize" Value="11.5" />
+    <Setter Property="Padding" Value="8,6" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+    <Setter Property="Background" Value="{DynamicResource AppBackgroundPanelBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource AppTextBrush}" />
+    <Setter Property="CaretBrush" Value="{DynamicResource AppTextBrush}" />
+    <Setter Property="SelectionBrush" Value="{DynamicResource AppAccentBgBrush}" />
+  </Style>
+  <Style Selector="Window.theme2 ComboBox">
+    <Setter Property="FontSize" Value="11.5" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+    <Setter Property="Background" Value="{DynamicResource AppBackgroundPanelBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource AppTextBrush}" />
+  </Style>
+  <Style Selector="Window.theme2 CheckBox">
+    <Setter Property="FontSize" Value="11.5" />
+    <Setter Property="Foreground" Value="{DynamicResource AppTextBrush}" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Window.theme2 TextBlock.hint">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="Foreground" Value="{DynamicResource AppTextSecondaryBrush}" />
+  </Style>
+  <Style Selector="Window.theme2 TextBlock.heading">
+    <Setter Property="FontWeight" Value="Medium" />
+  </Style>
+
+  <!-- The replay list: a flat status feed, not a picker -->
+  <Style Selector="Window.theme2 ListBox">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+  </Style>
+  <Style Selector="Window.theme2 ListBoxItem">
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Window.theme2 ListBoxItem:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AppRowHoverBrush}" />
+  </Style>
+  <Style Selector="Window.theme2 ListBoxItem:selected /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+
+  <!-- Named classes used by Theme 2's views -->
+  <Style Selector="Button.btn-accent">
+    <Setter Property="Background" Value="{DynamicResource AppAccentBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AppAccentBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource AppAccentInkBrush}" />
+    <Setter Property="FontWeight" Value="Medium" />
+  </Style>
+
+  <!-- The header's small pause/resume glyph button -->
+  <Style Selector="Button.icon-btn">
+    <Setter Property="Width" Value="24" />
+    <Setter Property="Height" Value="24" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource AppTextSecondaryBrush}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+
+  <!-- Inline text links (update notice, "Restart now.", "Retry") -->
+  <Style Selector="Button.link-btn">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+  </Style>
+  <Style Selector="Button.link-btn /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+
+  <!-- Header status line: grey when idle, amber while uploading, red with failed uploads -->
+  <Style Selector="TextBlock.overall">
+    <Setter Property="Foreground" Value="{DynamicResource AppTextSecondaryBrush}" />
+  </Style>
+  <Style Selector="TextBlock.overall.failing">
+    <Setter Property="Foreground" Value="{DynamicResource StatusErrorBrush}" />
+  </Style>
+  <Style Selector="TextBlock.overall.uploading">
+    <Setter Property="Foreground" Value="{DynamicResource StatusProgressBrush}" />
+  </Style>
+
+  <!--
+    Status colours (gui:StatusClass): .badge = a row's status pill background, .dot = its dot and the
+    stat chips' dots, .statusFg = the pill's text. Brawl takes PR #53's "too old" grey; statuses without a
+    colour of their own (not processed, custom game, too old) stay neutral.
+  -->
+  <Style Selector="Border.badge">
+    <Setter Property="Background" Value="{DynamicResource AppRowAltBrush}" />
+  </Style>
+  <Style Selector="Ellipse.dot">
+    <Setter Property="Fill" Value="{DynamicResource AppTextTertiaryBrush}" />
+  </Style>
+  <Style Selector="TextBlock.statusFg">
+    <Setter Property="Foreground" Value="{DynamicResource AppTextTertiaryBrush}" />
+  </Style>
+
+  <Style Selector="Border.badge.stSuccess"><Setter Property="Background" Value="{DynamicResource StatusSuccessBgBrush}" /></Style>
+  <Style Selector="Border.badge.stDuplicate"><Setter Property="Background" Value="{DynamicResource StatusDuplicateBgBrush}" /></Style>
+  <Style Selector="Border.badge.stInProgress"><Setter Property="Background" Value="{DynamicResource StatusProgressBgBrush}" /></Style>
+  <Style Selector="Border.badge.stUploadError"><Setter Property="Background" Value="{DynamicResource StatusErrorBgBrush}" /></Style>
+  <Style Selector="Border.badge.stAiDetected"><Setter Property="Background" Value="{DynamicResource StatusAiBgBrush}" /></Style>
+  <Style Selector="Border.badge.stIncomplete"><Setter Property="Background" Value="{DynamicResource StatusIncompleteBgBrush}" /></Style>
+  <Style Selector="Border.badge.stPtrRegion"><Setter Property="Background" Value="{DynamicResource StatusPtrBgBrush}" /></Style>
+  <Style Selector="Border.badge.stBrawl"><Setter Property="Background" Value="{DynamicResource StatusOldBgBrush}" /></Style>
+
+  <Style Selector="Ellipse.dot.stSuccess"><Setter Property="Fill" Value="{DynamicResource StatusSuccessBrush}" /></Style>
+  <Style Selector="Ellipse.dot.stDuplicate"><Setter Property="Fill" Value="{DynamicResource StatusDuplicateBrush}" /></Style>
+  <Style Selector="Ellipse.dot.stInProgress"><Setter Property="Fill" Value="{DynamicResource StatusProgressBrush}" /></Style>
+  <Style Selector="Ellipse.dot.stUploadError"><Setter Property="Fill" Value="{DynamicResource StatusErrorBrush}" /></Style>
+  <Style Selector="Ellipse.dot.stAiDetected"><Setter Property="Fill" Value="{DynamicResource StatusAiBrush}" /></Style>
+  <Style Selector="Ellipse.dot.stIncomplete"><Setter Property="Fill" Value="{DynamicResource StatusIncompleteBrush}" /></Style>
+  <Style Selector="Ellipse.dot.stPtrRegion"><Setter Property="Fill" Value="{DynamicResource StatusPtrBrush}" /></Style>
+  <Style Selector="Ellipse.dot.stBrawl"><Setter Property="Fill" Value="{DynamicResource StatusOldBrush}" /></Style>
+
+  <Style Selector="TextBlock.statusFg.stSuccess"><Setter Property="Foreground" Value="{DynamicResource StatusSuccessBrush}" /></Style>
+  <Style Selector="TextBlock.statusFg.stDuplicate"><Setter Property="Foreground" Value="{DynamicResource StatusDuplicateBrush}" /></Style>
+  <Style Selector="TextBlock.statusFg.stInProgress"><Setter Property="Foreground" Value="{DynamicResource StatusProgressBrush}" /></Style>
+  <Style Selector="TextBlock.statusFg.stUploadError"><Setter Property="Foreground" Value="{DynamicResource StatusErrorBrush}" /></Style>
+  <Style Selector="TextBlock.statusFg.stAiDetected"><Setter Property="Foreground" Value="{DynamicResource StatusAiBrush}" /></Style>
+  <Style Selector="TextBlock.statusFg.stIncomplete"><Setter Property="Foreground" Value="{DynamicResource StatusIncompleteBrush}" /></Style>
+  <Style Selector="TextBlock.statusFg.stPtrRegion"><Setter Property="Foreground" Value="{DynamicResource StatusPtrBrush}" /></Style>
+  <Style Selector="TextBlock.statusFg.stBrawl"><Setter Property="Foreground" Value="{DynamicResource StatusOldBrush}" /></Style>
+</Styles>

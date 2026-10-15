@@ -1,0 +1,55 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!--
+    Shared styles for every window (included once from App.axaml, so a new window picks them up with
+    no registration). They bring the Simple theme's controls to the WPF app's sizes: WPF's
+    MainWindow/SettingsWindow set checkboxes 23px high and buttons with 10,2 padding, and the font
+    follows the theme (Segoe UI; 9pt light, 10pt MetroDark dark). Other OSes fall back to their own
+    UI font at the same size.
+  -->
+
+  <Style Selector="Window">
+    <Setter Property="FontFamily" Value="Segoe UI, $Default" />
+    <Setter Property="FontSize" Value="{DynamicResource AppFontSize}" />
+  </Style>
+
+  <Style Selector="CheckBox">
+    <Setter Property="MinHeight" Value="23" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="Button">
+    <Setter Property="Padding" Value="10,2" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+  </Style>
+
+  <!-- Text laid out like WPF's Hyperlink: the update banner's "Restart now." -->
+  <Style Selector="Button.link">
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Foreground" Value="{DynamicResource ThemeAccentBrush}" />
+  </Style>
+  <Style Selector="Button.link /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.link TextBlock">
+    <Setter Property="TextDecorations" Value="Underline" />
+  </Style>
+
+  <!-- WPF list rows are tight: one line of text, a couple of pixels of padding. -->
+  <Style Selector="ListBoxItem">
+    <Setter Property="Padding" Value="2,1" />
+  </Style>
+
+  <!-- Smaller help text under a setting, dimmed like WPF's DimmedTextBrush blocks -->
+  <Style Selector="TextBlock.hint">
+    <Setter Property="FontSize" Value="10" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="Foreground" Value="{DynamicResource DimmedTextBrush}" />
+  </Style>
+  <Style Selector="TextBlock.heading">
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+</Styles>

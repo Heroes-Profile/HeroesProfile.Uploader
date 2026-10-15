@@ -47,6 +47,27 @@ namespace Heroesprofile.Uploader.Common
             }
         }
 
+        int _replayId;
+
+        /// <summary>
+        /// The replay's id on Heroes Profile (heroesprofile.com/Match/Single/&lt;id&gt;), from the upload or
+        /// the duplicate check; 0 when not known (not uploaded, or recorded before the app kept it).
+        /// </summary>
+        public int ReplayId
+        {
+            get {
+                return _replayId;
+            }
+            set {
+                if (_replayId == value) {
+                    return;
+                }
+
+                _replayId = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ReplayId)));
+            }
+        }
+
         public ReplayFile() { } // Required for serialization
 
         public ReplayFile(string filename)

@@ -1,0 +1,88 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:Heroesprofile.Uploader.Desktop.Gui.ViewModels"
+        x:Class="Heroesprofile.Uploader.Desktop.Gui.Views.SettingsWindow"
+        x:DataType="vm:SettingsWindowViewModel"
+        Title="Settings"
+        Icon="/Gui/Assets/app-icon.ico"
+        SizeToContent="WidthAndHeight" CanResize="False"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Classes.theme2="{Binding IsTheme2}">
+  <!-- Laid out after the WPF app's SettingsWindow.xaml, section for section and word for word. -->
+
+  <Window.Styles>
+    <Style Selector="TextBlock.folderStatus">
+      <Setter Property="FontSize" Value="10" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="TextBlock.folderStatus.missing">
+      <Setter Property="Foreground" Value="{DynamicResource FolderNotFoundBrush}" />
+    </Style>
+  </Window.Styles>
+
+  <Grid ColumnDefinitions="Auto,Auto" RowDefinitions="Auto,Auto">
+
+    <StackPanel Grid.Column="0" Grid.Row="0" Margin="20,20,20,0" Spacing="8" Width="360">
+      <TextBlock Classes="heading" Text="Replay folder" />
+      <TextBlock Classes="hint" Text="{Binding ReplayPathHelp}" />
+      <TextBox Text="{Binding ReplayPath}" TextWrapping="Wrap" />
+      <TextBlock Classes="folderStatus" Classes.missing="{Binding !ReplayPathFound}" Text="{Binding ReplayPathStatus}" />
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button Content="Browse..." Click="BrowseReplayPath_Click" />
+        <Button Content="Use default" Command="{Binding UseDefaultReplayPathCommand}" />
+      </StackPanel>
+    </StackPanel>
+
+    <StackPanel Grid.Column="1" Grid.Row="0" Margin="20,20,20,0" Spacing="8" MinWidth="150">
+      <TextBlock Classes="heading" Text="Theme" />
+      <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding SelectedTheme}" HorizontalAlignment="Stretch" />
+
+      <TextBlock Classes="heading" Text="Design" Margin="0,8,0,0" />
+      <ComboBox ItemsSource="{Binding Designs}" SelectedItem="{Binding SelectedDesign}" HorizontalAlignment="Stretch"
+                ToolTip.Tip="The main window's layout. Theme 2 is the design the Linux uploader started with." />
+
+      <StackPanel Margin="0,40,0,0" IsVisible="{Binding ShowPreReleases}">
+        <CheckBox Content="Allow beta updates" FontWeight="SemiBold" IsChecked="{Binding AllowPreReleases}" />
+        <TextBlock Classes="hint" HorizontalAlignment="Left" MaxWidth="150"
+                   Text="Intended for developers. Allows automatic updates to untested pre-release versions. Needs a restart to take effect." />
+      </StackPanel>
+    </StackPanel>
+
+    <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1" Margin="20" Spacing="8" Width="520">
+      <TextBlock Classes="heading" Text="Twitch Extension (Beta)" Margin="0,16,0,0" />
+      <TextBlock Classes="hint"
+                 Text="Shows your viewers your lobby, heroes and talents as they are picked. Connect your channel and create an uploader key at the Twitch Extension section of heroesprofile.com/Api/Account, paste it here, then tick Twitch Extension on the main window.&#x0a;&#x0a;Beta: this tool is still in testing and you may encounter issues. Report problems at heroesprofile.com/Contact or zemill@heroesprofile.com." />
+      <TextBox Text="{Binding TwitchUploaderKey}" PasswordChar="●" />
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button Content="Check key" Command="{Binding CheckTwitchKeyCommand}" IsEnabled="{Binding !IsCheckingTwitchKey}" />
+        <Button Content="Open Twitch settings" Command="{Binding OpenTwitchSettingsCommand}" />
+      </StackPanel>
+      <TextBlock FontSize="10" TextWrapping="Wrap" Text="{Binding TwitchKeyStatus}" />
+
+      <TextBlock Classes="heading" Text="Webhook" Margin="0,16,0,0" />
+      <TextBlock Classes="hint"
+                 Text="A webhook lets another program react to your matches automatically. Enter a url and this app will send it an HTTP POST whenever your prematch or postmatch page opens, with a small json payload identifying the event and linking to the match page:" />
+      <TextBlock FontFamily="Consolas, Menlo, monospace" FontSize="11" TextWrapping="Wrap"
+                 Foreground="{DynamicResource DimmedTextBrush}"
+                 Text="{x:Static vm:SettingsWindowViewModel.WebhookExample}" />
+      <TextBlock Classes="hint"
+                 Text="The payload works out of the box with Discord and Slack webhook urls ('content' and 'text' carry a ready-to-post message), so your matches can be announced in a channel with no bot required. Custom receivers can use the 'event' and 'url' fields instead. Requires the Prematch/Postmatch Page options to be enabled. Leave empty to disable." />
+      <TextBox Text="{Binding WebhookUrl}" />
+      <TextBlock FontSize="10" TextWrapping="Wrap" Foreground="{DynamicResource StatusUploadFailedBrush}"
+                 Text="{Binding WebhookError}"
+                 IsVisible="{Binding WebhookError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+      <!-- Only in the Ranks build -->
+      <StackPanel Spacing="8" IsVisible="{Binding SupportsRankReading}">
+        <TextBlock Classes="heading" Text="Rank reading (Beta)" Margin="0,16,0,0" />
+        <TextBlock Classes="hint"
+                   Text="Reads each player's Storm League rank from the game's loading screen and sends it to Heroes Profile with the game's replay, so matches show real ranks. Only the game window is captured, only during the loading screen." />
+        <CheckBox Content="Read ranks from the loading screen" IsChecked="{Binding ReadRanks}" Click="ReadRanks_Click" />
+        <CheckBox Content="Show Windows' outline around the game while it's captured" IsChecked="{Binding ShowCaptureOutline}"
+                  IsEnabled="{Binding ReadRanks}" />
+        <TextBlock Classes="hint"
+                   Text="Windows 11 captures without its yellow outline unless this is ticked. Windows 10 always shows it. Takes effect from the next game." />
+      </StackPanel>
+    </StackPanel>
+  </Grid>
+</Window>

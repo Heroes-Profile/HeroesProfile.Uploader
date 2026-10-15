@@ -8,6 +8,7 @@ namespace Heroesprofile.Uploader.Common
         bool PreMatchPage { get; set; }
         Task StartProcessing(string battleLobbyPath);
         Task UpdateData(string stormSavePath);
+        Task ReportGameMode(Replay stormSave);
         TwitchLiveSession Twitch { get; }
     }
 }

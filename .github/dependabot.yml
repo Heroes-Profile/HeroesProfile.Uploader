@@ -1,0 +1,24 @@
+version: 2
+
+updates:
+  # Directory.Packages.props (Common, Desktop, Tests) and the dotnet tool manifest (vpk - keep it in
+  # step with the Velopack package). Minor/patch bumps arrive as one grouped PR a week; majors come one
+  # per PR so they get a proper look. CI (ci.yml) builds and tests each PR on all three OSes.
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      nuget-minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+# The Heroes.ReplayParser submodule is deliberately left out: it stays pinned at the commit it's on,
+# since newer versions of it break the uploader. Update it by hand, only after testing.

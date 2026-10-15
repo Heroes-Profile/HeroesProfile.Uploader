@@ -1,17 +1,57 @@
 <Project>
 
   <!--
-    Linux support: GitVersionTask 5.1.3 (pulled in by the Heroes.ReplayParser submodule) can't load its
-    MSBuild task assembly under the SDK's Core-hosted `dotnet build`/`dotnet run` on Linux - it throws a
-    FileNotFoundException on GitVersionTask.MsBuild. DisableGitVersionTask is a first-class switch the
-    package itself defines (see its GitVersionTask.props) that short-circuits all of its targets.
-    Directory.Build.props is auto-imported by every project evaluated under this directory during
-    restore/build, including the submodule's, so setting it here reaches Heroes.ReplayParser without
-    needing -p:DisableGitVersionTask=true on every command line. $(OS) is "Windows_NT" on a real Windows
-    build (where GitVersionTask.MsBuild loads fine) and "Unix" here, so this is a no-op there.
+    GitVersionTask 5.1.3 (pulled in by the Heroes.ReplayParser submodule) can't load its MSBuild task
+    assembly under the SDK's Core-hosted `dotnet build`/`dotnet run`/`dotnet publish`, on any OS - it
+    throws a FileNotFoundException on GitVersionTask.MsBuild. DisableGitVersionTask is a first-class
+    switch the package itself defines (see its GitVersionTask.props) that short-circuits all of its
+    targets. Directory.Build.props is auto-imported by every project evaluated under this directory
+    during restore/build, including the submodule's, so setting it here reaches Heroes.ReplayParser
+    without needing -p:DisableGitVersionTask=true on every command line. $(MSBuildRuntimeType) is
+    "Core" under the dotnet CLI and "Full" under Visual Studio / msbuild.exe (where GitVersionTask.MsBuild
+    loads fine), so builds from Visual Studio are unaffected.
   -->
   <PropertyGroup>
-    <DisableGitVersionTask Condition="'$(OS)' != 'Windows_NT'">true</DisableGitVersionTask>
+    <DisableGitVersionTask Condition="'$(MSBuildRuntimeType)' == 'Core'">true</DisableGitVersionTask>
+  </PropertyGroup>
+
+  <!--
+    The app's version - the one place to bump for a release. Builds without an explicit -p:Version get
+    it (see Heroesprofile.Uploader.Desktop.csproj); release-desktop.yml reads it from here and adds a
+    "-beta.N" suffix for test builds.
+  -->
+  <PropertyGroup>
+    <HeroesProfileVersion>3.0.0</HeroesProfileVersion>
+  </PropertyGroup>
+
+  <!--
+    Shared settings for our own projects (Common, Desktop, Tests). The Heroes.ReplayParser submodule is
+    left out: it has its own conventions and pinned package versions.
+  -->
+  <PropertyGroup>
+    <IsHeroesProfileProject>true</IsHeroesProfileProject>
+    <IsHeroesProfileProject Condition="$(MSBuildProjectDirectory.Contains('Heroes.ReplayParser'))">false</IsHeroesProfileProject>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsHeroesProfileProject)' == 'true'">
+    <LangVersion>latest</LangVersion>
+
+    <!-- One place for every package version: Directory.Packages.props. -->
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+
+    <!-- Reproducible restores: packages.lock.json is committed and CI restores with locked mode, so any
+         dependency change (including transitive ones) shows up in a diff. -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <RestoreLockedMode Condition="'$(CI)' == 'true'">true</RestoreLockedMode>
+
+    <!-- Fail the build on any known-vulnerable package, direct or transitive. Suppressions live in
+         Directory.Packages.props, each with a reason. -->
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <NuGetAuditLevel>low</NuGetAuditLevel>
+    <WarningsAsErrors>$(WarningsAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsAsErrors>
+
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
 </Project>

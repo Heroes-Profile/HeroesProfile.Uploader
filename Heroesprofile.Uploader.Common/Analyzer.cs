@@ -88,6 +88,11 @@ namespace Heroesprofile.Uploader.Common
                 return null;
             }
 
+            // Brawls aren't uploaded, like AI games
+            if (replay.GameMode == GameMode.Brawl) {
+                return UploadStatus.Brawl;
+            }
+
             if (replay.ReplayBuild < MinimumBuild) {
                 return UploadStatus.TooOld;
             }

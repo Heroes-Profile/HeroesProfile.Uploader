@@ -70,14 +70,82 @@ namespace Heroesprofile.Uploader.Common
             }
         }
 
-        public bool PreMatchPage { get; set; }
+        private bool _preMatchPage;
+
+        /// <summary>Opens the pre-match page for each game. Takes effect straight away.</summary>
+        public bool PreMatchPage
+        {
+            get {
+                return _preMatchPage;
+            }
+            set {
+                if (_preMatchPage == value) {
+                    return;
+                }
+                _preMatchPage = value;
+                if (_liveProcessor != null) {
+                    _liveProcessor.PreMatchPage = value;
+                }
+                if (_initialized && _live_monitor != null) {
+                    RestartLiveWatchers();
+                }
+            }
+        }
+
         public bool PostMatchPage { get; set; }
+
+        /// <summary>
+        /// How long a battle lobby or storm save has to stop growing before it's read. Zero (the default)
+        /// skips the wait: on Windows the game holds the file open while writing it, so EnsureFileAvailable
+        /// already waits. Linux and macOS have no mandatory locking, so there that check passes on a
+        /// half-written file - the Desktop app sets this for them, as SettledMonitor does for replays.
+        /// </summary>
+        public TimeSpan LiveFileSettleTime { get; set; } = TimeSpan.Zero;
+        private static readonly TimeSpan LiveFileSettleMaxWait = TimeSpan.FromSeconds(30);
 
         /// <summary>Live lobby, hero and talent data for the Heroes Profile Twitch extension.</summary>
         public TwitchLiveSession Twitch { get; } = new TwitchLiveSession();
 
         /// <summary>Either live feature needs the battle lobby watched.</summary>
-        private bool WatchesLiveGames => PreMatchPage || Twitch.Enabled;
+        private bool WatchesLiveGames => PreMatchPage || Twitch.Enabled || _lobbyReader != null;
+
+        private Action<Replay> _lobbyReader;
+        private Action<Replay> _stormSaveReader;
+
+        /// <summary>
+        /// Something to call with each game's parsed lobby, or null for none. The normal app never sets
+        /// one; the Ranks build sets its rank reader here while rank reading is switched on. Takes effect
+        /// straight away, like <see cref="SetTwitchEnabled"/>.
+        /// </summary>
+        public void SetLobbyReader(Action<Replay> reader)
+        {
+            if (_lobbyReader == reader) {
+                return;
+            }
+            _lobbyReader = reader;
+
+            if (_initialized) {
+                RestartLiveWatchers();
+            }
+        }
+
+        /// <summary>
+        /// Something to call with each storm save of the game in progress, parsed (players, map and game mode
+        /// - the lobby file has no mode), or null for none. The game writes the first one as the match
+        /// starts. The Ranks build's rank reader uses it to drop what it captured in anything but a Storm
+        /// League game. Takes effect straight away.
+        /// </summary>
+        public void SetStormSaveReader(Action<Replay> reader)
+        {
+            if (_stormSaveReader == reader) {
+                return;
+            }
+            _stormSaveReader = reader;
+
+            if (_initialized) {
+                RestartLiveWatchers();
+            }
+        }
 
 
         private string _status = "";
@@ -179,11 +247,12 @@ namespace Heroesprofile.Uploader.Common
                 _live_monitor.TempBattleLobbyCreated += async (_, e) => {
 
                     _live_monitor.StopBattleLobbyWatcher();
-                    _liveProcessor = new LiveProcessor(PreMatchPage, Twitch);
+                    _liveProcessor = new LiveProcessor(PreMatchPage, Twitch) { LobbyParsed = _lobbyReader };
 
                     var tmpPath = Path.GetTempFileName();
                     try {
                         await EnsureFileAvailable(e.Data);
+                        await WaitUntilSettled(e.Data);
                         await SafeCopy(e.Data, tmpPath, true);
                         await _liveProcessor.StartProcessing(tmpPath);
                     }
@@ -237,11 +306,12 @@ namespace Heroesprofile.Uploader.Common
 
         /// <summary>
         /// The game writes a .StormSave as it goes — after heroes load and as talents
-        /// are picked. Only the Twitch extension reads them.
+        /// are picked. The Twitch extension reads them, so does the storm save reader if one is set, and
+        /// the pre-match page takes the game mode from the first one.
         /// </summary>
         private void StartStormSaveWatcherEvent()
         {
-            if (!Twitch.Enabled) {
+            if (!Twitch.Enabled && _stormSaveReader == null && !PreMatchPage) {
                 return;
             }
 
@@ -250,7 +320,30 @@ namespace Heroesprofile.Uploader.Common
                 try {
                     // Created fires before the game has finished writing it.
                     await EnsureFileAvailable(e.Data, testWrite: false);
+                    await WaitUntilSettled(e.Data);
                     await SafeCopy(e.Data, tmpPath, true);
+                    if (_stormSaveReader != null || PreMatchPage) {
+                        Replay save = null;
+                        try {
+                            save = TwitchLiveSession.ParseLiveFile(tmpPath, isFinalReplay: false);
+                        }
+                        catch (Exception ex) {
+                            _log.Warn(ex, $"Could not read storm save '{e.Data}'");
+                        }
+                        if (save != null) {
+                            if (_stormSaveReader is Action<Replay> reader) {
+                                try {
+                                    reader(save);
+                                }
+                                catch (Exception ex) {
+                                    _log.Warn(ex, $"Storm save reader failed on '{e.Data}'");
+                                }
+                            }
+                            if (PreMatchPage && _liveProcessor != null) {
+                                await _liveProcessor.ReportGameMode(save);
+                            }
+                        }
+                    }
                     await Twitch.UpdateFromStormSave(tmpPath);
                 }
                 catch (Exception ex) {
@@ -273,6 +366,38 @@ namespace Heroesprofile.Uploader.Common
         {
             _monitor.Stop();
             processingQueue.CompleteAdding();
+        }
+
+        /// <summary>
+        /// Puts every replay whose upload failed back in the queue to try again now. Restarting the app
+        /// does the same - failed uploads aren't saved to the replay list, so they come back as new - this
+        /// just saves the restart. Returns how many were queued.
+        /// </summary>
+        public int RetryFailed()
+        {
+            var failed = Snapshot().Where(x => x.UploadStatus == UploadStatus.UploadError).ToList();
+            foreach (var file in failed) {
+                file.UploadStatus = UploadStatus.None;
+                processingQueue.Add(file);
+            }
+            if (failed.Count > 0) {
+                _log.Info($"Retrying {failed.Count} failed upload(s)");
+            }
+            return failed.Count;
+        }
+
+        // Files is added to from background threads without a lock, so a plain enumeration can race an
+        // insert and throw; copying it again is cheap and safe.
+        private List<ReplayFile> Snapshot()
+        {
+            while (true) {
+                try {
+                    return Files.ToList();
+                }
+                catch (InvalidOperationException) {
+                    // Files changed mid-copy - try again.
+                }
+            }
         }
 
         /// <summary>
@@ -419,6 +544,40 @@ namespace Heroesprofile.Uploader.Common
                     return;
                 }
             }
+        }
+
+        /// <summary>
+        /// Wait until the file's size has stayed the same for <see cref="LiveFileSettleTime"/>. Gives up
+        /// after <see cref="LiveFileSettleMaxWait"/> and lets the caller read it anyway.
+        /// </summary>
+        internal async Task WaitUntilSettled(string filename)
+        {
+            if (LiveFileSettleTime <= TimeSpan.Zero) {
+                return;
+            }
+
+            var overall = Stopwatch.StartNew();
+            var stableSince = Stopwatch.StartNew();
+            long lastLength = -1;
+            while (overall.Elapsed < LiveFileSettleMaxWait) {
+                long length;
+                try {
+                    length = new FileInfo(filename).Length;
+                }
+                catch (IOException) {
+                    // still being created by the game - count it as changing
+                    length = -1;
+                }
+
+                if (length != lastLength) {
+                    lastLength = length;
+                    stableSince.Restart();
+                } else if (stableSince.Elapsed >= LiveFileSettleTime) {
+                    return;
+                }
+                await Task.Delay(100);
+            }
+            _log.Warn($"'{filename}' didn't stop changing within {LiveFileSettleMaxWait.TotalSeconds}s, reading it anyway");
         }
 
         /// <summary>

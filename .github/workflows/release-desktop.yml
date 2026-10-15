@@ -5,8 +5,9 @@ name: Release (Desktop)
 # plus a Linux tarball for headless/systemd use. Installed copies update themselves from these
 # releases (Heroesprofile.Uploader.Desktop/Updates/AppUpdater.cs).
 #
-# Runs by hand (Run workflow). It's a DRAFT unless you choose "prerelease" or "release": drafts are
-# invisible to update clients, so a build only reaches anyone once it's published.
+# Every push to master publishes a full release (Latest), one patch above the newest vX.Y.Z tag for
+# HeroesProfileVersion's X.Y (or HeroesProfileVersion itself when that's higher). Run by hand it's a
+# DRAFT unless you choose "prerelease" or "release": drafts are invisible to update clients.
 #
 # Signing: each OS signs only once its account is set up in the repo's "release-signing" environment
 # (each value is listed below); until then that OS's build is unsigned, exactly as before.
@@ -16,6 +17,8 @@ name: Release (Desktop)
 #             MACOS_CERTIFICATES_PASSWORD, APPLE_API_KEY_P8; vars APPLE_API_KEY_ID, APPLE_API_ISSUER)
 #   Linux   - GPG-signed SHA256SUMS (secrets LINUX_GPG_PRIVATE_KEY, LINUX_GPG_PASSPHRASE)
 on:
+  push:
+    branches: [master]
   workflow_dispatch:
     inputs:
       version:
@@ -33,9 +36,9 @@ on:
         type: choice
         options: [draft, prerelease, release]
 
-# One release build at a time: a run started while one is going waits for it (never cancels it - a build
-# stopped halfway through uploading would leave a half-filled draft), and only the newest waiting run
-# is kept.
+# One release build at a time: a run started while one is going waits for it, so a push's version is
+# worked out after the previous release's tag exists. It never cancels it (a build stopped halfway
+# through uploading would leave a half-filled draft), and only the newest waiting run is kept.
 concurrency:
   group: release-desktop-${{ github.ref }}
   cancel-in-progress: false
@@ -64,13 +67,27 @@ jobs:
         id: version
         env:
           REQUESTED: ${{ inputs.version }}
+          EVENT: ${{ github.event_name }}
         run: |
+          base=$(sed -nE 's/.*<HeroesProfileVersion>([0-9]+\.[0-9]+\.[0-9]+)<\/HeroesProfileVersion>.*/\1/p' Directory.Build.props)
           if [ -n "$REQUESTED" ]; then
             version="${REQUESTED#v}"
           else
-            base=$(sed -nE 's/.*<HeroesProfileVersion>([0-9]+\.[0-9]+\.[0-9]+)<\/HeroesProfileVersion>.*/\1/p' Directory.Build.props)
             [ -n "$base" ] || { echo "No three-part HeroesProfileVersion in Directory.Build.props" >&2; exit 1; }
-            version="$base-beta.${{ github.run_number }}"
+            if [ "$EVENT" = "push" ]; then
+              # Newest full release tag for this major.minor (prereleases like v3.0.0-beta.2 don't count).
+              minor="${base%.*}"
+              latest=$(git ls-remote --tags --refs origin "refs/tags/v$minor.*" | sed 's|.*refs/tags/v||' |
+                grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)
+              if [ -z "$latest" ]; then
+                version="$base"
+              else
+                next="$minor.$(( ${latest##*.} + 1 ))"
+                version=$(printf '%s\n%s\n' "$base" "$next" | sort -V | tail -1)
+              fi
+            else
+              version="$base-beta.${{ github.run_number }}"
+            fi
           fi
           echo "Version: $version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
@@ -327,7 +344,7 @@ jobs:
       - name: Upload to GitHub
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE: ${{ inputs.release || 'draft' }}
+          RELEASE: ${{ inputs.release || (github.event_name == 'push' && 'release') || 'draft' }}
           LINUX_GPG_PRIVATE_KEY: ${{ secrets.LINUX_GPG_PRIVATE_KEY }}
           LINUX_GPG_PASSPHRASE: ${{ secrets.LINUX_GPG_PASSPHRASE }}
         run: |
@@ -389,7 +406,7 @@ jobs:
 
       - name: Summary
         env:
-          RELEASE: ${{ inputs.release || 'draft' }}
+          RELEASE: ${{ inputs.release || (github.event_name == 'push' && 'release') || 'draft' }}
         run: |
           {
             echo "## v$VERSION ($RELEASE)"

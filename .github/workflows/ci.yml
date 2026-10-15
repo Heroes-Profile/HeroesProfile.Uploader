@@ -8,7 +8,7 @@ on:
   push:
     branches:
       - master
-      - OSAgnosticUpdate
+      - develop
   workflow_dispatch:
 
 permissions:

@@ -8,8 +8,8 @@ this page adds the Mac-specific parts.
 
 This build is for Apple Silicon Macs (M1 and later). An Intel build comes later.
 
-1. Open the latest successful **CI** run on the `OSAgnosticUpdate` branch:
-   <https://github.com/Heroes-Profile/HeroesProfile.Uploader/actions/workflows/ci.yml?query=branch%3AOSAgnosticUpdate>
+1. Open the latest successful **CI** run on the `develop` branch:
+   <https://github.com/Heroes-Profile/HeroesProfile.Uploader/actions/workflows/ci.yml?query=branch%3Adevelop>
 2. Under **Artifacts**, download `heroesprofile-uploader-macos-arm64-unsigned` and unzip it.
 3. It isn't signed yet, so macOS will refuse to open it until you clear the "downloaded from the
    internet" flag. In Terminal, in the folder you unzipped it to:

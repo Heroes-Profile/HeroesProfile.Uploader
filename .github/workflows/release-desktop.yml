@@ -5,9 +5,8 @@ name: Release (Desktop)
 # plus a Linux tarball for headless/systemd use. Installed copies update themselves from these
 # releases (Heroesprofile.Uploader.Desktop/Updates/AppUpdater.cs).
 #
-# Runs by hand (Run workflow), and on every code push to the working branch (see `push` below). Either
-# way it's a DRAFT unless you choose "prerelease" when running it by hand: drafts are invisible to update
-# clients, so a build only reaches testers once you publish it (or choose "prerelease").
+# Runs by hand (Run workflow). It's a DRAFT unless you choose "prerelease" or "release": drafts are
+# invisible to update clients, so a build only reaches anyone once it's published.
 #
 # Signing: each OS signs only once its account is set up in the repo's "release-signing" environment
 # (each value is listed below); until then that OS's build is unsigned, exactly as before.
@@ -26,28 +25,15 @@ on:
       release:
         description: >-
           draft: only maintainers can see it. prerelease: testers get it (installed copies with beta
-          updates on update to it). Note the Windows output also carries a Squirrel-format RELEASES file,
-          so old WPF installs with "Allow beta updates" on could be offered a prerelease too.
+          updates on update to it). release: everyone gets it, and it becomes Latest. Note the Windows
+          output also carries a Squirrel-format RELEASES file, so old WPF installs with "Allow beta
+          updates" on could be offered a prerelease too; a full release drops it.
         required: true
         default: draft
         type: choice
-        options: [draft, prerelease]
-  # TEMPORARY - remove before merging to master. Every push to develop that changes the
-  # app (not just docs, tests or other workflows) builds a fresh beta DRAFT, replacing the previous one
-  # (a push has no inputs, so `release` is empty = draft). Publish it on GitHub when it's good to go.
-  # It also lets the workflow run at all before it's on master: GitHub only offers "Run workflow" for
-  # workflows that exist on the default branch.
-  push:
-    branches: [develop]
-    paths-ignore:
-      - '**/*.md'
-      - 'Heroesprofile.Uploader.Tests/**'
-      - '.github/workflows/ci.yml'
-      - '.github/dependabot.yml'
-      - '.editorconfig'
-      - 'LICENSE'
+        options: [draft, prerelease, release]
 
-# One release build at a time: a push while one is running waits for it (never cancels it - a build
+# One release build at a time: a run started while one is going waits for it (never cancels it - a build
 # stopped halfway through uploading would leave a half-filled draft), and only the newest waiting run
 # is kept.
 concurrency:
@@ -392,6 +378,13 @@ jobs:
           # created, at that commit - once all its files and notes are in place.
           if [ "$RELEASE" = "prerelease" ]; then
             gh release edit "v$VERSION" --draft=false --prerelease --latest=false
+          fi
+          # Old WPF installs update through Squirrel from the newest full release's RELEASES file. Without
+          # it they stay on the old app until the user installs this one, which then removes the old one.
+          # Velopack only reads releases.<channel>.json.
+          if [ "$RELEASE" = "release" ]; then
+            gh release delete-asset "v$VERSION" RELEASES --yes
+            gh release edit "v$VERSION" --draft=false --prerelease=false --latest
           fi
 
       - name: Summary

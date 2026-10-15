@@ -16,8 +16,8 @@ One app for **Windows, macOS and Linux**. Download it from the
 | Linux | the `.AppImage`; or `HeroesProfileUploader-linux-x64.tar.gz`, the same app as a plain program (also for headless/systemd setups) |
 
 Nothing else needs installing (no .NET), and it updates itself. See
-[packaging/INSTALL.md](packaging/INSTALL.md) for step-by-step instructions, including opening the app
-while builds aren't code-signed yet. On Linux, Heroes of the Storm runs under Wine/Proton and you point
+[packaging/INSTALL.md](packaging/INSTALL.md) for step-by-step instructions, including opening the Mac
+build while it isn't code-signed yet. On Linux, Heroes of the Storm runs under Wine/Proton and you point
 the uploader at that prefix; see [packaging/linux/README.md](packaging/linux/README.md).
 
 **Coming from the old Windows uploader?** Just install the new one. On its first start it copies your

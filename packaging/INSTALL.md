@@ -1,21 +1,23 @@
-# Installing the Heroes Profile Uploader (new app, beta)
+# Installing the Heroes Profile Uploader
 
-This is the new version of the uploader, one app for Windows, macOS and Linux. It's in **beta**: builds
-are published as **pre-releases** named like `v3.0.0-beta.2` on the
-[Releases](https://github.com/Heroes-Profile/HeroesProfile.Uploader/releases) page, and they aren't
-code-signed yet. So your OS will warn you the first time you open one; the steps below say how to get
-past that.
+The uploader is one app for Windows, macOS and Linux. Download it from the
+[latest release](https://github.com/Heroes-Profile/HeroesProfile.Uploader/releases/latest).
 
-It looks and works like the current Windows uploader. Installed copies update themselves: when an
-update is ready you'll see a banner with **Restart now**.
+The Windows builds are code-signed by Skill Tree Development LLC, and the Linux downloads come with a
+signed `SHA256SUMS`. The Mac builds aren't signed yet while we wait on Apple, so macOS warns you the
+first time you open one; the macOS steps below say how to get past that.
+
+Installed copies update themselves: when an update is ready you'll see a banner with **Restart now**.
 
 ## Windows
 
 1. Download **`Heroesprofile.Uploader-win-Setup.exe`** from the release and run it.
-2. If you see "Windows protected your PC", click **More info**, then **Run anyway**.
-3. It installs for your user only (no admin needed), adds Start menu and desktop shortcuts, and starts.
+2. It installs for your user only (no admin needed), adds Start menu and desktop shortcuts, and starts.
 
-**Coming from the current uploader?**
+**Want to help with rank reading?** `Heroesprofile.Uploader-win-ranks-Setup.exe` is the same app with
+an opt-in rank reader for Storm League loading screens. The release notes explain what it does.
+
+**Coming from the old uploader?** Install the new one first, then let it remove the old one.
 - **Your settings carry over:** the first time the new app starts, it copies them from the old one,
   including your Twitch key.
 - **Nothing is uploaded twice:** it also copies the old app's record of what's already been uploaded.
@@ -31,7 +33,7 @@ To uninstall, use **Settings → Apps** in Windows. Your settings and upload his
 1. Download the macOS installer for your Mac:
    - **Apple Silicon** (M1 and later): the file with **`osx-arm64`** in its name.
    - **Intel**: the file with **`osx-x64`** in its name.
-2. Because it isn't signed yet, double-clicking shows "can't be opened". Instead:
+2. Because it isn't signed yet (we're waiting on Apple), double-clicking shows "can't be opened". Instead:
    - right-click it and choose **Open**, then **Open** again; or
    - open **System Settings → Privacy & Security** and click **Open Anyway**.
 3. Heroes of the Storm's replays are found automatically

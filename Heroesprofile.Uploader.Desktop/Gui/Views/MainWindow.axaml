@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:Heroesprofile.Uploader.Desktop.Gui.ViewModels"
         xmlns:views="clr-namespace:Heroesprofile.Uploader.Desktop.Gui.Views"
+        xmlns:chrome="clr-namespace:Avalonia.Controls.Chrome;assembly=Avalonia.Controls"
         x:Class="Heroesprofile.Uploader.Desktop.Gui.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="{Binding WindowTitle}"
@@ -13,8 +14,37 @@
     after the WPF app, and Theme 2, the Linux app's (PR #53) design. Both bind the same view model; the
     hidden one isn't laid out, so its list realizes no rows.
   -->
-  <Panel>
-    <views:Theme1MainView IsVisible="{Binding !IsTheme2}" />
-    <views:Theme2MainView IsVisible="{Binding IsTheme2}" />
-  </Panel>
+  <DockPanel>
+    <!--
+      The 1x/1.5x/2x size buttons, in the title bar. On Windows the window extends into the title bar
+      (see MainWindow.axaml.cs): Avalonia draws the title and minimize/maximize/close over this strip,
+      and the buttons sit just left of them. Elsewhere it's a slim strip under the system's title bar.
+    -->
+    <Grid x:Name="TitleBar" DockPanel.Dock="Top" MinHeight="26"
+          Background="Transparent" chrome:WindowDecorationProperties.ElementRole="TitleBar">
+      <StackPanel x:Name="ScaleButtons" HorizontalAlignment="Right" Orientation="Horizontal" Spacing="2" Margin="0,0,8,0"
+                  VerticalAlignment="Center" ToolTip.Tip="Size of everything in this window">
+        <Button Classes="scale-btn" Classes.active="{Binding IsScale1}" Content="1x"
+                Command="{Binding SetUiScaleCommand}" CommandParameter="1"
+                chrome:WindowDecorationProperties.ElementRole="User" />
+        <Button Classes="scale-btn" Classes.active="{Binding IsScale15}" Content="1.5x"
+                Command="{Binding SetUiScaleCommand}" CommandParameter="1.5"
+                chrome:WindowDecorationProperties.ElementRole="User" />
+        <Button Classes="scale-btn" Classes.active="{Binding IsScale2}" Content="2x"
+                Command="{Binding SetUiScaleCommand}" CommandParameter="2"
+                chrome:WindowDecorationProperties.ElementRole="User" />
+      </StackPanel>
+    </Grid>
+
+    <!-- Everything below is laid out and drawn at the chosen size: crisp text and shapes, not a stretched bitmap -->
+    <LayoutTransformControl>
+      <LayoutTransformControl.LayoutTransform>
+        <ScaleTransform ScaleX="{Binding UiScale}" ScaleY="{Binding UiScale}" />
+      </LayoutTransformControl.LayoutTransform>
+      <Panel>
+        <views:Theme1MainView IsVisible="{Binding !IsTheme2}" />
+        <views:Theme2MainView IsVisible="{Binding IsTheme2}" />
+      </Panel>
+    </LayoutTransformControl>
+  </DockPanel>
 </Window>

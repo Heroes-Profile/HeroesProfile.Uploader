@@ -1,8 +1,8 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <!--
-    Theme 2: the look the Linux app (PR #53) shipped with - flat panels, rounded controls, a green
-    accent and coloured status badges - using its palette (Theme2Colors.axaml). Included after
+    Theme 2: the look the Linux app (PR #53, by Azax - github.com/Azax-Dev) shipped with - flat
+    panels, rounded controls, a green accent and coloured status badges - using its palette (Theme2Colors.axaml). Included after
     Styles.axaml, so these win where both apply. Styles for ordinary controls only apply inside a
     window with the "theme2" class (set from the Design setting), leaving Theme 1 exactly as it was;
     the named classes (btn, badge, chip, ...) are only used by Theme 2's views.
@@ -92,6 +92,20 @@
     <Setter Property="FontSize" Value="12" />
     <Setter Property="HorizontalContentAlignment" Value="Center" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+
+  <!-- The title bar's 1x/1.5x/2x size buttons (see Styles.axaml); the current one is highlighted -->
+  <Style Selector="Window.theme2 Button.scale-btn">
+    <Setter Property="Padding" Value="6,2" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource AppTextTertiaryBrush}" />
+  </Style>
+  <Style Selector="Window.theme2 Button.scale-btn.active">
+    <Setter Property="Background" Value="{DynamicResource AppRowAltBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource AppTextBrush}" />
+    <Setter Property="FontWeight" Value="Medium" />
   </Style>
 
   <!-- Inline text links (update notice, "Restart now.", "Retry") -->

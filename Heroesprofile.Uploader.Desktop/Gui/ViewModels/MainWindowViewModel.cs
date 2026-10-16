@@ -44,8 +44,31 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
 
         public bool IsTheme2 => Design == AppConfig.Theme2Design;
 
-        /// <summary>Theme 2 was designed for a narrower window (PR #53's 360px minimum).</summary>
-        public double MinWindowWidth => IsTheme2 ? 360 : 480;
+        /// <summary>
+        /// Theme 2 was designed for a narrower window (PR #53's 360px minimum); both scale with
+        /// <see cref="UiScale"/>. On Windows the (unscaled) title bar also needs room for the title, the
+        /// size buttons and minimize/maximize/close side by side.
+        /// </summary>
+        public double MinWindowWidth => Math.Max((IsTheme2 ? 360 : 480) * UiScale, OperatingSystem.IsWindows() ? 440 : 0);
+
+        /// <summary>The 1x/1.5x/2x size (see <see cref="AppConfig.UiScale"/>).</summary>
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(MinWindowWidth), nameof(IsScale1), nameof(IsScale15), nameof(IsScale2))]
+        private double uiScale;
+
+        public bool IsScale1 => UiScale == 1;
+        public bool IsScale15 => UiScale == 1.5;
+        public bool IsScale2 => UiScale == 2;
+
+        /// <summary>The title bar's 1x/1.5x/2x buttons.</summary>
+        [RelayCommand]
+        private void SetUiScale(string value)
+        {
+            Config.UiScale = double.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
+            UiScale = Config.UiScale;
+        }
+
+        partial void OnUiScaleChanged(double value) => SaveConfig();
 
         /// <summary>Theme 2's stats grid - the same counts as <see cref="StatusCounts"/>, in PR #53's order and labels.</summary>
         public ObservableCollection<StatusCountViewModel> StatChips { get; } =
@@ -140,6 +163,7 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
         {
             Config = LoadConfigSafely();
             design = Config.Design;
+            uiScale = Config.UiScale;
 
             // Assign backing fields directly (not the generated properties) so this initial sync
             // doesn't itself trigger the OnXChanged handlers below, which persist to config.json.

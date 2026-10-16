@@ -82,6 +82,22 @@ namespace Heroesprofile.Uploader.Desktop
             set => _design = value == Theme2Design ? Theme2Design : Theme1Design;
         }
 
+        /// <summary>The scales the main window's title bar offers (1x, 1.5x, 2x).</summary>
+        public static readonly double[] UiScales = { 1, 1.5, 2 };
+
+        private double _uiScale = 1;
+
+        /// <summary>
+        /// The main window's size, in either design: everything is laid out and drawn at this multiple, so it stays sharp on big
+        /// monitors (unlike Windows' DPI override, which stretches the finished bitmap). Values other than
+        /// <see cref="UiScales"/> load as 1.
+        /// </summary>
+        public double UiScale
+        {
+            get => _uiScale;
+            set => _uiScale = Array.IndexOf(UiScales, value) >= 0 ? value : 1;
+        }
+
         public bool TwitchExtension { get; set; }
 
         /// <summary>

@@ -247,3 +247,6 @@ _Pvt_Extensions
 *.sln.iml
 /replay.server.battlelobby
 /packages
+
+# Loading-screen samples for the rank reader, mirrored from the private sl-rank-samples bucket (players' names - never commit)
+/rank-samples/

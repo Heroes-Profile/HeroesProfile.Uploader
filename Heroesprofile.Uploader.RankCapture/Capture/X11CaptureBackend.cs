@@ -137,6 +137,7 @@ namespace Heroesprofile.Uploader.RankCapture
             [DllImport(Lib)] private static extern IntPtr XGetImage(IntPtr display, IntPtr drawable, int x, int y, uint width, uint height, UIntPtr planeMask, int format);
             [DllImport(Lib)] private static extern IntPtr XSetErrorHandler(IntPtr handler);
             [DllImport(Lib)] private static extern IntPtr XInternAtom(IntPtr display, string name, bool onlyIfExists);
+            [DllImport(Lib)] private static extern bool XTranslateCoordinates(IntPtr display, IntPtr from, IntPtr to, int x, int y, out int toX, out int toY, out IntPtr child);
             [DllImport(Lib)] private static extern int XGetWindowProperty(IntPtr display, IntPtr window, IntPtr property, IntPtr offset, IntPtr length,
                 bool delete, IntPtr requestedType, out IntPtr actualType, out int actualFormat, out IntPtr itemCount, out IntPtr bytesAfter, out IntPtr data);
 
@@ -216,13 +217,31 @@ namespace Heroesprofile.Uploader.RankCapture
                 return null;
             }
 
-            /// <summary>The window's pixels as BGRA, or null if it can't be read (gone, unmapped, an unusual pixel format).</summary>
+            /// <summary>
+            /// The window's pixels as BGRA, or null if it can't be read (gone, unmapped, off screen, an unusual
+            /// pixel format). X only hands out the part of a window that's on the screen - asking for more is a
+            /// BadMatch error - so only that part is read, placed where it belongs in a frame the window's full
+            /// size (anything off screen stays black): the cards are found from the window's edges.
+            /// </summary>
             public static RawFrame Capture(IntPtr display, IntPtr window)
             {
                 if (XGetWindowAttributes(display, window, out var a) == 0 || a.map_state != IsViewableState || a.width <= 0 || a.height <= 0) {
                     return null;
                 }
-                var image = XGetImage(display, window, 0, 0, (uint)a.width, (uint)a.height, new UIntPtr(ulong.MaxValue), ZPixmap);
+                var root = XDefaultRootWindow(display);
+                if (XGetWindowAttributes(display, root, out var screen) == 0
+                    || !XTranslateCoordinates(display, window, root, 0, 0, out var screenX, out var screenY, out _)) {
+                    return null;
+                }
+                var x0 = Math.Max(0, -screenX);
+                var y0 = Math.Max(0, -screenY);
+                var x1 = Math.Min(a.width, screen.width - screenX);
+                var y1 = Math.Min(a.height, screen.height - screenY);
+                if (x1 <= x0 || y1 <= y0) {
+                    return null;
+                }
+
+                var image = XGetImage(display, window, x0, y0, (uint)(x1 - x0), (uint)(y1 - y0), new UIntPtr(ulong.MaxValue), ZPixmap);
                 if (image == IntPtr.Zero) {
                     return null;
                 }
@@ -232,25 +251,26 @@ namespace Heroesprofile.Uploader.RankCapture
                     var width = Marshal.ReadInt32(image, 0);
                     var height = Marshal.ReadInt32(image, 4);
                     var data = Marshal.ReadIntPtr(image, 16);
-                    var stride = Marshal.ReadInt32(image, 44);
+                    var imageStride = Marshal.ReadInt32(image, 44);
                     var bitsPerPixel = Marshal.ReadInt32(image, 48);
                     var redMask = (ulong)Marshal.ReadInt64(image, 56);
                     var blueMask = (ulong)Marshal.ReadInt64(image, 72);
                     if (bitsPerPixel != 32 || data == IntPtr.Zero) {
                         return null;
                     }
-                    var bytes = new byte[stride * height];
-                    Marshal.Copy(data, bytes, 0, bytes.Length);
+
+                    var stride = a.width * 4;
+                    var bytes = new byte[stride * a.height];
+                    for (var y = 0; y < height; y++) {
+                        Marshal.Copy(data + y * imageStride, bytes, (y0 + y) * stride + x0 * 4, width * 4);
+                    }
                     // The usual layout is BGRX (red 0xff0000). A display with red in the low byte needs swapping.
                     if (redMask == 0xff && blueMask == 0xff0000) {
-                        for (var y = 0; y < height; y++) {
-                            for (var x = 0; x < width; x++) {
-                                var i = y * stride + x * 4;
-                                (bytes[i], bytes[i + 2]) = (bytes[i + 2], bytes[i]);
-                            }
+                        for (var i = 0; i < bytes.Length; i += 4) {
+                            (bytes[i], bytes[i + 2]) = (bytes[i + 2], bytes[i]);
                         }
                     }
-                    return new RawFrame(width, height, stride, bytes);
+                    return new RawFrame(a.width, a.height, stride, bytes);
                 }
                 finally {
                     // XDestroyImage is a macro over the image's own destroy function (XImage.f.destroy_image, at 96).

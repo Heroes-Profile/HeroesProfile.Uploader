@@ -42,6 +42,7 @@ public class LinuxLiveTests(ITestOutputHelper output)
         try {
             // The window, found and read directly first - so a failure says which step it was.
             await Task.Delay(TimeSpan.FromSeconds(3), TestContext.Current.CancellationToken);
+            X11CaptureBackend.X.EnsureErrorHandler();
             var display = X11CaptureBackend.X.XOpenDisplay(IntPtr.Zero);
             Assert.NotEqual(IntPtr.Zero, display);
             try {
@@ -94,7 +95,7 @@ public class LinuxLiveTests(ITestOutputHelper output)
         }
         finally {
             try {
-                shown.Kill();
+                shown.Kill(entireProcessTree: true);
             }
             catch (InvalidOperationException) {
             }

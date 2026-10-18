@@ -431,6 +431,12 @@ jobs:
           gh release upload "v$VERSION" HeroesProfileUploader-linux-x64.tar.gz SHA256SUMS HeroesProfileUploaderSetup.exe "${extra[@]}" --clobber
           # The release description: which of all these files to download on which OS.
           sed "s|INSTALL_URL|https://github.com/${{ github.repository }}/blob/${{ github.sha }}/packaging/INSTALL.md|"             packaging/release-notes.md > release-notes.md
+          # The "Testing this beta" part is only for prerelease versions (3.0.2-beta.1): full releases drop it.
+          if [[ "$VERSION" == *-* ]]; then
+            sed -i '/^<!-- \/\?beta -->$/d' release-notes.md
+          else
+            sed -i '/^<!-- beta -->$/,/^<!-- \/beta -->$/d' release-notes.md
+          fi
           # Pin the tag to the commit this was built from: a draft has no tag yet, and without a target
           # publishing it would tag the default branch (master) instead.
           gh release edit "v$VERSION" --notes-file release-notes.md --target "${{ github.sha }}"

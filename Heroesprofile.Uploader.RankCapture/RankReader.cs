@@ -57,8 +57,15 @@ namespace Heroesprofile.Uploader.RankCapture
             }
 
             var frames = game.Finish();
+            var mode = save?.GameMode.ToString() ?? "Unknown";
             if (save?.GameMode != GameMode.StormLeague) {
-                _log.Info($"Rank reading: {save?.GameMode} game, not Storm League - dropped what was captured");
+                if (CaptureDump.Enabled) {
+                    // Testers' copy (macOS/Linux prereleases): read it anyway, to show what the reader made of it.
+                    _log.Info($"Rank reading: {mode} game, not Storm League - nothing sent, a copy kept for testing");
+                    Task.Run(async () => CaptureDump.Save(mode, frames, await ReadCardsAsync(frames)));
+                } else {
+                    _log.Info($"Rank reading: {mode} game, not Storm League - dropped what was captured");
+                }
                 return;
             }
 
@@ -68,6 +75,9 @@ namespace Heroesprofile.Uploader.RankCapture
                 var reading = await ReadCardsAsync(frames);
                 if (reading?.Cards != null) {
                     _pending.Add(new PendingRanks.Game(game.LobbyAt, fingerprint, reading.Cards));
+                }
+                if (CaptureDump.Enabled) {
+                    CaptureDump.Save(mode, frames, reading);
                 }
                 await SampleUploader.UploadAsync(game, frames, save, reading);
             });

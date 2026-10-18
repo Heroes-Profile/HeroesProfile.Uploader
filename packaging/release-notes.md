@@ -1,3 +1,29 @@
+<!-- beta -->
+## Testing this beta
+
+This is a prerelease, for testers. Download it from the table below as usual.
+
+**Getting future betas automatically:** open **Settings** in the uploader and press **Ctrl+Z**. That
+shows a hidden **Allow beta updates** option; turn it on and the uploader updates to new betas as well
+as full releases. Turn it off to go back to full releases only (you move back at the next full release).
+
+**Seeing what the rank reader captures (Mac and Linux):** beta builds with rank reading keep a copy of
+what each game's capture caught, on your computer only. Each game gets its own folder, named by date,
+time and game mode, holding every captured frame's player-card strips (`frame-00-left.png`,
+`frame-00-right.png`, ...) and a `read.txt` listing which frames showed the loading screen and the rank,
+name and hero read off each card. Every game mode is kept, not just Storm League, so you can check it in
+any game; the newest 20 games are kept. They go in a `HeroesProfileRankCaptures` folder:
+
+- **Linux (AppImage):** in the same folder as the `.AppImage` file.
+- **Mac:** in the same folder as `Heroes Profile Uploader.app`, usually `/Applications`.
+- **If that folder can't be written to** (e.g. a Mac account that isn't an admin): in the temp folder
+  instead, `/tmp/HeroesProfileRankCaptures` on Linux, or `$TMPDIR/HeroesProfileRankCaptures` on Mac
+  (open it with `open "$TMPDIR/HeroesProfileRankCaptures"` in Terminal).
+
+The uploader's log also says where it saved each game ("kept a copy of this game's capture in ...").
+Windows betas don't keep these copies.
+<!-- /beta -->
+
 ## Which file do I download?
 
 | Your computer | Download | Or, without installing |

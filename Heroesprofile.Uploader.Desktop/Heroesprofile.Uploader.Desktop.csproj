@@ -23,6 +23,17 @@
     <ApplicationIcon>Gui/Assets/app-icon.ico</ApplicationIcon>
   </PropertyGroup>
 
+  <!--
+    Release builds sign their uploads and rank reports so Heroes Profile can tell them from other senders
+    (UploaderSigning). The release workflow passes -p:UploaderSigningKey=<hex>: HMAC-SHA256 of the version
+    with a master secret it shares with the site, so every version has its own key. Without it (local and
+    CI builds) the app signs nothing.
+  -->
+  <ItemGroup Condition="'$(UploaderSigningKey)' != ''">
+    <AssemblyMetadata Include="UploaderSigningVersion" Value="$(Version)" />
+    <AssemblyMetadata Include="UploaderSigningKey" Value="$(UploaderSigningKey)" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Heroesprofile.Uploader.Common\Heroesprofile.Uploader.Common.csproj" />
   </ItemGroup>

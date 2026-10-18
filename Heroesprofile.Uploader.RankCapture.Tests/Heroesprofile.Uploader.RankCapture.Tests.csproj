@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Tests for the opt-in rank reader (Heroesprofile.Uploader.RankCapture). Kept apart from
+    Heroesprofile.Uploader.Tests, which must never load the rank reader (it checks the normal build has
+    none). Windows only, like the reader.
+
+    The sample tests read the players' loading-screen samples from rank-samples/ at the repo root - a
+    gitignored mirror of the private sl-rank-samples bucket - and skip when it isn't there (as on CI).
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.22621.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <OutputType>Exe</OutputType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Heroesprofile.Uploader.RankCapture\Heroesprofile.Uploader.RankCapture.csproj" />
+  </ItemGroup>
+
+</Project>

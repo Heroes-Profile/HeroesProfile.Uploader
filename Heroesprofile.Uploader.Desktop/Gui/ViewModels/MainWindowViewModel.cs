@@ -510,6 +510,10 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
         [RelayCommand]
         private void OpenWebsite() => OpenUrl("https://www.heroesprofile.com/");
 
+        /// <summary>Opens a new issue on the uploader's GitHub, for reporting a problem.</summary>
+        [RelayCommand]
+        private void ReportIssue() => OpenUrl("https://github.com/Heroes-Profile/HeroesProfile.Uploader/issues/new");
+
         private static void OpenUrl(string url)
         {
             try {

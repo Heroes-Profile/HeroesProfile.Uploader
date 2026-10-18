@@ -111,6 +111,7 @@ namespace Heroesprofile.Uploader.Common
 
         private Action<Replay> _lobbyReader;
         private Action<Replay> _stormSaveReader;
+        private Action<Replay, ReplayFile> _uploadedReader;
 
         /// <summary>
         /// Something to call with each game's parsed lobby, or null for none. The normal app never sets
@@ -145,6 +146,16 @@ namespace Heroesprofile.Uploader.Common
             if (_initialized) {
                 RestartLiveWatchers();
             }
+        }
+
+        /// <summary>
+        /// Something to call with each replay once Heroes Profile has it - uploaded now, or found already
+        /// there - with its parsed contents and its file (which carries the replay's id on the site), or null
+        /// for none. The Ranks build's rank reader uses it to send the ranks it read with that id.
+        /// </summary>
+        public void SetReplayUploadedReader(Action<Replay, ReplayFile> reader)
+        {
+            _uploadedReader = reader;
         }
 
 
@@ -458,6 +469,15 @@ namespace Heroesprofile.Uploader.Common
                     if (file.UploadStatus == UploadStatus.InProgress && replay != null) {
                         // if it is, upload it
                         await _uploader.Upload(replay, file, PostMatchPage);
+                        if (_uploadedReader is Action<Replay, ReplayFile> uploaded && file.ReplayId > 0 &&
+                            (file.UploadStatus == UploadStatus.Success || file.UploadStatus == UploadStatus.Duplicate)) {
+                            try {
+                                uploaded(replay, file);
+                            }
+                            catch (Exception ex) {
+                                _log.Warn(ex, $"Replay uploaded reader failed on {file}");
+                            }
+                        }
                     }
                     SaveReplayList();
                     if (ShouldDelete(file, replay)) {

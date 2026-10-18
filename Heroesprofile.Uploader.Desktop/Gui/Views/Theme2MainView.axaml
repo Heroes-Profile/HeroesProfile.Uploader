@@ -159,6 +159,8 @@
           <WrapPanel ItemSpacing="6" LineSpacing="6">
             <Button Content="Settings" Click="OpenSettings_Click" />
             <Button Content="Show log" Command="{Binding ShowLogCommand}" />
+            <Button Content="Report an issue" Command="{Binding ReportIssueCommand}"
+                    ToolTip.Tip="Opens the uploader's GitHub to report a problem - attaching your log helps" />
             <Button Content="Replay folder" Command="{Binding OpenReplayFolderCommand}" />
             <Button Content="Check for update" Command="{Binding CheckForUpdateCommand}" />
           </WrapPanel>

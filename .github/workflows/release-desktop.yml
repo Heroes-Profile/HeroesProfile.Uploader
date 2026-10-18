@@ -144,12 +144,27 @@ jobs:
       - name: Restore vpk
         run: dotnet tool restore
 
+      # This version's key for signing uploads and rank reports (UploaderSigning): HMAC-SHA256 of the
+      # version with RANKS_SIGNING_SECRET, which Heroes Profile holds too, so every release has its own key.
+      # Masked from the logs. Without the secret the builds just don't sign.
+      - name: Derive the signing key
+        env:
+          RANKS_SIGNING_SECRET: ${{ secrets.RANKS_SIGNING_SECRET }}
+        run: |
+          if [ -z "$RANKS_SIGNING_SECRET" ]; then
+            echo "::warning::RANKS_SIGNING_SECRET isn't set - this release won't sign its uploads or rank reports"
+            exit 0
+          fi
+          key=$(printf '%s' "$VERSION" | openssl dgst -sha256 -hmac "$RANKS_SIGNING_SECRET" | awk '{print $NF}')
+          echo "::add-mask::$key"
+          echo "SIGNING_ARGS=-p:UploaderSigningKey=$key" >> "$GITHUB_ENV"
+
       # A RID-specific publish restores a different graph than the lock files describe (runtime packs),
       # so locked mode is off here; versions still come from Directory.Packages.props.
       - name: Publish
         run: >
           dotnet publish Heroesprofile.Uploader.Desktop -c Release -r ${{ matrix.rid }} --self-contained
-          -p:Version=$VERSION -p:DebugType=none -p:RestoreLockedMode=false ${{ matrix.publish-args }} -o publish
+          -p:Version=$VERSION -p:DebugType=none -p:RestoreLockedMode=false $SIGNING_ARGS ${{ matrix.publish-args }} -o publish
 
       # The normal builds must never carry the rank reader's screen-capture code (it's what lets
       # privacy-minded users pick them); the Ranks build must.
@@ -302,7 +317,7 @@ jobs:
         if: startsWith(matrix.rid, 'linux-')
         run: |
           dotnet publish Heroesprofile.Uploader.Desktop -c Release -r linux-x64 --self-contained \
-            -p:PublishSingleFile=true -p:Version=$VERSION -p:DebugType=none -p:RestoreLockedMode=false -o single
+            -p:PublishSingleFile=true -p:Version=$VERSION -p:DebugType=none -p:RestoreLockedMode=false $SIGNING_ARGS -o single
           mkdir -p dist/HeroesProfileUploader extra
           cp single/$MAIN_EXE packaging/linux/README.md packaging/linux/heroesprofile-uploader.service dist/HeroesProfileUploader/
           tar -czf extra/HeroesProfileUploader-linux-x64.tar.gz -C dist HeroesProfileUploader

@@ -109,10 +109,15 @@ namespace Heroesprofile.Uploader.Common
                 // A multipart/form-data POST with the replay as its "file" part - what WebClient.UploadFile sent.
                 using (var stream = File.OpenRead(file))
                 using (var fileContent = new StreamContent(stream))
-                using (var form = new MultipartFormDataContent()) {
+                using (var form = new MultipartFormDataContent())
+                using (var request = new HttpRequestMessage(HttpMethod.Post, $"{HeroesProfileApiEndpoint}/upload/heroesprofile/desktop?fingerprint={fingerprint}&version={assemblyVersion}") { Content = form }) {
                     fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
                     form.Add(fileContent, "file", Path.GetFileName(file));
-                    using (var reply = await _client.PostAsync($"{HeroesProfileApiEndpoint}/upload/heroesprofile/desktop?fingerprint={fingerprint}&version={assemblyVersion}", form)) {
+                    // A released build signs the upload, over the file's hash; the site records whether it was.
+                    if (UploaderSigning.IsAvailable) {
+                        UploaderSigning.Sign(request.Headers, UploaderSigning.FileHash(file));
+                    }
+                    using (var reply = await _client.SendAsync(request)) {
                         if (!reply.IsSuccessStatusCode) {
                             if (await WaitIfThrottled(reply.StatusCode)) {
                                 return await UploadFile(replay_results, fingerprint, file, PostMatchPage);

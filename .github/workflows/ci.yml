@@ -37,6 +37,7 @@ jobs:
         run: |
           dotnet restore Heroesprofile.Uploader.Tests
           dotnet restore Heroesprofile.Uploader.RankCapture
+          dotnet restore Heroesprofile.Uploader.RankCapture.Tests
 
       - name: Build
         run: dotnet build Heroesprofile.Uploader.Tests --no-restore -c Release
@@ -50,10 +51,16 @@ jobs:
         if: runner.os == 'Windows'
         run: dotnet build Heroesprofile.Uploader.Desktop -c Release -p:IncludeRankCapture=true -p:RestoreLockedMode=false
 
+      # The rank reader's own tests (Windows only, like the reader). The ones that read players'
+      # loading-screen samples skip here: those live only in a private bucket.
+      - name: Test the rank reader
+        if: runner.os == 'Windows'
+        run: dotnet test --project Heroesprofile.Uploader.RankCapture.Tests --no-restore -c Release
+
       - name: Check formatting
         if: runner.os == 'Linux'
         run: |
-          for project in Heroesprofile.Uploader.Common Heroesprofile.Uploader.Desktop Heroesprofile.Uploader.Tests Heroesprofile.Uploader.RankCapture; do
+          for project in Heroesprofile.Uploader.Common Heroesprofile.Uploader.Desktop Heroesprofile.Uploader.Tests Heroesprofile.Uploader.RankCapture Heroesprofile.Uploader.RankCapture.Tests; do
             dotnet format whitespace "$project/$project.csproj" --no-restore --verify-no-changes
           done
 

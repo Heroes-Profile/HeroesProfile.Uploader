@@ -207,6 +207,14 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
             }
         }
 
+        /// <summary>
+        /// Whether <see cref="OnOpened"/> has something to ask as soon as the window opens: the old uploader
+        /// installed or still running, or no replay folder. Uploading waits on those, so a start to the tray
+        /// shows the window instead.
+        /// </summary>
+        public bool NeedsAttentionAtStartup =>
+            ViewModel?.WaitingForLegacyApp == true || ViewModel?.ReplayFolderError != null || (OperatingSystem.IsWindows() && LegacyApp.IsInstalled());
+
         /// <summary>The logo (Theme 1) or brand mark (Theme 2): opens heroesprofile.com.</summary>
         public void OpenWebsite() => ViewModel?.OpenWebsiteCommand.Execute(null);
 
@@ -227,8 +235,6 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
         /// <summary>Un-hides the window - the tray icon's "Open" item, or clicking the tray icon itself.</summary>
         public void RestoreFromTray()
         {
-            // Started with --minimized, the window was kept off the taskbar until now.
-            ShowInTaskbar = true;
             Show();
             WindowState = WindowState.Normal;
             Activate();

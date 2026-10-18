@@ -138,7 +138,8 @@ namespace Heroesprofile.Uploader.RankCapture
             [DllImport(Lib)] private static extern IntPtr XSetErrorHandler(IntPtr handler);
             [DllImport(Lib)] private static extern IntPtr XInternAtom(IntPtr display, string name, bool onlyIfExists);
             [DllImport(Lib)] private static extern bool XTranslateCoordinates(IntPtr display, IntPtr from, IntPtr to, int x, int y, out int toX, out int toY, out IntPtr child);
-            [DllImport(Lib)] private static extern int XGetWindowProperty(IntPtr display, IntPtr window, IntPtr property, IntPtr offset, IntPtr length,
+            [DllImport(Lib)]
+            private static extern int XGetWindowProperty(IntPtr display, IntPtr window, IntPtr property, IntPtr offset, IntPtr length,
                 bool delete, IntPtr requestedType, out IntPtr actualType, out int actualFormat, out IntPtr itemCount, out IntPtr bytesAfter, out IntPtr data);
 
             private static int _handlerSet;

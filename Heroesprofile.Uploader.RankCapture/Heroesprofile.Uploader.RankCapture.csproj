@@ -25,4 +25,14 @@
     <ProjectReference Include="..\Heroesprofile.Uploader.Common\Heroesprofile.Uploader.Common.csproj" />
   </ItemGroup>
 
+  <!-- What the loading-screen reader compares cards against (RankTemplates). Rebuilt from the samples by
+       the RankCapture tests' Build_templates_from_the_samples test. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Templates\rank-templates.bin" LogicalName="Heroesprofile.Uploader.RankCapture.rank-templates.bin" Condition="Exists('Templates\rank-templates.bin')" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Heroesprofile.Uploader.RankCapture.Tests" />
+  </ItemGroup>
+
 </Project>

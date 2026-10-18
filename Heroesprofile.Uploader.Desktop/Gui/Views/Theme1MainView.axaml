@@ -85,6 +85,8 @@
         <Button Content="Settings" HorizontalAlignment="Stretch" Margin="0,8,0,0" Click="OpenSettings_Click"
                 ToolTip.Tip="Replay folder, webhook and theme" />
         <Button Content="Show log" HorizontalAlignment="Stretch" Margin="0,4,0,0" Command="{Binding ShowLogCommand}" />
+        <Button Content="Report an issue" HorizontalAlignment="Stretch" Margin="0,4,0,0" Command="{Binding ReportIssueCommand}"
+                ToolTip.Tip="Opens the uploader's GitHub to report a problem - attaching your log helps" />
         <Button Content="Open replay folder" HorizontalAlignment="Stretch" Margin="0,4,0,0" Command="{Binding OpenReplayFolderCommand}" />
         <Button Content="Check for update" HorizontalAlignment="Stretch" Margin="0,4,0,0" Command="{Binding CheckForUpdateCommand}" />
         <Button Classes="link" HorizontalAlignment="Left" Margin="0,4,0,0" Command="{Binding OpenUpdateCommand}"

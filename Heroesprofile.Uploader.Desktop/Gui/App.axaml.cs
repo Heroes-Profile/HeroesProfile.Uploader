@@ -41,7 +41,18 @@ namespace Heroesprofile.Uploader.Desktop.Gui
                 RequestedThemeVariant = ThemeVariantFor(_viewModel.Config.Theme);
 
                 _window = new MainWindow { DataContext = _viewModel };
-                desktop.MainWindow = _window;
+
+                // Started minimized with "Minimize to tray" on (Start with Windows): straight to the tray,
+                // the window not shown at all until the tray icon opens it. Making it the lifetime's
+                // MainWindow would show it at startup - and a minimized window kept off the taskbar is
+                // drawn by Windows as a collapsed title bar in the screen's bottom-left corner (issue
+                // heroesprofile#1511). With no window open the app keeps running; closing the window once
+                // it's been opened still quits. Something the window asks about at startup (the old
+                // uploader, a missing replay folder) shows it as usual instead, since uploading waits on it.
+                var toTray = StartMinimized && _viewModel.Config.MinimizeToTray && !_window.NeedsAttentionAtStartup;
+                if (!toTray) {
+                    desktop.MainWindow = _window;
+                }
 
                 // TrayIcon/NativeMenuItem, declared under <TrayIcon.Icons> in App.axaml, aren't part
                 // of a regular control tree - x:Name doesn't generate a field for them the way it does
@@ -92,10 +103,9 @@ namespace Heroesprofile.Uploader.Desktop.Gui
                     });
                 }
 
-                if (StartMinimized && _viewModel.Config.MinimizeToTray) {
-                    // Never shown at all - straight to the tray, like the Windows app's --autorun.
-                    _window.WindowState = WindowState.Minimized;
-                    _window.ShowInTaskbar = false;
+                if (toTray) {
+                    // Never shown, so IsVisible never changes to put the tray icon up - do it here.
+                    _trayIcon.IsVisible = true;
                 }
 
                 // Check for updates on startup and then hourly - same cadence as the Windows app's own

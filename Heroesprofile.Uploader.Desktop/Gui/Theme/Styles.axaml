@@ -38,6 +38,27 @@
     <Setter Property="TextDecorations" Value="Underline" />
   </Style>
 
+  <!-- The main window's title bar: its 1x/1.5x/2x size buttons, the current one highlighted -->
+  <Style Selector="Button.scale-btn">
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Padding" Value="6,2" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="3" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{DynamicResource DimmedTextBrush}" />
+  </Style>
+  <Style Selector="Button.scale-btn.active">
+    <Setter Property="Background" Value="{DynamicResource ThemeControlMidBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource ThemeForegroundBrush}" />
+  </Style>
+  <!-- The title bar Avalonia draws on Windows (see MainWindow): no fullscreen button, just minimize/maximize/close -->
+  <Style Selector="Button#PART_FullScreenButton">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+
   <!-- WPF list rows are tight: one line of text, a couple of pixels of padding. -->
   <Style Selector="ListBoxItem">
     <Setter Property="Padding" Value="2,1" />

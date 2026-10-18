@@ -156,6 +156,20 @@ public class MainWindowPresentationTests
         Assert.Equal(AppConfig.Theme2Design, AppConfig.FromJson(json).Design);
     }
 
+    [Theory]
+    [InlineData(1.0, 1.0)]
+    [InlineData(1.5, 1.5)]
+    [InlineData(2.0, 2.0)]
+    [InlineData(0.0, 1.0)]
+    [InlineData(3.0, 1.0)]
+    [InlineData(1.25, 1.0)]
+    public void Ui_scale_is_one_of_the_offered_sizes(double stored, double expected)
+    {
+        Assert.Equal(expected, new AppConfig { UiScale = stored }.UiScale);
+        Assert.Equal(1.0, new AppConfig().UiScale);
+        Assert.Equal(expected, AppConfig.FromJson(new AppConfig { UiScale = stored }.ToJson()).UiScale);
+    }
+
     [Fact]
     public void Each_design_remembers_its_own_window_size()
     {

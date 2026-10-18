@@ -37,6 +37,7 @@ jobs:
         run: |
           dotnet restore Heroesprofile.Uploader.Tests
           dotnet restore Heroesprofile.Uploader.RankCapture
+          dotnet restore Heroesprofile.Uploader.RankCapture.Tests
 
       - name: Build
         run: dotnet build Heroesprofile.Uploader.Tests --no-restore -c Release
@@ -50,10 +51,16 @@ jobs:
         if: runner.os == 'Windows'
         run: dotnet build Heroesprofile.Uploader.Desktop -c Release -p:IncludeRankCapture=true -p:RestoreLockedMode=false
 
+      # The rank reader's own tests (Windows only, like the reader). The ones that read players'
+      # loading-screen samples skip here: those live only in a private bucket.
+      - name: Test the rank reader
+        if: runner.os == 'Windows'
+        run: dotnet test --project Heroesprofile.Uploader.RankCapture.Tests --no-restore -c Release
+
       - name: Check formatting
         if: runner.os == 'Linux'
         run: |
-          for project in Heroesprofile.Uploader.Common Heroesprofile.Uploader.Desktop Heroesprofile.Uploader.Tests Heroesprofile.Uploader.RankCapture; do
+          for project in Heroesprofile.Uploader.Common Heroesprofile.Uploader.Desktop Heroesprofile.Uploader.Tests Heroesprofile.Uploader.RankCapture Heroesprofile.Uploader.RankCapture.Tests; do
             dotnet format whitespace "$project/$project.csproj" --no-restore --verify-no-changes
           done
 
@@ -114,7 +121,7 @@ jobs:
           test -s "$HOME/Library/Application Support/Heroesprofile/logs/log.txt"
 
       # Unsigned test build for Mac testers (see packaging/macos/TESTING.md) - not a release.
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: heroesprofile-uploader-macos-arm64-unsigned
           path: publish/heroesprofile-uploader

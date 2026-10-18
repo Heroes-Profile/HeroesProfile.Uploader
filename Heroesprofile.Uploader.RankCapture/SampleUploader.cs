@@ -15,8 +15,9 @@ namespace Heroesprofile.Uploader.RankCapture
 {
     /// <summary>
     /// Beta only: sends a Storm League game's loading-screen card strips to Heroes Profile, where they're kept
-    /// in a private storage folder to build and test the rank reader. The server's answer says whether to
-    /// keep collecting; once it says no, this stops for the rest of the run.
+    /// in a private storage folder to build and test the rank reader - a few frames per game, with what the
+    /// reader made of them. The server's answer says whether to keep collecting; once it says no, this stops
+    /// for the rest of the run.
     /// </summary>
     internal static class SampleUploader
     {
@@ -33,11 +34,15 @@ namespace Heroesprofile.Uploader.RankCapture
         /// <summary>False once the server has said it has enough samples.</summary>
         public static bool Collecting { get; private set; } = true;
 
-        public static async Task UploadAsync(GameCapture game, IReadOnlyList<CapturedFrame> frames, Replay stormSave)
+        /// <summary>The most frames sent per game: the loading screen doesn't change, so a few are plenty.</summary>
+        public const int MaxFramesSent = 3;
+
+        public static async Task UploadAsync(GameCapture game, IReadOnlyList<CapturedFrame> frames, Replay stormSave, RankReader.GameReading reading)
         {
             if (!Collecting || frames.Count == 0) {
                 return;
             }
+            var send = FramesToSend(frames.Count, reading?.LoadingScreenFrames);
 
             var meta = new {
                 uploaderVersion = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,
@@ -53,8 +58,29 @@ namespace Heroesprofile.Uploader.RankCapture
                     battletag = p.BattleTag,
                     region = p.BattleNetRegionId,
                     team = p.Team,
+                    // From the storm save, which knows the heroes (the lobby file doesn't).
+                    hero = (stormSave.Players ?? Array.Empty<Player>()).FirstOrDefault(s => s != null && s.BattleTag == p.BattleTag && s.Name == p.Name)?.Character,
                 }),
-                frames = frames.Select((f, i) => new { index = i, capturedAt = f.At, width = f.Width, height = f.Height }),
+                frames = frames.Select((f, i) => new {
+                    index = i,
+                    capturedAt = f.At,
+                    width = f.Width,
+                    height = f.Height,
+                    loadingScreen = reading?.LoadingScreenFrames.Contains(i),
+                    sent = send.Contains(i),
+                }),
+                // What the reader made of the cards, to check it against the frames. Who each card is gets
+                // settled once the finished replay is in, so isn't here.
+                cards = reading?.Cards?.Select(c => new {
+                    card = (c.Rank.Side == Side.Left ? "L" : "R") + (c.Rank.Slot + 1),
+                    rank = c.Rank.Rank,
+                    league = c.Rank.League.ToString(),
+                    division = c.Rank.Division,
+                    ladderPosition = c.Rank.LadderPosition,
+                    names = c.Text.Names,
+                    heroes = c.Text.Heroes,
+                }),
+                textReaders = CardText.Languages,
             };
 
             // One request per frame (its two strips, a few MB) keeps each well under the site's PHP
@@ -63,14 +89,39 @@ namespace Heroesprofile.Uploader.RankCapture
             var sampleId = Guid.NewGuid().ToString();
             var metaJson = JsonConvert.SerializeObject(meta);
             var sent = 0;
-            for (var i = 0; i < frames.Count && Collecting; i++) {
+            foreach (var i in send) {
+                if (!Collecting) {
+                    break;
+                }
                 if (await SendFrameAsync(sampleId, metaJson, i, frames[i])) {
                     sent++;
                 }
             }
             if (sent > 0) {
-                _log.Info($"Rank reading: sent {sent} of {frames.Count} loading-screen samples for this Storm League game");
+                _log.Info($"Rank reading: sent {sent} of {frames.Count} captured frames as samples for this Storm League game");
             }
+        }
+
+        /// <summary>
+        /// Which frames to send (indexes, in order): up to <see cref="MaxFramesSent"/> of those that show the
+        /// loading screen, spread from first to last. When none do (or reading failed), one frame from the
+        /// middle, so a capture that missed the loading screen still shows what it caught.
+        /// </summary>
+        public static IReadOnlyList<int> FramesToSend(int count, IReadOnlyList<int> loadingScreen)
+        {
+            if (count == 0) {
+                return Array.Empty<int>();
+            }
+            if (loadingScreen == null || loadingScreen.Count == 0) {
+                return new[] { count / 2 };
+            }
+            if (loadingScreen.Count <= MaxFramesSent) {
+                return loadingScreen.ToList();
+            }
+            return Enumerable.Range(0, MaxFramesSent)
+                .Select(k => loadingScreen[(int)Math.Round(k * (loadingScreen.Count - 1) / (double)(MaxFramesSent - 1))])
+                .Distinct()
+                .ToList();
         }
 
         /// <summary>Sends one frame; false if it didn't go (and why is logged).</summary>

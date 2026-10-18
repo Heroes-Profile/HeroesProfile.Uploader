@@ -13,8 +13,8 @@ namespace Heroesprofile.Uploader.Desktop
         public const bool IsAvailable = true;
 
         /// <summary>
-        /// Starts or stops reading ranks: each game's lobby starts a capture, and its first storm save (which
-        /// carries the game mode) ends it.
+        /// Starts or stops reading ranks: each game's lobby starts a capture, its first storm save (which
+        /// carries the game mode) ends it, and its replay reaching Heroes Profile sends the ranks read.
         /// </summary>
         public static void Apply(Manager manager, bool on)
         {
@@ -26,6 +26,7 @@ namespace Heroesprofile.Uploader.Desktop
             }
             manager.SetLobbyReader(on ? RankCapture.RankReader.OnLobby : null);
             manager.SetStormSaveReader(on ? RankCapture.RankReader.OnStormSave : null);
+            manager.SetReplayUploadedReader(on ? RankCapture.RankReader.OnReplayUploaded : null);
         }
 
         /// <summary>Show Windows' capture outline around the game (from the next game on).</summary>

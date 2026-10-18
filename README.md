@@ -24,6 +24,12 @@ the uploader at that prefix; see [packaging/linux/README.md](packaging/linux/REA
 settings (including your Twitch key) and the record of what's already been uploaded into its own
 folder, so nothing is uploaded twice, and then offers to uninstall the old app.
 
+# Credits
+
+- [Azax](https://github.com/Azax-Dev) wrote the native Linux uploader
+  ([#53](https://github.com/Heroes-Profile/HeroesProfile.Uploader/pull/53)) that this cross-platform
+  app grew from, including its design, offered as **Theme 2** (Settings → Design).
+
 # Contributing
 
 Coding conventions are as usual for C# except braces, those are in egyptian style ([OTBS](https://en.wikipedia.org/wiki/Indent_style#1TBS)). For repos included as submodules their coding style is used.

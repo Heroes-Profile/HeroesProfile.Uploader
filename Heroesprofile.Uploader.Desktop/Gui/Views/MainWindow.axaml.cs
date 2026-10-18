@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform;
 using Heroesprofile.Uploader.Desktop.Gui.ViewModels;
 using Heroesprofile.Uploader.Desktop.Migration;
 using System;
@@ -23,14 +24,43 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
         // The design whose size the window currently has - each design remembers its own (AppConfig).
         private string _shownDesign;
 
+        // The UI scale the window's current size was set for, so a scale change can resize it in proportion.
+        private double _shownScale;
+
         public MainWindow()
         {
             InitializeComponent();
+            SetUpTitleBar();
             DataContextChanged += (_, __) => RestorePlacement();
             PropertyChanged += OnWindowPropertyChanged;
             Opened += OnOpened;
             Closing += (_, __) => SavePlacement();
         }
+
+        /// <summary>
+        /// Windows: extend into the title bar, so the size buttons sit next to minimize/maximize/close
+        /// (Avalonia then draws the title bar itself; its fullscreen button is hidden in Styles.axaml).
+        /// Elsewhere the system's title bar stays, with the buttons on a strip below it.
+        /// </summary>
+        private void SetUpTitleBar()
+        {
+            if (!OperatingSystem.IsWindows()) {
+                return;
+            }
+            ExtendClientAreaToDecorationsHint = true;
+            // Room for the caption buttons on the right, and the title bar's height once it's known.
+            ScaleButtons.Margin = new Thickness(0, 0, CaptionButtonsWidth + 8, 0);
+            void MatchTitleBarHeight() => TitleBar.Height = Math.Max(WindowDecorationMargin.Top, TitleBar.MinHeight);
+            PropertyChanged += (_, e) => {
+                if (e.Property == WindowDecorationMarginProperty) {
+                    MatchTitleBarHeight();
+                }
+            };
+            Opened += (_, __) => MatchTitleBarHeight();
+        }
+
+        // Avalonia's drawn minimize/maximize/close: three 46px buttons.
+        private const double CaptionButtonsWidth = 138;
 
         /// <summary>Puts the window back where the user left it, unless that's no longer on any screen.</summary>
         private void RestorePlacement()
@@ -40,10 +70,13 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
             }
             var config = ViewModel.Config;
             _shownDesign = ViewModel.Design;
+            _shownScale = ViewModel.UiScale;
             ApplySize(config.WindowSizeFor(_shownDesign));
             ViewModel.PropertyChanged += (_, e) => {
                 if (e.PropertyName == nameof(MainWindowViewModel.Design)) {
                     SwitchSize();
+                } else if (e.PropertyName == nameof(MainWindowViewModel.UiScale)) {
+                    Rescale();
                 }
             };
 
@@ -86,6 +119,34 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
             _shownDesign = ViewModel.Design;
             if (WindowState == WindowState.Normal) {
                 ApplySize(config.WindowSizeFor(_shownDesign));
+            }
+        }
+
+        /// <summary>The 1x/1.5x/2x changed: scale the window with its contents, so the layout keeps its proportions.</summary>
+        private void Rescale()
+        {
+            var ratio = ViewModel.UiScale / _shownScale;
+            _shownScale = ViewModel.UiScale;
+            if (WindowState != WindowState.Normal) {
+                MinWidth = ViewModel.MinWindowWidth;
+                return;
+            }
+            // Kept on the screen it's on: no bigger than its working area, and moved up/left if it grew past its edge.
+            var screen = Screens.ScreenFromWindow(this) ?? Screens.Primary;
+            var width = Width * ratio;
+            var height = Height * ratio;
+            if (screen != null) {
+                var max = screen.WorkingArea.Size.ToSize(screen.Scaling);
+                width = Math.Min(width, max.Width);
+                height = Math.Min(height, max.Height);
+            }
+            ApplySize((width, height));
+            if (screen != null) {
+                var area = screen.WorkingArea;
+                var size = PixelSize.FromSize(new Size(Width, Height), screen.Scaling);
+                Position = new PixelPoint(
+                    Math.Max(area.X, Math.Min(Position.X, area.Right - size.Width)),
+                    Math.Max(area.Y, Math.Min(Position.Y, area.Bottom - size.Height)));
             }
         }
 
@@ -146,6 +207,14 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
             }
         }
 
+        /// <summary>
+        /// Whether <see cref="OnOpened"/> has something to ask as soon as the window opens: the old uploader
+        /// installed or still running, or no replay folder. Uploading waits on those, so a start to the tray
+        /// shows the window instead.
+        /// </summary>
+        public bool NeedsAttentionAtStartup =>
+            ViewModel?.WaitingForLegacyApp == true || ViewModel?.ReplayFolderError != null || (OperatingSystem.IsWindows() && LegacyApp.IsInstalled());
+
         /// <summary>The logo (Theme 1) or brand mark (Theme 2): opens heroesprofile.com.</summary>
         public void OpenWebsite() => ViewModel?.OpenWebsiteCommand.Execute(null);
 
@@ -166,8 +235,6 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
         /// <summary>Un-hides the window - the tray icon's "Open" item, or clicking the tray icon itself.</summary>
         public void RestoreFromTray()
         {
-            // Started with --minimized, the window was kept off the taskbar until now.
-            ShowInTaskbar = true;
             Show();
             WindowState = WindowState.Normal;
             Activate();

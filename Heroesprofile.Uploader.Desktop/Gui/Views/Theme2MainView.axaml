@@ -5,7 +5,7 @@
              x:Class="Heroesprofile.Uploader.Desktop.Gui.Views.Theme2MainView"
              x:DataType="vm:MainWindowViewModel">
   <!--
-    Theme 2: the main window the Linux app (PR #53) shipped with - header with status (its pause button
+    Theme 2: the main window the Linux app (PR #53, by Azax - github.com/Azax-Dev) shipped with - header with status (its pause button
     is commented out below, see MainWindowViewModel.TogglePause),
     stats grid, toggles, a replay list with time/map/status badges, and a footer - on the same view
     model as Theme 1, plus this app's additions (retry failed uploads, Twitch status, per-OS toggles).
@@ -159,6 +159,8 @@
           <WrapPanel ItemSpacing="6" LineSpacing="6">
             <Button Content="Settings" Click="OpenSettings_Click" />
             <Button Content="Show log" Command="{Binding ShowLogCommand}" />
+            <Button Content="Report an issue" Command="{Binding ReportIssueCommand}"
+                    ToolTip.Tip="Opens the uploader's GitHub to report a problem - attaching your log helps" />
             <Button Content="Replay folder" Command="{Binding OpenReplayFolderCommand}" />
             <Button Content="Check for update" Command="{Binding CheckForUpdateCommand}" />
           </WrapPanel>

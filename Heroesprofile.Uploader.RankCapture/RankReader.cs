@@ -155,7 +155,7 @@ namespace Heroesprofile.Uploader.RankCapture
                 }
                 var decoded = new List<(Pixels Left, Pixels Right)>();
                 foreach (var frame in frames) {
-                    decoded.Add((await PngPixels.DecodeAsync(frame.LeftPng), await PngPixels.DecodeAsync(frame.RightPng)));
+                    decoded.Add((await Png.DecodeAsync(frame.LeftPng), await Png.DecodeAsync(frame.RightPng)));
                 }
                 var loadingScreen = Enumerable.Range(0, decoded.Count)
                     .Where(i => LoadingScreenReader.IsLoadingScreen(decoded[i].Left, decoded[i].Right))

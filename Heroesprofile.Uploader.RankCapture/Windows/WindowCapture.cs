@@ -151,24 +151,6 @@ namespace Heroesprofile.Uploader.RankCapture
             _device.Dispose();
         }
 
-        /// <summary>
-        /// Encodes the part of <paramref name="bitmap"/> inside <paramref name="bounds"/> as a PNG, at full
-        /// resolution.
-        /// </summary>
-        public static async Task<byte[]> EncodePngAsync(SoftwareBitmap bitmap, BitmapBounds bounds)
-        {
-            using var stream = new InMemoryRandomAccessStream();
-            var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, stream);
-            encoder.SetSoftwareBitmap(bitmap);
-            encoder.BitmapTransform.Bounds = bounds;
-            await encoder.FlushAsync();
-
-            using var output = new MemoryStream();
-            stream.Seek(0);
-            await stream.AsStreamForRead().CopyToAsync(output);
-            return output.ToArray();
-        }
-
         // --- Interop: a capture item for a window, and a Direct3D device to capture with ---
 
         // IGraphicsCaptureItemInterop, and the IGraphicsCaptureItem it hands back. The interop interface is

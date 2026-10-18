@@ -45,17 +45,26 @@ jobs:
       - name: Test
         run: dotnet test --project Heroesprofile.Uploader.Tests --no-build -c Release
 
-      # The Ranks build (opt-in rank reader, Windows only) - so a break in it shows up here, not at
-      # release time. A different target framework than the lock files describe, hence not locked.
+      # The Ranks build (opt-in rank reader) on every OS - so a break in it shows up here, not at release
+      # time. A different target framework than the lock files describe on Windows, hence not locked.
       - name: Build the Ranks variant
-        if: runner.os == 'Windows'
         run: dotnet build Heroesprofile.Uploader.Desktop -c Release -p:IncludeRankCapture=true -p:RestoreLockedMode=false
 
-      # The rank reader's own tests (Windows only, like the reader). The ones that read players'
+      # What the rank reader reads names with on Linux (Tesseract) - and on macOS, its native helper.
+      - name: Install Tesseract
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends tesseract-ocr
+
+      - name: Build the macOS rank helper
+        if: runner.os == 'macOS'
+        run: |
+          swiftc -O -target "$(uname -m)-apple-macos12.3" packaging/macos/rank-helper/main.swift -o "$RUNNER_TEMP/hp-rank-helper"
+          echo "HP_RANK_HELPER=$RUNNER_TEMP/hp-rank-helper" >> "$GITHUB_ENV"
+
+      # The rank reader's own tests, on every OS with that OS's text reader. The ones that read players'
       # loading-screen samples skip here: those live only in a private bucket.
       - name: Test the rank reader
-        if: runner.os == 'Windows'
-        run: dotnet test --project Heroesprofile.Uploader.RankCapture.Tests --no-restore -c Release
+        run: dotnet test --project Heroesprofile.Uploader.RankCapture.Tests --no-restore -c Release ${{ runner.os != 'Windows' && '-f net10.0' || '' }}
 
       - name: Check formatting
         if: runner.os == 'Linux'

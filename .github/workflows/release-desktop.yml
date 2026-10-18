@@ -101,9 +101,9 @@ jobs:
           - os: windows-latest
             rid: win-x64
             channel: win
-          # The "Ranks" build: the same Windows app plus the opt-in rank reader
-          # (Heroesprofile.Uploader.RankCapture), on its own update channel so a normal install is never
-          # moved onto it. Only this entry sets publish-args.
+          # The "Ranks" builds: the same app plus the opt-in rank reader
+          # (Heroesprofile.Uploader.RankCapture), each on its own "-ranks" update channel so a normal install
+          # is never moved onto one. Only these entries set publish-args.
           - os: windows-latest
             rid: win-x64
             channel: win-ranks
@@ -111,12 +111,24 @@ jobs:
           - os: ubuntu-latest
             rid: linux-x64
             channel: linux
+          - os: ubuntu-latest
+            rid: linux-x64
+            channel: linux-ranks
+            publish-args: -p:IncludeRankCapture=true
           - os: macos-latest
             rid: osx-arm64
             channel: osx-arm64
           - os: macos-latest
+            rid: osx-arm64
+            channel: osx-arm64-ranks
+            publish-args: -p:IncludeRankCapture=true
+          - os: macos-latest
             rid: osx-x64
             channel: osx-x64
+          - os: macos-latest
+            rid: osx-x64
+            channel: osx-x64-ranks
+            publish-args: -p:IncludeRankCapture=true
     runs-on: ${{ matrix.os }}
     # Holds the signing credentials; restrict it to trusted branches/tags (and add reviewers) in the
     # repo's Settings -> Environments.
@@ -166,16 +178,32 @@ jobs:
           dotnet publish Heroesprofile.Uploader.Desktop -c Release -r ${{ matrix.rid }} --self-contained
           -p:Version=$VERSION -p:DebugType=none -p:RestoreLockedMode=false $SIGNING_ARGS ${{ matrix.publish-args }} -o publish
 
-      # The normal builds must never carry the rank reader's screen-capture code (it's what lets
-      # privacy-minded users pick them); the Ranks build must.
-      - name: Check the rank reader is only in the Ranks build
+      # The macOS Ranks builds capture and read text through a small native helper (Apple's APIs are Swift /
+      # Objective-C), shipped next to the app's executable; vpk signs and notarizes it with the app.
+      - name: macOS rank helper
+        if: startsWith(matrix.rid, 'osx-') && endsWith(matrix.channel, '-ranks')
         run: |
-          found=$(find publish -iname '*RankCapture*' | head -1)
-          if [ "${{ matrix.channel }}" = "win-ranks" ]; then
-            [ -n "$found" ] || { echo "::error::The Ranks build is missing Heroesprofile.Uploader.RankCapture"; exit 1; }
-          else
-            [ -z "$found" ] || { echo "::error::$found is in the ${{ matrix.channel }} build - rank capture must only ship in the Ranks build"; exit 1; }
-          fi
+          case "${{ matrix.rid }}" in
+            osx-arm64) arch=arm64 ;;
+            osx-x64)   arch=x86_64 ;;
+          esac
+          swiftc -O -target "$arch-apple-macos12.3" packaging/macos/rank-helper/main.swift -o publish/hp-rank-helper
+          file publish/hp-rank-helper
+
+      # The normal builds must never carry the rank reader's screen-capture code (it's what lets
+      # privacy-minded users pick them); the Ranks builds must.
+      - name: Check the rank reader is only in the Ranks builds
+        run: |
+          found=$(find publish -iname '*RankCapture*' -o -iname 'hp-rank-helper' | head -1)
+          case "${{ matrix.channel }}" in
+            *-ranks)
+              [ -n "$(find publish -iname '*RankCapture*' | head -1)" ] || { echo "::error::The Ranks build is missing Heroesprofile.Uploader.RankCapture"; exit 1; }
+              if [[ "${{ matrix.rid }}" == osx-* ]]; then
+                [ -x publish/hp-rank-helper ] || { echo "::error::The macOS Ranks build is missing hp-rank-helper"; exit 1; }
+              fi ;;
+            *)
+              [ -z "$found" ] || { echo "::error::$found is in the ${{ matrix.channel }} build - rank capture must only ship in the Ranks builds"; exit 1; } ;;
+          esac
 
       - name: Icon
         id: icon
@@ -314,7 +342,7 @@ jobs:
 
       # Headless/systemd Linux users run the plain single-file binary (packaging/linux/README.md).
       - name: Linux tarball
-        if: startsWith(matrix.rid, 'linux-')
+        if: matrix.channel == 'linux'
         run: |
           dotnet publish Heroesprofile.Uploader.Desktop -c Release -r linux-x64 --self-contained \
             -p:PublishSingleFile=true -p:Version=$VERSION -p:DebugType=none -p:RestoreLockedMode=false $SIGNING_ARGS -o single
@@ -374,7 +402,7 @@ jobs:
 
           # Named like every earlier release: just the tag, e.g. v3.0.0-beta.2.
           flags=(--merge --tag "v$VERSION" --releaseName "v$VERSION")
-          for channel in win win-ranks linux osx-arm64 osx-x64; do
+          for channel in win win-ranks linux linux-ranks osx-arm64 osx-arm64-ranks osx-x64 osx-x64-ranks; do
             dotnet vpk upload github --repoUrl "https://github.com/${{ github.repository }}" --token "$GH_TOKEN" \
               --channel "$channel" -o "release-$channel/releases" "${flags[@]}"
           done

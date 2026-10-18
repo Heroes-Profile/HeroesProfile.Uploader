@@ -1,28 +1,44 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    The opt-in rank reader: reads players' ranks off the game's loading screen. Only the "Ranks" build
-    includes it (Heroesprofile.Uploader.Desktop built with -p:IncludeRankCapture=true, published on its own
-    Velopack channel, win-ranks); the normal uploader never references this project, so none of its code
-    is in that build - release-desktop.yml checks.
+    The opt-in rank reader: reads players' ranks off the game's loading screen. Only the "Ranks" builds
+    include it (Heroesprofile.Uploader.Desktop built with -p:IncludeRankCapture=true, published on their own
+    Velopack channels: win-ranks, linux-ranks, osx-arm64-ranks, osx-x64-ranks); the normal uploader never
+    references this project, so none of its code is in that build - release-desktop.yml checks.
 
-    Windows only for now: it uses Windows' own screen capture (Windows.Graphics.Capture) and text reader
-    (Windows.Media.Ocr). The 22621 SDK has the newest capture options; SupportedOSPlatformVersion keeps
-    Windows 10 (2004 and later) supported.
+    Two targets. net10.0 is everything that works anywhere - reading the cards, matching players, sending -
+    plus the Linux and macOS capture and text reading (Capture/, Text/: X11 and Tesseract, or the bundled
+    macOS helper). The Windows target adds Windows' own screen capture (Windows.Graphics.Capture) and text
+    reader (Windows.Media.Ocr), in Windows/; the 22621 SDK has the newest capture options, and
+    SupportedOSPlatformVersion keeps Windows 10 (2004 and later) supported.
   -->
   <PropertyGroup>
-    <TargetFramework>net10.0-windows10.0.22621.0</TargetFramework>
-    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
-    <!-- Lets the Linux/macOS CI runners build it too. -->
+    <TargetFrameworks>net10.0;net10.0-windows10.0.22621.0</TargetFrameworks>
+    <!-- Lets the Linux/macOS CI runners build the Windows target too. -->
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <RootNamespace>Heroesprofile.Uploader.RankCapture</RootNamespace>
     <AssemblyName>Heroesprofile.Uploader.RankCapture</AssemblyName>
-    <!-- One call into Windows' capture interop goes through a COM function pointer (WindowCapture.CaptureItemForWindow). -->
+    <!-- Windows' capture interop calls through a COM function pointer (WindowCapture.CaptureItemForWindow),
+         and the X11 capture takes an error handler as an unmanaged callback. -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-windows10.0.22621.0'">
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <DefineConstants>$(DefineConstants);WINDOWS_CAPTURE</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != 'net10.0-windows10.0.22621.0'">
+    <Compile Remove="Windows/**" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Heroesprofile.Uploader.Common\Heroesprofile.Uploader.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- PNG in and out on every OS: the card strips kept in memory and sent as samples, and the macOS
+         helper's captures. The app already ships it, through Avalonia. -->
+    <PackageReference Include="SkiaSharp" />
   </ItemGroup>
 
   <!-- What the loading-screen reader compares cards against (RankTemplates). Rebuilt from the samples by

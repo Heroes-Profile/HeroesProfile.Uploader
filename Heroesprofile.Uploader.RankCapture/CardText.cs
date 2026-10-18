@@ -1,21 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using System.Threading.Tasks;
-using Windows.Graphics.Imaging;
-using Windows.Media.Ocr;
 
 namespace Heroesprofile.Uploader.RankCapture
 {
     /// <summary>
-    /// Reads text off a card: the player's name and their hero's, with Windows' own text recognition
-    /// (Windows.Media.Ocr, which works offline), and a Grandmaster's ladder position, mostly by matching its
-    /// characters against templates. Windows reads one language's script per reader and only has readers for
-    /// the languages installed on the PC, so names are read with every one of them; <see cref="PlayerMatcher"/>
-    /// keeps whichever reading matches a player. A name in a script no reader here knows comes back as junk
-    /// or nothing, which the matcher copes with too.
+    /// Reads text off a card: the player's name and their hero's, with the OS's own offline text recognition
+    /// (<see cref="TextReaders"/>), and a Grandmaster's ladder position, mostly by matching its characters
+    /// against templates. Readers only know the languages installed on the machine (and on Windows, one script
+    /// each), so names are read with every one there is; <see cref="PlayerMatcher"/> keeps whichever reading
+    /// matches a player. A name in a script no reader here knows comes back as junk or nothing, which the
+    /// matcher copes with too.
     /// </summary>
     internal static class CardText
     {
@@ -31,22 +28,11 @@ namespace Heroesprofile.Uploader.RankCapture
         private const int Scale = 3;
         private const int Margin = 30;
 
-        // A reader for every language Windows has one installed for (English, Korean, Russian, ...).
-        private static readonly Lazy<IReadOnlyList<OcrEngine>> _textReaders = new Lazy<IReadOnlyList<OcrEngine>>(() => {
-            var readers = OcrEngine.AvailableRecognizerLanguages.Select(OcrEngine.TryCreateFromLanguage).Where(e => e != null).ToList();
-            if (readers.Count == 0 && OcrEngine.TryCreateFromUserProfileLanguages() is OcrEngine profile) {
-                readers.Add(profile);
-            }
-            return readers;
-        });
-        private static readonly Lazy<OcrEngine> _digits = new Lazy<OcrEngine>(() =>
-            OcrEngine.TryCreateFromLanguage(new Windows.Globalization.Language("en-US")) ?? _textReaders.Value.FirstOrDefault());
-
-        /// <summary>Whether Windows has any text reader installed.</summary>
-        public static bool IsAvailable => _textReaders.Value.Count > 0;
+        /// <summary>Whether this machine has any text reader.</summary>
+        public static bool IsAvailable => TextReaders.All.Count > 0;
 
         /// <summary>The languages names are read in.</summary>
-        public static IEnumerable<string> Languages => _textReaders.Value.Select(r => r.RecognizerLanguage.LanguageTag);
+        public static IEnumerable<string> Languages => TextReaders.All.Select(r => r.Language);
 
         /// <summary>The card's player name as each installed reader reads it (empty readings left out).</summary>
         public static Task<IReadOnlyList<string>> ReadNameAsync(Pixels strip, Side side, int slot) => ReadLineAsync(strip, side, slot, NameTop, NameHeight);
@@ -59,10 +45,12 @@ namespace Heroesprofile.Uploader.RankCapture
             var area = LoadingScreenReader.SampleCardArea(strip, side, slot, side == Side.Left ? TextLeftX : TextRightX, top, TextWidth * Scale, height * Scale, Scale);
             var image = WithMargin(TextOnDark(area));
             var readings = new List<string>();
-            foreach (var reader in _textReaders.Value) {
-                var text = Clean(await ReadAsync(reader, image));
-                if (text.Length > 0 && !readings.Contains(text)) {
-                    readings.Add(text);
+            foreach (var reader in TextReaders.All) {
+                foreach (var reading in await reader.ReadAsync(image)) {
+                    var text = Clean(reading);
+                    if (text.Length > 0 && !readings.Contains(text)) {
+                        readings.Add(text);
+                    }
                 }
             }
             return readings;
@@ -88,7 +76,7 @@ namespace Heroesprofile.Uploader.RankCapture
         /// <summary>
         /// A Grandmaster card's ladder position, or null when it can't be read. Each character is matched
         /// against <paramref name="templates"/>' Grandmaster characters; if one matches none of them (a digit
-        /// no sample has shown yet), Windows reads the characters instead - it reads numbers of two digits
+        /// no sample has shown yet), the text reader reads the characters instead - Windows' reads numbers of two digits
         /// or more well once they're picked out clean, but not single digits.
         /// </summary>
         public static async Task<int?> ReadGrandmasterNumberAsync(Pixels strip, Side side, int slot, RankTemplates templates)
@@ -114,7 +102,16 @@ namespace Heroesprofile.Uploader.RankCapture
 
             // Windows does better with more to go on: the characters three times over, with a gap between.
             var clean = CharactersImage(characters);
-            return ParseNumber(await ReadAsync(_digits.Value, WithMargin(Repeat(clean, 3))));
+            var reader = TextReaders.Digits;
+            if (reader == null) {
+                return null;
+            }
+            foreach (var reading in await reader.ReadAsync(WithMargin(Repeat(clean, 3)))) {
+                if (ParseNumber(reading) is int number) {
+                    return number;
+                }
+            }
+            return null;
         }
 
         /// <summary>The first run of digits in what was read ("#6" is 6), if it's a plausible ladder position.</summary>
@@ -266,23 +263,6 @@ namespace Heroesprofile.Uploader.RankCapture
                 Array.Copy(image.Rgb, y * image.Width * 3, result.Rgb, ((y + Margin) * result.Width + Margin) * 3, image.Width * 3);
             }
             return result;
-        }
-
-        private static async Task<string> ReadAsync(OcrEngine engine, Pixels image)
-        {
-            if (engine == null) {
-                return "";
-            }
-            var bytes = new byte[image.Width * image.Height * 4];
-            for (var i = 0; i < image.Width * image.Height; i++) {
-                bytes[i * 4] = (byte)Math.Clamp(image.Rgb[i * 3 + 2], 0, 255);
-                bytes[i * 4 + 1] = (byte)Math.Clamp(image.Rgb[i * 3 + 1], 0, 255);
-                bytes[i * 4 + 2] = (byte)Math.Clamp(image.Rgb[i * 3], 0, 255);
-                bytes[i * 4 + 3] = 255;
-            }
-            using var bitmap = SoftwareBitmap.CreateCopyFromBuffer(bytes.AsBuffer(), BitmapPixelFormat.Bgra8, image.Width, image.Height, BitmapAlphaMode.Ignore);
-            var result = await engine.RecognizeAsync(bitmap);
-            return string.Join(" ", result.Lines.Select(l => l.Text));
         }
 
         /// <summary>What was read, without the spaces the reader likes to put in names and stray marks around them.</summary>

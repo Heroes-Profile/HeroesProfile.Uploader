@@ -90,7 +90,7 @@ internal static class Samples
     }
 
     public static async Task<(Pixels Left, Pixels Right)> DecodeAsync((string Left, string Right) files) =>
-        (await PngPixels.DecodeAsync(await File.ReadAllBytesAsync(files.Left)), await PngPixels.DecodeAsync(await File.ReadAllBytesAsync(files.Right)));
+        (await Png.DecodeAsync(await File.ReadAllBytesAsync(files.Left)), await Png.DecodeAsync(await File.ReadAllBytesAsync(files.Right)));
 
     /// <summary>The first of a game's frames that shows the loading screen, or null.</summary>
     public static async Task<(Pixels Left, Pixels Right)?> LoadingScreenAsync(string gameFolder)

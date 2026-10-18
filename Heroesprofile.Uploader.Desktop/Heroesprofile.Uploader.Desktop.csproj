@@ -39,14 +39,19 @@
   </ItemGroup>
 
   <!--
-    The "Ranks" build: -p:IncludeRankCapture=true adds the opt-in rank reader (Heroesprofile.Uploader.RankCapture,
-    Windows only) and defines RANK_CAPTURE for the one place that hooks it up (RankReading.cs). Without it -
-    the normal build, and every build on Linux/macOS - none of that project is referenced or shipped.
+    The "Ranks" build: -p:IncludeRankCapture=true adds the opt-in rank reader (Heroesprofile.Uploader.RankCapture)
+    and defines RANK_CAPTURE for the one place that hooks it up (RankReading.cs). Without it - the normal build -
+    none of that project is referenced or shipped. Built for Windows (-r win-*, or no RID on a Windows machine)
+    it targets Windows so it gets Windows' own capture and text reading; built for Linux or macOS it stays on
+    plain net10.0 and uses RankCapture's X11/Tesseract or macOS-helper parts.
   -->
   <PropertyGroup Condition="'$(IncludeRankCapture)' == 'true'">
+    <DefineConstants>$(DefineConstants);RANK_CAPTURE</DefineConstants>
+    <RankCaptureForWindows Condition="$(RuntimeIdentifier.StartsWith('win')) Or ('$(RuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('Windows')))">true</RankCaptureForWindows>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(RankCaptureForWindows)' == 'true'">
     <TargetFramework>net10.0-windows10.0.22621.0</TargetFramework>
     <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
-    <DefineConstants>$(DefineConstants);RANK_CAPTURE</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(IncludeRankCapture)' == 'true'">
     <ProjectReference Include="..\Heroesprofile.Uploader.RankCapture\Heroesprofile.Uploader.RankCapture.csproj" />

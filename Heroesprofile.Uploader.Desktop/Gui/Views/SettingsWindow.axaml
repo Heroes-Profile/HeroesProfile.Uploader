@@ -81,9 +81,13 @@
                    Text="Reads each player's Storm League rank from the game's loading screen and sends it to Heroes Profile with the game's replay, so matches show real ranks. Only the game window is captured, only during the loading screen." />
         <CheckBox Content="Read ranks from the loading screen" IsChecked="{Binding ReadRanks}" Click="ReadRanks_Click" />
         <CheckBox Content="Show Windows' outline around the game while it's captured" IsChecked="{Binding ShowCaptureOutline}"
-                  IsEnabled="{Binding ReadRanks}" />
-        <TextBlock Classes="hint"
+                  IsEnabled="{Binding ReadRanks}" IsVisible="{Binding IsWindows}" />
+        <TextBlock Classes="hint" IsVisible="{Binding IsWindows}"
                    Text="Windows 11 captures without its yellow outline unless this is ticked. Windows 10 always shows it. Takes effect from the next game." />
+        <TextBlock Classes="hint" IsVisible="{Binding IsMacOS}"
+                   Text="Needs macOS 14 or later. macOS asks to let the uploader record the screen the first time; allow it in System Settings, Privacy &amp; Security, Screen Recording, then restart the uploader." />
+        <TextBlock Classes="hint" IsVisible="{Binding IsLinux}"
+                   Text="Reads the game's window under Wine or Proton (X11 or XWayland). Player names are read with Tesseract: install tesseract-ocr, plus tesseract-ocr-kor, -rus and so on for names in other alphabets." />
       </StackPanel>
     </StackPanel>
   </Grid>

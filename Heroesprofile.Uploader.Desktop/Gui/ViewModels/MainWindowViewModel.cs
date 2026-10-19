@@ -68,9 +68,12 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
 
         /// <summary>The title bar's 1x/1.5x/2x buttons.</summary>
         [RelayCommand]
-        private void SetUiScale(string value)
+        private void SetUiScale(string value) => ApplyUiScale(double.Parse(value, System.Globalization.CultureInfo.InvariantCulture));
+
+        /// <summary>Sizes the main window (one of <see cref="AppConfig.UiScales"/>) and saves it: the title bar's buttons and Settings' Size.</summary>
+        public void ApplyUiScale(double scale)
         {
-            Config.UiScale = double.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
+            Config.UiScale = scale;
             UiScale = Config.UiScale;
         }
 

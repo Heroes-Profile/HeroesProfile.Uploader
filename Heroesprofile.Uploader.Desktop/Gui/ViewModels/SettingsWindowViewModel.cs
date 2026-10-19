@@ -5,6 +5,7 @@ using Heroesprofile.Uploader.Desktop.Platform;
 using NLog;
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
@@ -46,12 +47,19 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
             new ThemeChoice("Lite", AppConfig.Theme2Design),
         };
 
-        /// <summary>The main window's sizes (see AppConfig.UiScale) - Theme 2's place for the title bar's 1x/1.5x/2x buttons.</summary>
-        public ThemeChoice[] Sizes { get; } = {
-            new ThemeChoice("1x", "1"),
-            new ThemeChoice("1.5x", "1.5"),
-            new ThemeChoice("2x", "2"),
-        };
+        /// <summary>A main-window size: "1.5x" and its scale.</summary>
+        public sealed record SizeChoice(string Label, double Scale)
+        {
+            public override string ToString() => Label;
+        }
+
+        /// <summary>
+        /// The main window's sizes - AppConfig.UiScales, the one list of them - and Theme 2's place for the title
+        /// bar's 1x/1.5x/2x buttons.
+        /// </summary>
+        public SizeChoice[] Sizes { get; } = AppConfig.UiScales
+            .Select(s => new SizeChoice(s.ToString(System.Globalization.CultureInfo.InvariantCulture) + "x", s))
+            .ToArray();
 
         private readonly MainWindowViewModel _main;
 
@@ -62,7 +70,7 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
             replayPath = config.ReplayPath ?? "";
             selectedTheme = Array.Find(Themes, t => t.Value == config.Theme) ?? Themes[1];
             selectedDesign = Array.Find(Designs, d => d.Value == config.Design) ?? Designs[0];
-            selectedSize = Array.Find(Sizes, z => z.Value == config.UiScale.ToString(System.Globalization.CultureInfo.InvariantCulture)) ?? Sizes[0];
+            selectedSize = Array.Find(Sizes, z => z.Scale == config.UiScale) ?? Sizes[0];
             allowPreReleases = config.AllowPreReleases;
             readRanks = RankReading.IsAvailable && config.ReadRanks;
             showCaptureOutline = config.ShowCaptureOutline;
@@ -136,12 +144,12 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
         public bool IsTheme2 => SelectedDesign?.Value == AppConfig.Theme2Design;
 
         [ObservableProperty]
-        private ThemeChoice selectedSize;
+        private SizeChoice selectedSize;
 
-        partial void OnSelectedSizeChanged(ThemeChoice value)
+        partial void OnSelectedSizeChanged(SizeChoice value)
         {
             if (value != null) {
-                _main.SetUiScaleCommand.Execute(value.Value);
+                _main.ApplyUiScale(value.Scale);
             }
         }
 

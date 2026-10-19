@@ -72,8 +72,8 @@ What each system needs:
 - **Linux:** the game under Wine or Proton, on X11 or a Wayland desktop with XWayland (the usual setup).
   Player names are read with **Tesseract**, which now comes with the app (English letters), so there's
   nothing to install. For names in other alphabets, install your distro's `tesseract-ocr` plus language
-  packs (e.g. `tesseract-ocr-kor`, `tesseract-ocr-rus`, `tesseract-ocr-chi-sim`); the app uses that one when
-  it has more languages.
+  packs (e.g. `tesseract-ocr-kor`, `tesseract-ocr-rus`, `tesseract-ocr-chi-sim`); the app reads with that one
+  too, for its extra languages.
 
 If you play Storm League and are happy to help, grab the "with rank reading" download for your system.
 Otherwise use the normal one.

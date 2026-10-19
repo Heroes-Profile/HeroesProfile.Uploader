@@ -65,7 +65,7 @@ Recording**, then restart the uploader.
 and turn it on in **Settings → Read ranks from the loading screen**. It reads the game's window under
 Wine or Proton (X11, or XWayland on a Wayland desktop). Player names are read with Tesseract, which comes
 with it (English letters only), so there's nothing to install. For names in other alphabets, install your
-distro's Tesseract with the language packs you want; the app uses that one when it has more languages:
+distro's Tesseract with the language packs you want; the app reads with that one too, for its extra languages:
 
 ```
 sudo apt install tesseract-ocr tesseract-ocr-kor tesseract-ocr-rus   # Debian, Ubuntu, Mint

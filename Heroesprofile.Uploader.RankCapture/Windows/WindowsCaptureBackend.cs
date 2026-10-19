@@ -1,7 +1,6 @@
+using NLog;
 using System;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
-using Windows.Graphics.Imaging;
 
 namespace Heroesprofile.Uploader.RankCapture
 {
@@ -11,6 +10,8 @@ namespace Heroesprofile.Uploader.RankCapture
     /// </summary>
     internal sealed class WindowsCaptureBackend : ICaptureBackend
     {
+        private static readonly Logger _log = LogManager.GetCurrentClassLogger();
+
         public string Unsupported => WindowCapture.IsSupported ? null : "this version of Windows can't capture windows (needs Windows 10 2004 or later)";
 
         public async Task PrepareAsync(bool showOutline)
@@ -26,16 +27,13 @@ namespace Heroesprofile.Uploader.RankCapture
             if (window == IntPtr.Zero) {
                 return null;
             }
-            return WindowCapture.Start(window, interval, showOutline, bitmap => {
-                try {
-                    var bytes = new byte[bitmap.PixelWidth * bitmap.PixelHeight * 4];
-                    bitmap.CopyToBuffer(bytes.AsBuffer());
-                    onFrame(new RawFrame(bitmap.PixelWidth, bitmap.PixelHeight, bitmap.PixelWidth * 4, bytes));
-                }
-                finally {
-                    bitmap.Dispose();
-                }
-            });
+            // An HDR display is captured in its own scRGB, which the 8-bit capture got wrong (WindowCapture).
+            if (DisplayColour.TryForWindow(window, out var colour)) {
+                _log.Info($"Rank reading: the game's display is {colour}");
+            } else {
+                _log.Info("Rank reading: couldn't tell whether the game's display is HDR - capturing it as SDR");
+            }
+            return WindowCapture.Start(window, interval, showOutline, colour, onFrame);
         }
     }
 }

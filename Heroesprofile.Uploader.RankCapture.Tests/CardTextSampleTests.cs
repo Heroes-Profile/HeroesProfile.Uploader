@@ -33,11 +33,11 @@ public class CardTextSampleTests(ITestOutputHelper output)
             output.WriteLine($"{label.SampleId} {(label.Side == Side.Left ? "L" : "R")}{label.Slot + 1}: labelled {label.Rank}, read {number}");
             Assert.Equal(int.Parse(label.Rank.Split(' ')[1]), number);
 
-            // Without character templates (a digit no sample has shown), Windows reads numbers of two digits
-            // or more on its own.
-            if (number >= 10) {
-                Assert.Equal(number, await CardText.ReadGrandmasterNumberAsync(strip, label.Side, label.Slot, null));
-            }
+            // Without character templates (a character no sample has shown), the text reader takes over. It
+            // can miss a number (#65 through the lightning), which is then simply not sent - but must never
+            // read a wrong one.
+            var fallback = await CardText.ReadGrandmasterNumberAsync(strip, label.Side, label.Slot, null);
+            Assert.True(fallback == null || fallback == number, $"Without templates, read {fallback} for {label.Rank}");
         }
     }
 

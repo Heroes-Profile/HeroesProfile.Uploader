@@ -33,10 +33,11 @@ namespace Heroesprofile.Uploader.RankCapture
         // corner on both sides.
         private const int BadgeLeftX = 5, BadgeRightX = 255, BadgeY = 85, BadgeWidth = 140, BadgeHeight = 150;
 
-        // Midway across the gaps in the samples (2,800 cards, 2026-10-18): Master/Grandmaster frames matched
-        // 0.82 and up, every other card 0.67 at most; badges' shields 0.54 and up, unranked cards 0.35 at most.
-        public const double MasterCutoff = 0.75;
-        public const double ShieldCutoff = 0.45;
+        // Midway across the gaps in the samples (537 games, 2026-10-19): Master/Grandmaster frames matched
+        // 0.76 and up, every other card 0.67 at most; badges' shields 0.44 and up (0.54 but for one HDR
+        // capture), unranked cards 0.35 at most.
+        public const double MasterCutoff = 0.72;
+        public const double ShieldCutoff = 0.40;
         public const int DigitWidth = 20, DigitHeight = 28;
 
         /// <summary>
@@ -124,27 +125,36 @@ namespace Heroesprofile.Uploader.RankCapture
         /// <summary>
         /// The league a badge-carrying card's frame colour says. Metal-coloured frames (saturated) by hue:
         /// Bronze copper, Gold yellow, Diamond cyan. Pale ones by tint: Silver neutral grey, Platinum pink.
+        /// Each league only within the range its frames measured in the samples (537 games, 2026-10-19), with a
+        /// margin; anything else is Unknown, which is never sent. That matters for captures whose colours are
+        /// off - an HDR display's over-saturated, blown-out capture made Gold frames read as Platinum (and as
+        /// Bronze once the clipped highlights were left out): those now come out Unknown instead of wrong.
         /// </summary>
         public static League LeagueFromColour(FrameColour c)
         {
-            if (c.Saturation >= 60) {
-                if (c.Hue < 30) {
+            if (c.Saturation >= 90) {
+                // Bronze 20-27 degrees, Gold 31-50 (a warm display shifts both up a little), Diamond ~199.
+                if (c.Hue < 29) {
                     return League.Bronze;
                 }
-                if (c.Hue < 60) {
+                if (c.Hue < 56) {
                     return League.Gold;
                 }
-                if (c.Hue >= 150 && c.Hue < 230) {
+                if (c.Hue >= 150 && c.Hue < 230 && c.Saturation >= 180) {
                     return League.Diamond;
                 }
                 return League.Unknown;
             }
+            if (c.Saturation >= 60) {
+                // Between the pale frames (36 at most) and the metal ones (102 at least): colours are off.
+                return League.Unknown;
+            }
             var redOverGreen = c.R - c.G;
             var blueOverRed = c.B - c.R;
-            if (redOverGreen <= 2 && blueOverRed >= -15 && blueOverRed <= 40) {
+            if (redOverGreen <= 2 && blueOverRed >= -5 && blueOverRed <= 40) {
                 return League.Silver;
             }
-            if (redOverGreen >= 12 && redOverGreen <= 45 && blueOverRed <= 10) {
+            if (redOverGreen >= 12 && redOverGreen <= 45 && blueOverRed >= -12 && blueOverRed <= 12) {
                 return League.Platinum;
             }
             return League.Unknown;

@@ -3,8 +3,12 @@ using System.Threading.Tasks;
 
 namespace Heroesprofile.Uploader.RankCapture
 {
-    /// <summary>One captured image of the game window: 32-bit BGRA rows (the alpha byte is ignored).</summary>
-    internal sealed record RawFrame(int Width, int Height, int Stride, byte[] Bgra);
+    /// <summary>
+    /// One captured image of the game window: 32-bit BGRA rows (the alpha byte is ignored). <see cref="Hdr"/>:
+    /// captured off an HDR display and converted back to the game's colours (see ScRgb), its SDR white then
+    /// <see cref="SdrWhiteNits"/>.
+    /// </summary>
+    internal sealed record RawFrame(int Width, int Height, int Stride, byte[] Bgra, bool Hdr = false, float SdrWhiteNits = 0);
 
     /// <summary>
     /// How this OS captures the game's window (<see cref="CaptureBackends.Current"/>): Windows' own capture

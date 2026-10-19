@@ -125,7 +125,7 @@ namespace Heroesprofile.Uploader.RankCapture
                         if (_stop.IsCancellationRequested) {
                             return;
                         }
-                        _frames.Enqueue(new CapturedFrame(at, frame.Width, frame.Height, left, right));
+                        _frames.Enqueue(new CapturedFrame(at, frame.Width, frame.Height, left, right, frame.Hdr, frame.SdrWhiteNits));
                         while (_frames.Count > FramesKept) {
                             _frames.Dequeue();
                         }
@@ -165,6 +165,9 @@ namespace Heroesprofile.Uploader.RankCapture
         }
     }
 
-    /// <summary>One captured frame: when, the game's resolution, and the left and right card strips as PNG.</summary>
-    internal sealed record CapturedFrame(DateTime At, int Width, int Height, byte[] LeftPng, byte[] RightPng);
+    /// <summary>
+    /// One captured frame: when, the game's resolution, the left and right card strips as PNG, and whether it
+    /// came off an HDR display (converted back to the game's colours; see RawFrame).
+    /// </summary>
+    internal sealed record CapturedFrame(DateTime At, int Width, int Height, byte[] LeftPng, byte[] RightPng, bool Hdr = false, float SdrWhiteNits = 0);
 }

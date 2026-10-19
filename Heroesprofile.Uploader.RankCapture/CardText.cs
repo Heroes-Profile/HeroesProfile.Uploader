@@ -67,6 +67,8 @@ namespace Heroesprofile.Uploader.RankCapture
         // (the lightning does).
         private const float CharacterWhite = 140;
         private const int CharacterMinHeight = 22, CharacterMaxHeight = 56;
+        // How far (units) a character's top may sit off the number's line: the samples' characters are within 3.
+        private const int CharacterLineTolerance = 6;
 
         public const int GlyphWidth = 16, GlyphHeight = 24;
 
@@ -174,6 +176,13 @@ namespace Heroesprofile.Uploader.RankCapture
                     mask[(p / w - top) * width + p % w - left] = true;
                 }
                 characters.Add(new Character(left, top, width, height, mask, Glyph(mask, width, height)));
+            }
+            // A number's characters stand on one line. Something white in the portrait above it (#62, #32 in
+            // the samples: a blob at the top, ~15 units higher) is dropped by being off that line.
+            if (characters.Count > 1) {
+                var tops = characters.Select(c => c.Top).OrderBy(t => t).ToList();
+                var lineTop = tops[tops.Count / 2];
+                characters = characters.Where(c => Math.Abs(c.Top - lineTop) <= CharacterLineTolerance).ToList();
             }
             return characters.OrderBy(c => c.Left).ToList();
         }

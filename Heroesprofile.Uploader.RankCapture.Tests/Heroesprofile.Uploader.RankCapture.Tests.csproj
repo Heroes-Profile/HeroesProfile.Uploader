@@ -3,14 +3,14 @@
   <!--
     Tests for the opt-in rank reader (Heroesprofile.Uploader.RankCapture). Kept apart from
     Heroesprofile.Uploader.Tests, which must never load the rank reader (it checks the normal build has
-    none). Windows only, like the reader.
+    none). Two targets, like the reader: net10.0 runs on every OS (CI runs it on Linux and macOS too, with
+    that OS's text reader); the Windows target tests Windows' own capture and text reading.
 
     The sample tests read the players' loading-screen samples from rank-samples/ at the repo root - a
     gitignored mirror of the private sl-rank-samples bucket - and skip when it isn't there (as on CI).
   -->
   <PropertyGroup>
-    <TargetFramework>net10.0-windows10.0.22621.0</TargetFramework>
-    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <TargetFrameworks>net10.0;net10.0-windows10.0.22621.0</TargetFrameworks>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <OutputType>Exe</OutputType>
     <Nullable>enable</Nullable>
@@ -19,8 +19,15 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-windows10.0.22621.0'">
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="xunit.v3" />
+    <PackageReference Include="SkiaSharp" />
+    <!-- Skia's Linux library: the app gets it through Avalonia, the tests need it themselves on Linux CI. -->
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" />
   </ItemGroup>
 
   <ItemGroup>

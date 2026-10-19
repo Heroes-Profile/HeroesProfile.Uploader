@@ -131,6 +131,11 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
 
         public bool SupportsRankReading => RankReading.IsAvailable;
 
+        // Each OS captures differently, so each has its own notes (and only Windows has an outline to show).
+        public bool IsWindows => OperatingSystem.IsWindows();
+        public bool IsMacOS => OperatingSystem.IsMacOS();
+        public bool IsLinux => OperatingSystem.IsLinux();
+
         public const string RankReadingConsent =
             "While a game's loading screen is showing, the uploader will capture the Heroes of the Storm " +
             "window and read each player's rank from it. It only looks at the game window, only during the " +

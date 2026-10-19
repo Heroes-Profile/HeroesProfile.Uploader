@@ -46,7 +46,7 @@ public class LabelledSampleTests(ITestOutputHelper output)
         Samples.RequireSamples();
         var templates = RankTemplates.Shipped;
         Assert.NotNull(templates);
-        var labels = Samples.LoadLabels().Where(l => l.Expected != null).ToList();
+        var labels = Samples.LoadLabels().Where(l => l.Expected != null && !l.OffColours).ToList();
 
         var results = new List<(Samples.Label Label, CardRank? Read)>();
         foreach (var game in labels.GroupBy(l => l.GameFolder)) {
@@ -96,6 +96,49 @@ public class LabelledSampleTests(ITestOutputHelper output)
     }
 
     /// <summary>
+    /// Captures whose colours are off (one player's HDR display: over-saturated, highlights blown out) can't
+    /// have their league told from the frame's colour. They may read Unknown - which is never sent - but
+    /// never a wrong league; and every badge must still be found, with its digit.
+    /// </summary>
+    [Fact]
+    public async Task Off_colour_captures_never_read_a_wrong_league()
+    {
+        Samples.RequireSamples();
+        var templates = RankTemplates.Shipped!;
+        var labels = Samples.LoadLabels().Where(l => l.OffColours && l.Expected != null).ToList();
+        Assert.NotEmpty(labels);
+        int unknown = 0;
+        foreach (var game in labels.GroupBy(l => l.GameFolder)) {
+            var frames = new List<(Pixels, Pixels)>();
+            foreach (var files in Samples.FrameFiles(game.Key)) {
+                var frame = await Samples.DecodeAsync(files);
+                if (LoadingScreenReader.IsLoadingScreen(frame.Left, frame.Right)) {
+                    frames.Add(frame);
+                    if (frames.Count == 3) {
+                        break;
+                    }
+                }
+            }
+            var ranks = LoadingScreenReader.ReadGame(frames, templates);
+            Assert.NotNull(ranks);
+            foreach (var label in game) {
+                var read = ranks.Single(r => r.Side == label.Side && r.Slot == label.Slot);
+                var (league, division) = label.Expected!.Value;
+                var where = $"{label.SampleId} {(label.Side == Side.Left ? "L" : "R")}{label.Slot + 1}";
+                output.WriteLine($"{where}: labelled {Describe(league, division)}, read {Describe(read.League, read.Division)}");
+                if (league is >= League.Bronze and <= League.Diamond) {
+                    Assert.True(read.League == league || read.League == League.Unknown, $"{where} is {league}, read {read.League}");
+                    Assert.Equal(division, read.Division);
+                    unknown += read.League == League.Unknown ? 1 : 0;
+                } else {
+                    Assert.Equal(league, read.League);
+                }
+            }
+        }
+        output.WriteLine($"{labels.Count} cards, {unknown} read Unknown, none wrong");
+    }
+
+    /// <summary>
     /// How close the labelled cards come to each cutoff the reader uses - for tuning, so it's explicit:
     /// <c>Heroesprofile.Uploader.RankCapture.Tests.exe -method "*Report_how_close_the_cards_come_to_the_cutoffs" -explicit only -showliveoutput</c>
     /// </summary>
@@ -105,7 +148,7 @@ public class LabelledSampleTests(ITestOutputHelper output)
         Samples.RequireSamples();
         var templates = RankTemplates.Shipped!;
         var cards = new List<(League League, LoadingScreenReader.CardFeatures Features)>();
-        foreach (var game in Samples.LoadLabels().Where(l => l.Expected != null).GroupBy(l => l.GameFolder)) {
+        foreach (var game in Samples.LoadLabels().Where(l => l.Expected != null && !l.OffColours).GroupBy(l => l.GameFolder)) {
             var frame = await Samples.LoadingScreenAsync(game.Key);
             if (frame == null) {
                 continue;

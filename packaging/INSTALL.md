@@ -63,17 +63,15 @@ Recording**, then restart the uploader.
 
 **Want to help with rank reading?** Download the `.AppImage` with **`linux-ranks`** in its name instead,
 and turn it on in **Settings → Read ranks from the loading screen**. It reads the game's window under
-Wine or Proton (X11, or XWayland on a Wayland desktop). To read player names it needs Tesseract:
+Wine or Proton (X11, or XWayland on a Wayland desktop). Player names are read with Tesseract, which comes
+with it (English letters only), so there's nothing to install. For names in other alphabets, install your
+distro's Tesseract with the language packs you want; the app uses that one when it has more languages:
 
 ```
-sudo apt install tesseract-ocr        # Debian, Ubuntu, Mint
-sudo dnf install tesseract            # Fedora
-sudo pacman -S tesseract tesseract-data-eng   # Arch
+sudo apt install tesseract-ocr tesseract-ocr-kor tesseract-ocr-rus   # Debian, Ubuntu, Mint
+sudo dnf install tesseract tesseract-langpack-kor tesseract-langpack-rus   # Fedora
+sudo pacman -S tesseract tesseract-data-eng tesseract-data-kor tesseract-data-rus   # Arch
 ```
-
-Add a language pack for names in other alphabets, e.g. `tesseract-ocr-kor`, `tesseract-ocr-rus`,
-`tesseract-ocr-chi-sim` (Debian/Ubuntu names). Without Tesseract, ranks are still read, but cards can only
-be matched to players by their heroes.
 
 **Prefer a plain program?** `HeroesProfileUploader-linux-x64.tar.gz` holds the same app as a single
 executable: run it with no arguments for the normal window, on any x86_64 distro. It's also the one to

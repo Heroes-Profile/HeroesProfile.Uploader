@@ -70,10 +70,10 @@ What each system needs:
   record the screen: allow it in **System Settings → Privacy & Security → Screen Recording**, then
   restart the uploader.
 - **Linux:** the game under Wine or Proton, on X11 or a Wayland desktop with XWayland (the usual setup).
-  Player names are read with **Tesseract**, which you install yourself: `tesseract-ocr`, plus a language
-  pack for names in other alphabets (e.g. `tesseract-ocr-kor`, `tesseract-ocr-rus`,
-  `tesseract-ocr-chi-sim`). Without it ranks are still read, but cards can only be matched to players by
-  their heroes.
+  Player names are read with **Tesseract**, which now comes with the app (English letters), so there's
+  nothing to install. For names in other alphabets, install your distro's `tesseract-ocr` plus language
+  packs (e.g. `tesseract-ocr-kor`, `tesseract-ocr-rus`, `tesseract-ocr-chi-sim`); the app uses that one when
+  it has more languages.
 
 If you play Storm League and are happy to help, grab the "with rank reading" download for your system.
 Otherwise use the normal one.

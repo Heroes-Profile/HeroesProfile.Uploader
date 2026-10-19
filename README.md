@@ -28,7 +28,7 @@ folder, so nothing is uploaded twice, and then offers to uninstall the old app.
 
 - [Azax](https://github.com/Azax-Dev) wrote the native Linux uploader
   ([#53](https://github.com/Heroes-Profile/HeroesProfile.Uploader/pull/53)) that this cross-platform
-  app grew from, including its design, offered as **Theme 2** (Settings → Design).
+  app grew from, including its design, offered as **Lite** (Settings → Design).
 
 # Contributing
 

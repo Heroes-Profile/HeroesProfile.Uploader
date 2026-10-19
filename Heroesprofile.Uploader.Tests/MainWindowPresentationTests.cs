@@ -182,4 +182,77 @@ public class MainWindowPresentationTests
         Assert.Equal((400.0, 700.0), config.WindowSizeFor(AppConfig.Theme2Design));
         Assert.Equal((760.0, 600.0), config.WindowSizeFor(AppConfig.Theme1Design));
     }
+
+    /// <summary>
+    /// A main window view model on a scratch config (the test run's own home folder, see TestHome) whose
+    /// replay folder doesn't exist, so it never starts watching or uploading replays.
+    /// </summary>
+    private static MainWindowViewModel MainWindow(string design, double uiScale = 1)
+    {
+        new AppConfig {
+            ReplayPath = Path.Combine(TestHome.Folder, "no-replays-here"),
+            Design = design,
+            UiScale = uiScale,
+        }.Save();
+        return new MainWindowViewModel();
+    }
+
+    [Fact]
+    public void The_size_strip_shows_except_for_lite_off_windows()
+    {
+        // Default always has it; Lite keeps it only on Windows, where it's the drawn title bar (and its drag area).
+        Assert.True(MainWindow(AppConfig.Theme1Design).ShowTitleStrip);
+        Assert.Equal(OperatingSystem.IsWindows(), MainWindow(AppConfig.Theme2Design).ShowTitleStrip);
+    }
+
+    [Fact]
+    public void Switching_design_updates_the_size_strip()
+    {
+        var main = MainWindow(AppConfig.Theme1Design);
+        var changed = new List<string?>();
+        main.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+
+        main.Design = AppConfig.Theme2Design;
+
+        Assert.Contains(nameof(MainWindowViewModel.ShowTitleStrip), changed);
+        Assert.Equal(OperatingSystem.IsWindows(), main.ShowTitleStrip);
+    }
+
+    [Fact]
+    public void Settings_offers_every_size_and_only_those()
+    {
+        var settings = new SettingsWindowViewModel(MainWindow(AppConfig.Theme2Design));
+        Assert.Equal(AppConfig.UiScales, settings.Sizes.Select(s => s.Scale));
+        Assert.Equal(new[] { "1x", "1.5x", "2x" }, settings.Sizes.Select(s => s.Label));
+    }
+
+    [Theory]
+    [InlineData(1.0)]
+    [InlineData(1.5)]
+    [InlineData(2.0)]
+    public void Settings_shows_the_current_size(double scale)
+    {
+        var settings = new SettingsWindowViewModel(MainWindow(AppConfig.Theme2Design, scale));
+        Assert.Equal(scale, settings.SelectedSize.Scale);
+    }
+
+    [Fact]
+    public void Choosing_a_size_in_settings_resizes_the_main_window_and_saves_it()
+    {
+        var main = MainWindow(AppConfig.Theme2Design);
+        var settings = new SettingsWindowViewModel(main);
+
+        settings.SelectedSize = settings.Sizes.Single(s => s.Label == "1.5x");
+
+        Assert.Equal(1.5, main.UiScale);
+        Assert.Equal(1.5, AppConfig.Load().UiScale);
+    }
+
+    [Fact]
+    public void Settings_calls_the_designs_default_and_lite()
+    {
+        var settings = new SettingsWindowViewModel(MainWindow(AppConfig.Theme1Design));
+        Assert.Equal(new[] { ("Default", AppConfig.Theme1Design), ("Lite", AppConfig.Theme2Design) },
+            settings.Designs.Select(d => (d.Label, d.Value)));
+    }
 }

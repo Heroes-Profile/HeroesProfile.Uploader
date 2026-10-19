@@ -41,7 +41,11 @@
       <ComboBox ItemsSource="{Binding Designs}" SelectedItem="{Binding SelectedDesign}" HorizontalAlignment="Stretch" />
       <!-- Credit for Theme 2 (PR #53), shown while it's picked -->
       <TextBlock Classes="hint" HorizontalAlignment="Left" MaxWidth="150" IsVisible="{Binding IsTheme2}"
-                 Text="Theme 2 was designed by Azax for the Linux uploader." />
+                 Text="Lite was designed by Azax for the Linux uploader." />
+
+      <TextBlock Classes="heading" Text="Size" Margin="0,8,0,0" />
+      <ComboBox ItemsSource="{Binding Sizes}" SelectedItem="{Binding SelectedSize}" HorizontalAlignment="Stretch"
+                ToolTip.Tip="Size of everything in the main window" />
 
       <StackPanel Margin="0,40,0,0" IsVisible="{Binding ShowPreReleases}">
         <CheckBox Content="Allow beta updates" FontWeight="SemiBold" IsChecked="{Binding AllowPreReleases}" />

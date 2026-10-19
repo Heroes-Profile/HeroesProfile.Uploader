@@ -39,7 +39,7 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
 
         /// <summary>Main-window layout: <see cref="AppConfig.Theme1Design"/> or <see cref="AppConfig.Theme2Design"/>.</summary>
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(IsTheme2), nameof(MinWindowWidth))]
+        [NotifyPropertyChangedFor(nameof(IsTheme2), nameof(MinWindowWidth), nameof(ShowTitleStrip))]
         private string design;
 
         public bool IsTheme2 => Design == AppConfig.Theme2Design;
@@ -56,15 +56,24 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
         [NotifyPropertyChangedFor(nameof(MinWindowWidth), nameof(IsScale1), nameof(IsScale15), nameof(IsScale2))]
         private double uiScale;
 
+        /// <summary>
+        /// The strip with the 1x/1.5x/2x buttons. On Windows they sit in the title bar, so they're always there;
+        /// elsewhere they take a row of their own, so Theme 2 leaves them out (Settings has a Size choice too).
+        /// </summary>
+        public bool ShowTitleStrip => !IsTheme2 || OperatingSystem.IsWindows();
+
         public bool IsScale1 => UiScale == 1;
         public bool IsScale15 => UiScale == 1.5;
         public bool IsScale2 => UiScale == 2;
 
         /// <summary>The title bar's 1x/1.5x/2x buttons.</summary>
         [RelayCommand]
-        private void SetUiScale(string value)
+        private void SetUiScale(string value) => ApplyUiScale(double.Parse(value, System.Globalization.CultureInfo.InvariantCulture));
+
+        /// <summary>Sizes the main window (one of <see cref="AppConfig.UiScales"/>) and saves it: the title bar's buttons and Settings' Size.</summary>
+        public void ApplyUiScale(double scale)
         {
-            Config.UiScale = double.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
+            Config.UiScale = scale;
             UiScale = Config.UiScale;
         }
 

@@ -7,7 +7,8 @@ name: Release (Desktop)
 #
 # Only develop and master build releases:
 #   develop - every push publishes a PRERELEASE (testers with beta updates on get it), versioned as the
-#             next patch with -beta.<run number>, e.g. 3.0.2-beta.57 after v3.0.1.
+#             next patch with -beta.N, counting up per patch: after v3.0.1 come 3.0.2-beta.1, .2,
+#             ..., and after v3.0.2 is released, 3.0.3-beta.1.
 #   master  - every push publishes a full release (Latest), one patch above the newest vX.Y.Z tag for
 #             HeroesProfileVersion's X.Y (or HeroesProfileVersion itself when that's higher).
 # Run by hand (from develop or master) it does the same by default ("auto"), or a draft, prerelease or
@@ -26,7 +27,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version, e.g. 3.0.2-beta.3. Empty: the next patch (with -beta.<run number> unless it''s a release)'
+        description: 'Version, e.g. 3.0.2-beta.3. Empty: the next patch (with the next -beta.N unless it''s a release)'
         required: false
         default: ''
       release:
@@ -103,9 +104,13 @@ jobs:
               version=$(printf '%s\n%s\n' "$base" "$next" | sort -V | tail -1)
             fi
             # Anything short of a release is a beta of that patch, so installed copies (on the last
-            # release) see it as newer.
+            # release) see it as newer: the next one after that patch's newest beta tag (.1 for the first).
+            # Drafts have no tag, so a draft's number can come round again - an earlier beta draft is
+            # replaced by the next build anyway (see Upload to GitHub).
             if [ "$release" != "release" ]; then
-              version="$version-beta.${{ github.run_number }}"
+              last=$(git ls-remote --tags --refs origin "refs/tags/v$version-beta.*" | sed 's|.*-beta\.||' |
+                grep -E '^[0-9]+$' | sort -n | tail -1 || true)
+              version="$version-beta.$(( ${last:-0} + 1 ))"
             fi
           fi
           echo "Version: $version ($release, from $BRANCH)"

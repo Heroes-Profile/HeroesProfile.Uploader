@@ -40,10 +40,17 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
             new ThemeChoice("Follow system", AppConfig.SystemTheme),
         };
 
-        /// <summary>The two main-window layouts (see AppConfig.Design). Placeholder names for now.</summary>
+        /// <summary>The two main-window layouts (see AppConfig.Design): the WPF-style Default, and Lite (Theme 2).</summary>
         public ThemeChoice[] Designs { get; } = {
-            new ThemeChoice("Theme 1", AppConfig.Theme1Design),
-            new ThemeChoice("Theme 2", AppConfig.Theme2Design),
+            new ThemeChoice("Default", AppConfig.Theme1Design),
+            new ThemeChoice("Lite", AppConfig.Theme2Design),
+        };
+
+        /// <summary>The main window's sizes (see AppConfig.UiScale) - Theme 2's place for the title bar's 1x/1.5x/2x buttons.</summary>
+        public ThemeChoice[] Sizes { get; } = {
+            new ThemeChoice("1x", "1"),
+            new ThemeChoice("1.5x", "1.5"),
+            new ThemeChoice("2x", "2"),
         };
 
         private readonly MainWindowViewModel _main;
@@ -55,6 +62,7 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
             replayPath = config.ReplayPath ?? "";
             selectedTheme = Array.Find(Themes, t => t.Value == config.Theme) ?? Themes[1];
             selectedDesign = Array.Find(Designs, d => d.Value == config.Design) ?? Designs[0];
+            selectedSize = Array.Find(Sizes, z => z.Value == config.UiScale.ToString(System.Globalization.CultureInfo.InvariantCulture)) ?? Sizes[0];
             allowPreReleases = config.AllowPreReleases;
             readRanks = RankReading.IsAvailable && config.ReadRanks;
             showCaptureOutline = config.ShowCaptureOutline;
@@ -126,6 +134,16 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
 
         /// <summary>This window follows the Design choice too (Theme 2's control styling).</summary>
         public bool IsTheme2 => SelectedDesign?.Value == AppConfig.Theme2Design;
+
+        [ObservableProperty]
+        private ThemeChoice selectedSize;
+
+        partial void OnSelectedSizeChanged(ThemeChoice value)
+        {
+            if (value != null) {
+                _main.SetUiScaleCommand.Execute(value.Value);
+            }
+        }
 
         // Rank reading - only the Ranks build offers it (RankReading.IsAvailable)
 

@@ -82,7 +82,7 @@
     <Setter Property="FontWeight" Value="Medium" />
   </Style>
 
-  <!-- The header's small pause/resume glyph button -->
+  <!-- The header's small glyph buttons (Settings, the ⋯ menu) -->
   <Style Selector="Button.icon-btn">
     <Setter Property="Width" Value="24" />
     <Setter Property="Height" Value="24" />

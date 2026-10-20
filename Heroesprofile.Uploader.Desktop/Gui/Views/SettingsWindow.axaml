@@ -91,7 +91,7 @@
         <TextBlock Classes="hint" IsVisible="{Binding IsMacOS}"
                    Text="Needs macOS 14 or later. macOS asks to let the uploader record the screen the first time; allow it in System Settings, Privacy &amp; Security, Screen Recording, then restart the uploader." />
         <TextBlock Classes="hint" IsVisible="{Binding IsLinux}"
-                   Text="Reads the game's window under Wine or Proton (X11 or XWayland). Player names are read with Tesseract: install tesseract-ocr, plus tesseract-ocr-kor, -rus and so on for names in other alphabets." />
+                   Text="Reads the game's window under Wine or Proton (X11 or XWayland). Player names are read with the Tesseract that comes with the app (English letters). For names in other alphabets, install tesseract-ocr plus tesseract-ocr-kor, -rus and so on; the app reads with that one too, for its extra languages." />
       </StackPanel>
     </StackPanel>
   </Grid>

@@ -215,6 +215,12 @@ jobs:
           swiftc -O -target "$arch-apple-macos12.3" packaging/macos/rank-helper/main.swift -o publish/hp-rank-helper
           file publish/hp-rank-helper
 
+      # The Linux Ranks build reads names with its own Tesseract (English), so users don't have to install
+      # it; built in a container for an old glibc, so it runs on any distro (packaging/linux/build-tesseract.sh).
+      - name: Linux rank reader's Tesseract
+        if: matrix.channel == 'linux-ranks'
+        run: packaging/linux/build-tesseract.sh publish/tesseract
+
       # The normal builds must never carry the rank reader's screen-capture code (it's what lets
       # privacy-minded users pick them); the Ranks builds must.
       - name: Check the rank reader is only in the Ranks builds
@@ -225,6 +231,9 @@ jobs:
               [ -n "$(find publish -iname '*RankCapture*' | head -1)" ] || { echo "::error::The Ranks build is missing Heroesprofile.Uploader.RankCapture"; exit 1; }
               if [[ "${{ matrix.rid }}" == osx-* ]]; then
                 [ -x publish/hp-rank-helper ] || { echo "::error::The macOS Ranks build is missing hp-rank-helper"; exit 1; }
+              fi
+              if [[ "${{ matrix.rid }}" == linux-* ]]; then
+                [ -x publish/tesseract/tesseract ] || { echo "::error::The Linux Ranks build is missing its Tesseract"; exit 1; }
               fi ;;
             *)
               [ -z "$found" ] || { echo "::error::$found is in the ${{ matrix.channel }} build - rank capture must only ship in the Ranks builds"; exit 1; } ;;

@@ -8,6 +8,12 @@ LICENSE file.
 The Heroes.ReplayParser component is distributed under its own license; see
 Heroes.ReplayParser/LICENSE.txt.
 
+The Linux "Ranks" build includes Tesseract OCR (Apache License 2.0) with its
+English data (tessdata_fast, Apache License 2.0), built with Leptonica (BSD
+2-clause), libpng (libpng license) and zlib (zlib license); see
+packaging/linux/build-tesseract.sh. Their license texts ship with it, in the
+app's tesseract/licenses folder.
+
 --------------------------------------------------------------------------------
 
 MIT License

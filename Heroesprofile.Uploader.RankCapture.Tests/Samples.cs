@@ -36,8 +36,12 @@ internal static class Samples
         return dir?.FullName ?? throw new InvalidOperationException("Couldn't find the repo root from " + AppContext.BaseDirectory);
     }
 
-    /// <summary>One labelled card. <see cref="Rank"/> as written in labels.csv, e.g. "Silver 4", "Master", "Unranked?".</summary>
-    public sealed record Label(string GameFolder, string SampleId, Side Side, int Slot, string Rank)
+    /// <summary>
+    /// One labelled card. <see cref="Rank"/> as written in labels.csv, e.g. "Silver 4", "Master", "Unranked?".
+    /// <see cref="OffColours"/>: the capture's colours are off (an HDR display's over-saturated, blown-out
+    /// capture - labels.csv says "over-saturated capture"), so its league can't be told from colour.
+    /// </summary>
+    public sealed record Label(string GameFolder, string SampleId, Side Side, int Slot, string Rank, bool OffColours = false)
     {
         /// <summary>The label's league and division, or null for labels marked unreliable ("Diamond?").</summary>
         public (League League, int? Division)? Expected
@@ -71,7 +75,8 @@ internal static class Samples
             var id = parts[0].Split('/')[1].TrimEnd('*').TrimEnd('-');
             var folder = folders.Single(f => Path.GetFileName(f).StartsWith(id, StringComparison.Ordinal));
             var side = parts[1][0] == 'L' ? Side.Left : Side.Right;
-            labels.Add(new Label(folder, id, side, parts[1][1] - '1', parts[2]));
+            var offColours = parts.Length > 3 && parts[3].Contains("over-saturated", StringComparison.Ordinal);
+            labels.Add(new Label(folder, id, side, parts[1][1] - '1', parts[2], offColours));
         }
         return labels;
     }
@@ -90,7 +95,7 @@ internal static class Samples
     }
 
     public static async Task<(Pixels Left, Pixels Right)> DecodeAsync((string Left, string Right) files) =>
-        (await PngPixels.DecodeAsync(await File.ReadAllBytesAsync(files.Left)), await PngPixels.DecodeAsync(await File.ReadAllBytesAsync(files.Right)));
+        (await Png.DecodeAsync(await File.ReadAllBytesAsync(files.Left)), await Png.DecodeAsync(await File.ReadAllBytesAsync(files.Right)));
 
     /// <summary>The first of a game's frames that shows the loading screen, or null.</summary>
     public static async Task<(Pixels Left, Pixels Right)?> LoadingScreenAsync(string gameFolder)

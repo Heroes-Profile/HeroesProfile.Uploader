@@ -20,7 +20,7 @@
       (see MainWindow.axaml.cs): Avalonia draws the title and minimize/maximize/close over this strip,
       and the buttons sit just left of them. Elsewhere it's a slim strip under the system's title bar.
     -->
-    <Grid x:Name="TitleBar" DockPanel.Dock="Top" MinHeight="26"
+    <Grid x:Name="TitleBar" DockPanel.Dock="Top" MinHeight="26" IsVisible="{Binding ShowTitleStrip}"
           Background="Transparent" chrome:WindowDecorationProperties.ElementRole="TitleBar">
       <StackPanel x:Name="ScaleButtons" HorizontalAlignment="Right" Orientation="Horizontal" Spacing="2" Margin="0,0,8,0"
                   VerticalAlignment="Center" ToolTip.Tip="Size of everything in this window">

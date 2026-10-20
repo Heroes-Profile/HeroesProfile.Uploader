@@ -41,7 +41,11 @@
       <ComboBox ItemsSource="{Binding Designs}" SelectedItem="{Binding SelectedDesign}" HorizontalAlignment="Stretch" />
       <!-- Credit for Theme 2 (PR #53), shown while it's picked -->
       <TextBlock Classes="hint" HorizontalAlignment="Left" MaxWidth="150" IsVisible="{Binding IsTheme2}"
-                 Text="Theme 2 was designed by Azax for the Linux uploader." />
+                 Text="Lite was designed by Azax for the Linux uploader." />
+
+      <TextBlock Classes="heading" Text="Size" Margin="0,8,0,0" />
+      <ComboBox ItemsSource="{Binding Sizes}" SelectedItem="{Binding SelectedSize}" HorizontalAlignment="Stretch"
+                ToolTip.Tip="Size of everything in the main window" />
 
       <StackPanel Margin="0,40,0,0" IsVisible="{Binding ShowPreReleases}">
         <CheckBox Content="Allow beta updates" FontWeight="SemiBold" IsChecked="{Binding AllowPreReleases}" />
@@ -81,9 +85,13 @@
                    Text="Reads each player's Storm League rank from the game's loading screen and sends it to Heroes Profile with the game's replay, so matches show real ranks. Only the game window is captured, only during the loading screen." />
         <CheckBox Content="Read ranks from the loading screen" IsChecked="{Binding ReadRanks}" Click="ReadRanks_Click" />
         <CheckBox Content="Show Windows' outline around the game while it's captured" IsChecked="{Binding ShowCaptureOutline}"
-                  IsEnabled="{Binding ReadRanks}" />
-        <TextBlock Classes="hint"
+                  IsEnabled="{Binding ReadRanks}" IsVisible="{Binding IsWindows}" />
+        <TextBlock Classes="hint" IsVisible="{Binding IsWindows}"
                    Text="Windows 11 captures without its yellow outline unless this is ticked. Windows 10 always shows it. Takes effect from the next game." />
+        <TextBlock Classes="hint" IsVisible="{Binding IsMacOS}"
+                   Text="Needs macOS 14 or later. macOS asks to let the uploader record the screen the first time; allow it in System Settings, Privacy &amp; Security, Screen Recording, then restart the uploader." />
+        <TextBlock Classes="hint" IsVisible="{Binding IsLinux}"
+                   Text="Reads the game's window under Wine or Proton (X11 or XWayland). Player names are read with the Tesseract that comes with the app (English letters). For names in other alphabets, install tesseract-ocr plus tesseract-ocr-kor, -rus and so on; the app reads with that one too, for its extra languages." />
       </StackPanel>
     </StackPanel>
   </Grid>

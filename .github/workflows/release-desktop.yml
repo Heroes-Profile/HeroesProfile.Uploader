@@ -5,9 +5,14 @@ name: Release (Desktop)
 # plus a Linux tarball for headless/systemd use. Installed copies update themselves from these
 # releases (Heroesprofile.Uploader.Desktop/Updates/AppUpdater.cs).
 #
-# Every push to master publishes a full release (Latest), one patch above the newest vX.Y.Z tag for
-# HeroesProfileVersion's X.Y (or HeroesProfileVersion itself when that's higher). Run by hand it's a
-# DRAFT unless you choose "prerelease" or "release": drafts are invisible to update clients.
+# Only develop and master build releases:
+#   develop - every push publishes a PRERELEASE (testers with beta updates on get it), versioned as the
+#             next patch with -beta.N, counting up per patch: after v3.0.1 come 3.0.2-beta.1, .2,
+#             ..., and after v3.0.2 is released, 3.0.3-beta.1.
+#   master  - every push publishes a full release (Latest), one patch above the newest vX.Y.Z tag for
+#             HeroesProfileVersion's X.Y (or HeroesProfileVersion itself when that's higher).
+# Run by hand (from develop or master) it does the same by default ("auto"), or a draft, prerelease or
+# release if you pick one; drafts are invisible to update clients. Any other branch stops straight away.
 #
 # Signing: each OS signs only once its account is set up in the repo's "release-signing" environment
 # (each value is listed below); until then that OS's build is unsigned, exactly as before.
@@ -18,23 +23,24 @@ name: Release (Desktop)
 #   Linux   - GPG-signed SHA256SUMS (secrets LINUX_GPG_PRIVATE_KEY, LINUX_GPG_PASSPHRASE)
 on:
   push:
-    branches: [master]
+    branches: [master, develop]
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version, e.g. 3.0.0-beta.3. Empty: HeroesProfileVersion (Directory.Build.props) + "-beta.<run number>"'
+        description: 'Version, e.g. 3.0.2-beta.3. Empty: the next patch (with the next -beta.N unless it''s a release)'
         required: false
         default: ''
       release:
         description: >-
-          draft: only maintainers can see it. prerelease: testers get it (installed copies with beta
-          updates on update to it). release: everyone gets it, and it becomes Latest. Note the Windows
-          output also carries a Squirrel-format RELEASES file, so old WPF installs with "Allow beta
-          updates" on could be offered a prerelease too; a full release drops it.
+          auto: develop makes a prerelease, master a release. draft: only maintainers can see it.
+          prerelease: testers get it (installed copies with beta updates on update to it). release:
+          everyone gets it, and it becomes Latest. Note the Windows output also carries a Squirrel-format
+          RELEASES file, so old WPF installs with "Allow beta updates" on could be offered a prerelease
+          too; a full release drops it.
         required: true
-        default: draft
+        default: auto
         type: choice
-        options: [draft, prerelease, release]
+        options: [auto, draft, prerelease, release]
 
 # One release build at a time: a run started while one is going waits for it, so a push's version is
 # worked out after the previous release's tag exists. It never cancels it (a build stopped halfway
@@ -60,6 +66,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
+      release: ${{ steps.version.outputs.release }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -67,30 +74,48 @@ jobs:
         id: version
         env:
           REQUESTED: ${{ inputs.version }}
-          EVENT: ${{ github.event_name }}
+          REQUESTED_RELEASE: ${{ inputs.release }}
+          BRANCH: ${{ github.ref_name }}
         run: |
+          # The branch decides what this is: develop prereleases, master releases, nothing else builds.
+          case "$BRANCH" in
+            develop) release=prerelease ;;
+            master) release=release ;;
+            *) echo "::error::Releases are only built from develop (prerelease) or master (release), not $BRANCH"; exit 1 ;;
+          esac
+          if [ -n "$REQUESTED_RELEASE" ] && [ "$REQUESTED_RELEASE" != "auto" ]; then
+            release="$REQUESTED_RELEASE"
+          fi
+
           base=$(sed -nE 's/.*<HeroesProfileVersion>([0-9]+\.[0-9]+\.[0-9]+)<\/HeroesProfileVersion>.*/\1/p' Directory.Build.props)
           if [ -n "$REQUESTED" ]; then
             version="${REQUESTED#v}"
           else
             [ -n "$base" ] || { echo "No three-part HeroesProfileVersion in Directory.Build.props" >&2; exit 1; }
-            if [ "$EVENT" = "push" ]; then
-              # Newest full release tag for this major.minor (prereleases like v3.0.0-beta.2 don't count).
-              minor="${base%.*}"
-              latest=$(git ls-remote --tags --refs origin "refs/tags/v$minor.*" | sed 's|.*refs/tags/v||' |
-                grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)
-              if [ -z "$latest" ]; then
-                version="$base"
-              else
-                next="$minor.$(( ${latest##*.} + 1 ))"
-                version=$(printf '%s\n%s\n' "$base" "$next" | sort -V | tail -1)
-              fi
+            # The next patch: one above the newest full release tag for this major.minor (prereleases like
+            # v3.0.2-beta.1 don't count), or HeroesProfileVersion when that's higher.
+            minor="${base%.*}"
+            latest=$(git ls-remote --tags --refs origin "refs/tags/v$minor.*" | sed 's|.*refs/tags/v||' |
+              grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)
+            if [ -z "$latest" ]; then
+              version="$base"
             else
-              version="$base-beta.${{ github.run_number }}"
+              next="$minor.$(( ${latest##*.} + 1 ))"
+              version=$(printf '%s\n%s\n' "$base" "$next" | sort -V | tail -1)
+            fi
+            # Anything short of a release is a beta of that patch, so installed copies (on the last
+            # release) see it as newer: the next one after that patch's newest beta tag (.1 for the first).
+            # Drafts have no tag, so a draft's number can come round again - an earlier beta draft is
+            # replaced by the next build anyway (see Upload to GitHub).
+            if [ "$release" != "release" ]; then
+              last=$(git ls-remote --tags --refs origin "refs/tags/v$version-beta.*" | sed 's|.*-beta\.||' |
+                grep -E '^[0-9]+$' | sort -n | tail -1 || true)
+              version="$version-beta.$(( ${last:-0} + 1 ))"
             fi
           fi
-          echo "Version: $version"
+          echo "Version: $version ($release, from $BRANCH)"
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "release=$release" >> "$GITHUB_OUTPUT"
 
   build:
     needs: version
@@ -101,9 +126,9 @@ jobs:
           - os: windows-latest
             rid: win-x64
             channel: win
-          # The "Ranks" build: the same Windows app plus the opt-in rank reader
-          # (Heroesprofile.Uploader.RankCapture), on its own update channel so a normal install is never
-          # moved onto it. Only this entry sets publish-args.
+          # The "Ranks" builds: the same app plus the opt-in rank reader
+          # (Heroesprofile.Uploader.RankCapture), each on its own "-ranks" update channel so a normal install
+          # is never moved onto one. Only these entries set publish-args.
           - os: windows-latest
             rid: win-x64
             channel: win-ranks
@@ -111,12 +136,24 @@ jobs:
           - os: ubuntu-latest
             rid: linux-x64
             channel: linux
+          - os: ubuntu-latest
+            rid: linux-x64
+            channel: linux-ranks
+            publish-args: -p:IncludeRankCapture=true
           - os: macos-latest
             rid: osx-arm64
             channel: osx-arm64
           - os: macos-latest
+            rid: osx-arm64
+            channel: osx-arm64-ranks
+            publish-args: -p:IncludeRankCapture=true
+          - os: macos-latest
             rid: osx-x64
             channel: osx-x64
+          - os: macos-latest
+            rid: osx-x64
+            channel: osx-x64-ranks
+            publish-args: -p:IncludeRankCapture=true
     runs-on: ${{ matrix.os }}
     # Holds the signing credentials; restrict it to trusted branches/tags (and add reviewers) in the
     # repo's Settings -> Environments.
@@ -166,16 +203,41 @@ jobs:
           dotnet publish Heroesprofile.Uploader.Desktop -c Release -r ${{ matrix.rid }} --self-contained
           -p:Version=$VERSION -p:DebugType=none -p:RestoreLockedMode=false $SIGNING_ARGS ${{ matrix.publish-args }} -o publish
 
-      # The normal builds must never carry the rank reader's screen-capture code (it's what lets
-      # privacy-minded users pick them); the Ranks build must.
-      - name: Check the rank reader is only in the Ranks build
+      # The macOS Ranks builds capture and read text through a small native helper (Apple's APIs are Swift /
+      # Objective-C), shipped next to the app's executable; vpk signs and notarizes it with the app.
+      - name: macOS rank helper
+        if: startsWith(matrix.rid, 'osx-') && endsWith(matrix.channel, '-ranks')
         run: |
-          found=$(find publish -iname '*RankCapture*' | head -1)
-          if [ "${{ matrix.channel }}" = "win-ranks" ]; then
-            [ -n "$found" ] || { echo "::error::The Ranks build is missing Heroesprofile.Uploader.RankCapture"; exit 1; }
-          else
-            [ -z "$found" ] || { echo "::error::$found is in the ${{ matrix.channel }} build - rank capture must only ship in the Ranks build"; exit 1; }
-          fi
+          case "${{ matrix.rid }}" in
+            osx-arm64) arch=arm64 ;;
+            osx-x64)   arch=x86_64 ;;
+          esac
+          swiftc -O -target "$arch-apple-macos12.3" packaging/macos/rank-helper/main.swift -o publish/hp-rank-helper
+          file publish/hp-rank-helper
+
+      # The Linux Ranks build reads names with its own Tesseract (English), so users don't have to install
+      # it; built in a container for an old glibc, so it runs on any distro (packaging/linux/build-tesseract.sh).
+      - name: Linux rank reader's Tesseract
+        if: matrix.channel == 'linux-ranks'
+        run: packaging/linux/build-tesseract.sh publish/tesseract
+
+      # The normal builds must never carry the rank reader's screen-capture code (it's what lets
+      # privacy-minded users pick them); the Ranks builds must.
+      - name: Check the rank reader is only in the Ranks builds
+        run: |
+          found=$(find publish -iname '*RankCapture*' -o -iname 'hp-rank-helper' | head -1)
+          case "${{ matrix.channel }}" in
+            *-ranks)
+              [ -n "$(find publish -iname '*RankCapture*' | head -1)" ] || { echo "::error::The Ranks build is missing Heroesprofile.Uploader.RankCapture"; exit 1; }
+              if [[ "${{ matrix.rid }}" == osx-* ]]; then
+                [ -x publish/hp-rank-helper ] || { echo "::error::The macOS Ranks build is missing hp-rank-helper"; exit 1; }
+              fi
+              if [[ "${{ matrix.rid }}" == linux-* ]]; then
+                [ -x publish/tesseract/tesseract ] || { echo "::error::The Linux Ranks build is missing its Tesseract"; exit 1; }
+              fi ;;
+            *)
+              [ -z "$found" ] || { echo "::error::$found is in the ${{ matrix.channel }} build - rank capture must only ship in the Ranks builds"; exit 1; } ;;
+          esac
 
       - name: Icon
         id: icon
@@ -314,7 +376,7 @@ jobs:
 
       # Headless/systemd Linux users run the plain single-file binary (packaging/linux/README.md).
       - name: Linux tarball
-        if: startsWith(matrix.rid, 'linux-')
+        if: matrix.channel == 'linux'
         run: |
           dotnet publish Heroesprofile.Uploader.Desktop -c Release -r linux-x64 --self-contained \
             -p:PublishSingleFile=true -p:Version=$VERSION -p:DebugType=none -p:RestoreLockedMode=false $SIGNING_ARGS -o single
@@ -359,7 +421,7 @@ jobs:
       - name: Upload to GitHub
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE: ${{ inputs.release || (github.event_name == 'push' && 'release') || 'draft' }}
+          RELEASE: ${{ needs.version.outputs.release }}
           LINUX_GPG_PRIVATE_KEY: ${{ secrets.LINUX_GPG_PRIVATE_KEY }}
           LINUX_GPG_PASSPHRASE: ${{ secrets.LINUX_GPG_PASSPHRASE }}
         run: |
@@ -374,7 +436,7 @@ jobs:
 
           # Named like every earlier release: just the tag, e.g. v3.0.0-beta.2.
           flags=(--merge --tag "v$VERSION" --releaseName "v$VERSION")
-          for channel in win win-ranks linux osx-arm64 osx-x64; do
+          for channel in win win-ranks linux linux-ranks osx-arm64 osx-arm64-ranks osx-x64 osx-x64-ranks; do
             dotnet vpk upload github --repoUrl "https://github.com/${{ github.repository }}" --token "$GH_TOKEN" \
               --channel "$channel" -o "release-$channel/releases" "${flags[@]}"
           done
@@ -403,6 +465,12 @@ jobs:
           gh release upload "v$VERSION" HeroesProfileUploader-linux-x64.tar.gz SHA256SUMS HeroesProfileUploaderSetup.exe "${extra[@]}" --clobber
           # The release description: which of all these files to download on which OS.
           sed "s|INSTALL_URL|https://github.com/${{ github.repository }}/blob/${{ github.sha }}/packaging/INSTALL.md|"             packaging/release-notes.md > release-notes.md
+          # The "Testing this beta" part is only for prerelease versions (3.0.2-beta.1): full releases drop it.
+          if [[ "$VERSION" == *-* ]]; then
+            sed -i '/^<!-- \/\?beta -->$/d' release-notes.md
+          else
+            sed -i '/^<!-- beta -->$/,/^<!-- \/beta -->$/d' release-notes.md
+          fi
           # Pin the tag to the commit this was built from: a draft has no tag yet, and without a target
           # publishing it would tag the default branch (master) instead.
           gh release edit "v$VERSION" --notes-file release-notes.md --target "${{ github.sha }}"
@@ -421,7 +489,7 @@ jobs:
 
       - name: Summary
         env:
-          RELEASE: ${{ inputs.release || (github.event_name == 'push' && 'release') || 'draft' }}
+          RELEASE: ${{ needs.version.outputs.release }}
         run: |
           {
             echo "## v$VERSION ($RELEASE)"

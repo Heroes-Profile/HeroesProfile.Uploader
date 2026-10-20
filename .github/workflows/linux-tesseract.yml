@@ -1,0 +1,42 @@
+name: Linux Tesseract
+
+# Builds the Tesseract the Linux Ranks build ships (packaging/linux/build-tesseract.sh) whenever that script
+# changes, so a broken download, checksum or build shows up on the pull request - not when a release is
+# being built, where it would hold up every OS's release. Only on changes to it: it takes ~90 s and Docker.
+# Read-only token, no secrets.
+on:
+  pull_request:
+    paths:
+      - packaging/linux/build-tesseract.sh
+      - .github/workflows/linux-tesseract.yml
+  push:
+    branches:
+      - master
+      - develop
+    paths:
+      - packaging/linux/build-tesseract.sh
+      - .github/workflows/linux-tesseract.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # The script checks the program needs nothing but glibc and that it lists English.
+      - name: Build Tesseract
+        run: packaging/linux/build-tesseract.sh "$RUNNER_TEMP/tesseract"
+
+      # And that it reads: a line of text drawn with ImageMagick, as a PNG on stdin, the way
+      # TesseractTextReader sends player names.
+      - name: Read a line of text with it
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick fonts-dejavu-core > /dev/null
+          out="$RUNNER_TEMP/tesseract"
+          convert -size 600x80 xc:white -font DejaVu-Sans -fill black -pointsize 48 -annotate +10+58 'GreyPowerVan' png:- |
+            "$out/tesseract" stdin stdout --tessdata-dir "$out/tessdata" -l eng --psm 7 2>/dev/null | tee read.txt
+          grep -q 'GreyPowerVan' read.txt || { echo "::error::The bundled Tesseract didn't read the test line"; exit 1; }

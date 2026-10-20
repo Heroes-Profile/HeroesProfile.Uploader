@@ -5,6 +5,7 @@ using Heroesprofile.Uploader.Desktop.Platform;
 using NLog;
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
@@ -40,11 +41,25 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
             new ThemeChoice("Follow system", AppConfig.SystemTheme),
         };
 
-        /// <summary>The two main-window layouts (see AppConfig.Design). Placeholder names for now.</summary>
+        /// <summary>The two main-window layouts (see AppConfig.Design): the WPF-style Default, and Lite (Theme 2).</summary>
         public ThemeChoice[] Designs { get; } = {
-            new ThemeChoice("Theme 1", AppConfig.Theme1Design),
-            new ThemeChoice("Theme 2", AppConfig.Theme2Design),
+            new ThemeChoice("Default", AppConfig.Theme1Design),
+            new ThemeChoice("Lite", AppConfig.Theme2Design),
         };
+
+        /// <summary>A main-window size: "1.5x" and its scale.</summary>
+        public sealed record SizeChoice(string Label, double Scale)
+        {
+            public override string ToString() => Label;
+        }
+
+        /// <summary>
+        /// The main window's sizes - AppConfig.UiScales, the one list of them - and Theme 2's place for the title
+        /// bar's 1x/1.5x/2x buttons.
+        /// </summary>
+        public SizeChoice[] Sizes { get; } = AppConfig.UiScales
+            .Select(s => new SizeChoice(s.ToString(System.Globalization.CultureInfo.InvariantCulture) + "x", s))
+            .ToArray();
 
         private readonly MainWindowViewModel _main;
 
@@ -55,6 +70,7 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
             replayPath = config.ReplayPath ?? "";
             selectedTheme = Array.Find(Themes, t => t.Value == config.Theme) ?? Themes[1];
             selectedDesign = Array.Find(Designs, d => d.Value == config.Design) ?? Designs[0];
+            selectedSize = Array.Find(Sizes, z => z.Scale == config.UiScale) ?? Sizes[0];
             allowPreReleases = config.AllowPreReleases;
             readRanks = RankReading.IsAvailable && config.ReadRanks;
             showCaptureOutline = config.ShowCaptureOutline;
@@ -127,9 +143,24 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
         /// <summary>This window follows the Design choice too (Theme 2's control styling).</summary>
         public bool IsTheme2 => SelectedDesign?.Value == AppConfig.Theme2Design;
 
+        [ObservableProperty]
+        private SizeChoice selectedSize;
+
+        partial void OnSelectedSizeChanged(SizeChoice value)
+        {
+            if (value != null) {
+                _main.ApplyUiScale(value.Scale);
+            }
+        }
+
         // Rank reading - only the Ranks build offers it (RankReading.IsAvailable)
 
         public bool SupportsRankReading => RankReading.IsAvailable;
+
+        // Each OS captures differently, so each has its own notes (and only Windows has an outline to show).
+        public bool IsWindows => OperatingSystem.IsWindows();
+        public bool IsMacOS => OperatingSystem.IsMacOS();
+        public bool IsLinux => OperatingSystem.IsLinux();
 
         public const string RankReadingConsent =
             "While a game's loading screen is showing, the uploader will capture the Heroes of the Storm " +

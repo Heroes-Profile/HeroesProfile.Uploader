@@ -15,7 +15,8 @@ Installed copies update themselves: when an update is ready you'll see a banner 
 2. It installs for your user only (no admin needed), adds Start menu and desktop shortcuts, and starts.
 
 **Want to help with rank reading?** `Heroesprofile.Uploader-win-ranks-Setup.exe` is the same app with
-an opt-in rank reader for Storm League loading screens. The release notes explain what it does.
+an opt-in rank reader for Storm League loading screens. The release notes explain what it does. Turn it
+on in **Settings → Read ranks from the loading screen**.
 
 **Coming from the old uploader?** Install the new one first, then let it remove the old one.
 - **Your settings carry over:** the first time the new app starts, it copies them from the old one,
@@ -42,6 +43,12 @@ To uninstall, use **Settings → Apps** in Windows. Your settings and upload his
 **Minimize to menu bar** keeps it running as an icon in the menu bar. **Start on login** starts it
 minimized when you log in.
 
+**Want to help with rank reading?** Download the installer with **`-ranks`** in its name for your Mac
+(`osx-arm64-ranks` or `osx-x64-ranks`). It needs macOS 14 (Sonoma) or later. Turn it on in **Settings →
+Read ranks from the loading screen**; the first time a game's loading screen shows, macOS asks whether
+the uploader may record the screen. Allow it in **System Settings → Privacy & Security → Screen
+Recording**, then restart the uploader.
+
 ## Linux
 
 1. Download the **`.AppImage`** from the release.
@@ -53,6 +60,18 @@ minimized when you log in.
    **Open Settings**, then **Browse...** and pick your Wine/Proton prefix (the folder containing
    `drive_c`). See [Where is my prefix?](linux/README.md#where-is-my-prefix)
 4. Tick **Show in app menu** to add it to your app launcher.
+
+**Want to help with rank reading?** Download the `.AppImage` with **`linux-ranks`** in its name instead,
+and turn it on in **Settings → Read ranks from the loading screen**. It reads the game's window under
+Wine or Proton (X11, or XWayland on a Wayland desktop). Player names are read with Tesseract, which comes
+with it (English letters only), so there's nothing to install. For names in other alphabets, install your
+distro's Tesseract with the language packs you want; the app reads with that one too, for its extra languages:
+
+```
+sudo apt install tesseract-ocr tesseract-ocr-kor tesseract-ocr-rus   # Debian, Ubuntu, Mint
+sudo dnf install tesseract tesseract-langpack-kor tesseract-langpack-rus   # Fedora
+sudo pacman -S tesseract tesseract-data-eng tesseract-data-kor tesseract-data-rus   # Arch
+```
 
 **Prefer a plain program?** `HeroesProfileUploader-linux-x64.tar.gz` holds the same app as a single
 executable: run it with no arguments for the normal window, on any x86_64 distro. It's also the one to

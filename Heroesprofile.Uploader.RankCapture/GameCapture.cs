@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Windows.Graphics.Imaging;
 
 namespace Heroesprofile.Uploader.RankCapture
 {
@@ -40,7 +39,7 @@ namespace Heroesprofile.Uploader.RankCapture
         private readonly object _lock = new object();
         private readonly Queue<CapturedFrame> _frames = new Queue<CapturedFrame>();
         private readonly CancellationTokenSource _stop = new CancellationTokenSource();
-        private WindowCapture _capture;
+        private IDisposable _capture;
 
         private GameCapture(Replay lobby)
         {
@@ -68,30 +67,27 @@ namespace Heroesprofile.Uploader.RankCapture
         private async Task RunAsync()
         {
             try {
-                if (!WindowCapture.IsSupported) {
-                    _log.Warn("Rank reading: this version of Windows can't capture windows (needs Windows 10 2004 or later)");
+                var backend = CaptureBackends.Current;
+                if (backend.Unsupported is string why) {
+                    _log.Warn($"Rank reading: can't capture the game here - {why}");
                     return;
                 }
 
-                // The lobby file can appear a moment before the game has its window up.
-                var window = IntPtr.Zero;
-                while (window == IntPtr.Zero && !_stop.IsCancellationRequested) {
-                    window = WindowCapture.FindGameWindow();
-                    if (window == IntPtr.Zero) {
-                        await Task.Delay(TimeSpan.FromSeconds(1), _stop.Token);
-                    }
-                }
-
                 var showOutline = RankReader.ShowOutline;
-                if (!showOutline) {
-                    await WindowCapture.EnsureBorderlessAccessAsync();
-                }
+                await backend.PrepareAsync(showOutline);
 
-                lock (_lock) {
-                    if (_stop.IsCancellationRequested) {
-                        return;
+                // The lobby file can appear a moment before the game has its window up.
+                while (!_stop.IsCancellationRequested) {
+                    lock (_lock) {
+                        if (_stop.IsCancellationRequested) {
+                            return;
+                        }
+                        _capture = backend.Start(Interval, showOutline, OnFrame);
                     }
-                    _capture = WindowCapture.Start(window, Interval, showOutline, OnFrame);
+                    if (_capture != null) {
+                        break;
+                    }
+                    await Task.Delay(TimeSpan.FromSeconds(1), _stop.Token);
                 }
                 _log.Debug($"Rank reading: capturing the loading screen for {CaptureFor.TotalSeconds:0} seconds");
 
@@ -116,22 +112,20 @@ namespace Heroesprofile.Uploader.RankCapture
             }
         }
 
-        private void OnFrame(SoftwareBitmap bitmap)
+        private void OnFrame(RawFrame frame)
         {
             var at = DateTime.UtcNow;
-            Task.Run(async () => {
+            Task.Run(() => {
                 try {
-                    var width = bitmap.PixelWidth;
-                    var height = bitmap.PixelHeight;
-                    var strip = (uint)Math.Round(width * StripWidth);
-                    var left = await WindowCapture.EncodePngAsync(bitmap, new BitmapBounds { X = 0, Y = 0, Width = strip, Height = (uint)height });
-                    var right = await WindowCapture.EncodePngAsync(bitmap, new BitmapBounds { X = (uint)width - strip, Y = 0, Width = strip, Height = (uint)height });
+                    var strip = (int)Math.Round(frame.Width * StripWidth);
+                    var left = Png.EncodeStrip(frame, 0, strip);
+                    var right = Png.EncodeStrip(frame, frame.Width - strip, strip);
 
                     lock (_lock) {
                         if (_stop.IsCancellationRequested) {
                             return;
                         }
-                        _frames.Enqueue(new CapturedFrame(at, width, height, left, right));
+                        _frames.Enqueue(new CapturedFrame(at, frame.Width, frame.Height, left, right, frame.Hdr, frame.SdrWhiteNits));
                         while (_frames.Count > FramesKept) {
                             _frames.Dequeue();
                         }
@@ -139,9 +133,6 @@ namespace Heroesprofile.Uploader.RankCapture
                 }
                 catch (Exception ex) {
                     _log.Debug($"Rank reading: couldn't keep a frame: {ex.Message}");
-                }
-                finally {
-                    bitmap.Dispose();
                 }
             });
         }
@@ -174,6 +165,9 @@ namespace Heroesprofile.Uploader.RankCapture
         }
     }
 
-    /// <summary>One captured frame: when, the game's resolution, and the left and right card strips as PNG.</summary>
-    internal sealed record CapturedFrame(DateTime At, int Width, int Height, byte[] LeftPng, byte[] RightPng);
+    /// <summary>
+    /// One captured frame: when, the game's resolution, the left and right card strips as PNG, and whether it
+    /// came off an HDR display (converted back to the game's colours; see RawFrame).
+    /// </summary>
+    internal sealed record CapturedFrame(DateTime At, int Width, int Height, byte[] LeftPng, byte[] RightPng, bool Hdr = false, float SdrWhiteNits = 0);
 }

@@ -68,7 +68,12 @@ namespace Heroesprofile.Uploader.RankCapture
                     height = f.Height,
                     loadingScreen = reading?.LoadingScreenFrames.Contains(i),
                     sent = send.Contains(i),
+                    hdr = f.Hdr,
+                    sdrWhiteNits = f.Hdr ? f.SdrWhiteNits : (float?)null,
                 }),
+                // Whether the game's display was in HDR: its frames were then captured in scRGB and converted
+                // back to the game's colours (WindowCapture/ScRgb), the fix for HDR captures' wrong colours.
+                hdr = frames.Any(f => f.Hdr),
                 // What the reader made of the cards, to check it against the frames. Who each card is gets
                 // settled once the finished replay is in, so isn't here.
                 cards = reading?.Cards?.Select(c => new {

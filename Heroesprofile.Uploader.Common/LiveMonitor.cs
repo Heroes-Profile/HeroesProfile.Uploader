@@ -26,6 +26,20 @@ namespace Heroesprofile.Uploader.Common
         protected FileSystemWatcher _stormsave_watcher;
         private string _watchedStormSavePath;
 
+        /// <summary>
+        /// The game keeps one save per game and rewrites it as the match goes on. On most
+        /// machines that arrives as Created, on some only as Changed, and FileSystemWatcher
+        /// drops events under load on any of them - hence both handlers and the poll below.
+        /// </summary>
+        private static readonly TimeSpan StormSaveCooldown = TimeSpan.FromSeconds(3);
+        private static readonly TimeSpan StormSavePollInterval = TimeSpan.FromSeconds(10);
+
+        private readonly object _stormSaveLock = new object();
+        private readonly Dictionary<string, DateTime> _stormSaveSeen = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
+        private System.Threading.Timer _stormsave_poll;
+        private string _polledPath;
+        private DateTime _polledWrite = DateTime.MinValue;
+
         public event EventHandler<EventArgs<string>> TempBattleLobbyCreated;
         public event EventHandler<EventArgs<string>> StormSaveCreated;
 
@@ -38,8 +52,61 @@ namespace Heroesprofile.Uploader.Common
 
         protected virtual void OnStormSaveAdded(object source, FileSystemEventArgs e)
         {
-            _log.Debug($"Detected new StormSave replay: {e.FullPath}");
-            StormSaveCreated?.Invoke(this, new EventArgs<string>(e.FullPath));
+            RaiseStormSave(e.FullPath, e.ChangeType.ToString());
+        }
+
+        private void RaiseStormSave(string path, string reason)
+        {
+            lock (_stormSaveLock) {
+                DateTime last;
+                if (_stormSaveSeen.TryGetValue(path, out last) && DateTime.UtcNow - last < StormSaveCooldown) {
+                    return;
+                }
+                _stormSaveSeen[path] = DateTime.UtcNow;
+            }
+
+            _log.Debug($"Detected StormSave replay ({reason}): {path}");
+            StormSaveCreated?.Invoke(this, new EventArgs<string>(path));
+        }
+
+        /// <summary>
+        /// Backstop for the watcher: the newest save on disk, whenever it has been written
+        /// since we last looked. Seeded on start so a save left over from an earlier session
+        /// is not replayed.
+        /// </summary>
+        private void PollStormSaves(object state)
+        {
+            try {
+                var newest = NewestStormSave();
+                if (newest == null) {
+                    return;
+                }
+
+                if (newest.FullName == _polledPath && newest.LastWriteTimeUtc <= _polledWrite) {
+                    return;
+                }
+
+                _polledPath = newest.FullName;
+                _polledWrite = newest.LastWriteTimeUtc;
+                RaiseStormSave(newest.FullName, "poll");
+            }
+            catch (Exception ex) {
+                _log.Debug($"Could not poll for storm saves: {ex.Message}");
+            }
+        }
+
+        private FileInfo NewestStormSave()
+        {
+            var path = StormSavePath;
+
+            if (string.IsNullOrEmpty(path) || !Directory.Exists(path)) {
+                return null;
+            }
+
+            return new DirectoryInfo(path)
+                .EnumerateFiles("*.StormSave", SearchOption.AllDirectories)
+                .OrderByDescending(f => f.LastWriteTimeUtc)
+                .FirstOrDefault();
         }
 
         /// <summary>
@@ -79,10 +146,15 @@ namespace Heroesprofile.Uploader.Common
                     _stormsave_watcher = new FileSystemWatcher() {
                         Path = StormSavePath,
                         Filter = "*.StormSave",
-                        IncludeSubdirectories = true
+                        IncludeSubdirectories = true,
+                        NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size
                     };
                     _stormsave_watcher.Created -= OnStormSaveAdded;
                     _stormsave_watcher.Created += OnStormSaveAdded;
+                    // A save rewritten in place never raises Created, and that is the whole
+                    // game's talents missing for anyone whose system does it that way.
+                    _stormsave_watcher.Changed -= OnStormSaveAdded;
+                    _stormsave_watcher.Changed += OnStormSaveAdded;
                     _watchedStormSavePath = StormSavePath;
                 }
                 catch (Exception ex) {
@@ -92,6 +164,13 @@ namespace Heroesprofile.Uploader.Common
                 }
             }
             _stormsave_watcher.EnableRaisingEvents = true;
+
+            if (_stormsave_poll == null) {
+                var seed = NewestStormSave();
+                _polledPath = seed?.FullName;
+                _polledWrite = seed?.LastWriteTimeUtc ?? DateTime.MinValue;
+                _stormsave_poll = new System.Threading.Timer(PollStormSaves, null, StormSavePollInterval, StormSavePollInterval);
+            }
 
             _log.Debug($"Started watching for new storm save in {StormSavePath}");
         }
@@ -116,6 +195,12 @@ namespace Heroesprofile.Uploader.Common
             if (_stormsave_watcher != null) {
                 _stormsave_watcher.EnableRaisingEvents = false;
             }
+
+            if (_stormsave_poll != null) {
+                _stormsave_poll.Dispose();
+                _stormsave_poll = null;
+            }
+
             _log.Debug($"Stopped watching for new storm save files");
         }
 

@@ -22,16 +22,18 @@ namespace Heroesprofile.Uploader.Common
         // old paths for already-deployed clients, but it is not a base URL to build
         // against — once DNS moves, everything on it except those aliases redirects
         // here. The upload routes stay keyless, so there is still no token to send.
+        // Under uploader/ since 3.0.5: the same calls without it are what the retired WPF uploader (2.x) still
+        // makes, and the site retires those paths a month later (routes/api-external.php in the website repo).
 #if DEBUG
-        const string HeroesProfileApiEndpoint = "http://127.0.0.1:8000/api/external/v1";
-        const string HeroesProfileMatchParsed = "http://127.0.0.1:8000/api/external/v1/replays/parsed?replayID=";
+        const string HeroesProfileApiEndpoint = "http://127.0.0.1:8000/api/external/v1/uploader";
+        const string HeroesProfileMatchParsed = "http://127.0.0.1:8000/api/external/v1/uploader/replays/parsed?replayID=";
         const string HeroesProfileMatchSummary = "http://localhost/Match/Single/?replayID=";
 
 
 
 #else
-        const string HeroesProfileApiEndpoint = "https://www.heroesprofile.com/api/external/v1";
-        const string HeroesProfileMatchParsed = "https://www.heroesprofile.com/api/external/v1/replays/parsed?replayID=";
+        const string HeroesProfileApiEndpoint = "https://www.heroesprofile.com/api/external/v1/uploader";
+        const string HeroesProfileMatchParsed = "https://www.heroesprofile.com/api/external/v1/uploader/replays/parsed?replayID=";
         const string HeroesProfileMatchSummary = "https://www.heroesprofile.com/Match/Single/?replayID=";
 #endif
 
@@ -45,6 +47,25 @@ namespace Heroesprofile.Uploader.Common
         /// <summary>How long to keep asking whether the site has parsed an upload before giving up on the postmatch page.</summary>
         internal TimeSpan PostMatchWaitTime { get; set; } = TimeSpan.FromSeconds(60);
         internal TimeSpan PostMatchPollInterval { get; set; } = TimeSpan.FromSeconds(2);
+
+        /// <summary>The version sent with each upload (<see cref="AppVersionOf"/> of the running app).</summary>
+        internal string AppVersion { get; set; } = AppVersionOf(Assembly.GetEntryAssembly());
+
+        /// <summary>
+        /// The app's own version, as releases are numbered ("3.0.2-beta.1"): its informational version, which
+        /// `-p:Version=` sets at publish, without the "+commit" the SDK appends. Not this library's: it pins
+        /// AssemblyVersion 2.4.0, so the app used to report 2.4.0.0 - the same as the old WPF app, which made
+        /// the two impossible to tell apart in Heroes Profile's upload records.
+        /// </summary>
+        internal static string AppVersionOf(Assembly app)
+        {
+            var informational = app?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+            if (!string.IsNullOrWhiteSpace(informational)) {
+                var plus = informational.IndexOf('+');
+                return plus >= 0 ? informational.Substring(0, plus) : informational;
+            }
+            return (app ?? typeof(Uploader).Assembly).GetName().Version?.ToString() ?? "unknown";
+        }
 
         /// <summary>
         /// New instance of replay uploader
@@ -100,17 +121,13 @@ namespace Heroesprofile.Uploader.Common
         /// <summary>Uploads the replay; its upload status and its id on Heroes Profile (0 if there isn't one).</summary>
         private async Task<(UploadStatus Status, int ReplayId)> UploadFile(Replay replay_results, string fingerprint, string file, bool PostMatchPage)
         {
-            Assembly assembly = Assembly.GetExecutingAssembly();
-            AssemblyName assemblyName = assembly.GetName();
-            Version assemblyVersion = assemblyName.Version;
-
             try {
                 string response;
                 // A multipart/form-data POST with the replay as its "file" part - what WebClient.UploadFile sent.
                 using (var stream = File.OpenRead(file))
                 using (var fileContent = new StreamContent(stream))
                 using (var form = new MultipartFormDataContent())
-                using (var request = new HttpRequestMessage(HttpMethod.Post, $"{HeroesProfileApiEndpoint}/upload/heroesprofile/desktop?fingerprint={fingerprint}&version={assemblyVersion}") { Content = form }) {
+                using (var request = new HttpRequestMessage(HttpMethod.Post, $"{HeroesProfileApiEndpoint}/upload/heroesprofile/desktop?fingerprint={fingerprint}&version={Uri.EscapeDataString(AppVersion)}") { Content = form }) {
                     fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
                     form.Add(fileContent, "file", Path.GetFileName(file));
                     // A released build signs the upload, over the file's hash; the site records whether it was.

@@ -91,6 +91,43 @@ public sealed class UploaderTests : IDisposable
     }
 
     [Fact]
+    public async Task Uploads_say_which_version_of_the_app_sent_them()
+    {
+        var server = new FakeServer(Json("""{ "exists": false }"""), Json(UploadResult("Success")));
+        var uploader = UploaderFor(server);
+        uploader.AppVersion = "3.0.2-beta.1";
+
+        await uploader.Upload(null!, Replay(), PostMatchPage: false);
+
+        Assert.Contains("version=3.0.2-beta.1", server.Requests[1].Uri.Query);
+    }
+
+    [Fact]
+    public async Task Calls_go_to_the_uploader_paths_not_the_ones_being_retired()
+    {
+        // The paths without uploader/ are left to the old WPF app (2.x) until the site retires them.
+        var server = new FakeServer(Json("""{ "exists": false }"""), Json(UploadResult("Success")));
+
+        await UploaderFor(server).Upload(null!, Replay(), PostMatchPage: false);
+
+        Assert.Equal($"/api/external/v1/uploader/replays/fingerprints/{Fingerprint}", server.Requests[0].Uri.AbsolutePath);
+        Assert.Equal("/api/external/v1/uploader/upload/heroesprofile/desktop", server.Requests[1].Uri.AbsolutePath);
+    }
+
+    [Fact]
+    public void The_version_is_the_apps_not_this_librarys()
+    {
+        // The app's version as releases number it (HeroesProfileVersion here, -p:Version in a release), without
+        // the SDK's "+commit" - not Common's pinned 2.4.0, which made 3.x uploads look like the old WPF app's.
+        var desktop = typeof(Heroesprofile.Uploader.Desktop.ReleaseVersion).Assembly;
+        var version = Common.Uploader.AppVersionOf(desktop);
+
+        Assert.Equal(Heroesprofile.Uploader.Desktop.ReleaseVersion.Current().ToString(), version);
+        Assert.DoesNotContain("+", version);
+        Assert.DoesNotContain("2.4.0", version);
+    }
+
+    [Fact]
     public async Task The_postmatch_check_runs_in_the_background_and_keeps_asking_while_the_site_parses()
     {
         // Never "true" - that would open a real browser.

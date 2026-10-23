@@ -36,11 +36,11 @@ namespace Heroesprofile.Uploader.Common
 
         // v1, served from the main site. See the note in Uploader.cs.
 #if DEBUG
-        private static readonly string heresprofileAPI = @"http://127.0.0.1:8000/api/external/v1/";
+        private static readonly string heresprofileAPI = @"http://127.0.0.1:8000/api/external/v1/uploader/";
         private static readonly string heresprofile = @"http://127.0.0.1:8000/";
 
 #else
-        private static readonly string heresprofileAPI = @"https://www.heroesprofile.com/api/external/v1/";
+        private static readonly string heresprofileAPI = @"https://www.heroesprofile.com/api/external/v1/uploader/";
         private static readonly string heresprofile = @"https://www.heroesprofile.com/";
 
 #endif

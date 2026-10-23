@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The WPF uploader's last update, 2.9.1: it uploads nothing, and tells its users to install the new uploader
+    from the download page. Old installs (2.x, Squirrel) pick it up through their own update check, which
+    reads the RELEASES file of the newest GitHub release - release-desktop.yml attaches this one's
+    (packaging: build.ps1). So it has to be what the old app was to Squirrel: package
+    Heroesprofile.Uploader, program Heroesprofile.Uploader.exe, product "Heroesprofile Uploader" (its
+    shortcuts' name), Squirrel-aware, .NET Framework 4.6.2 like the old app.
+
+    Not part of the solution, and built on Windows only (by the release workflow).
+  -->
+  <PropertyGroup>
+    <TargetFramework>net462</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>Heroesprofile.Uploader</AssemblyName>
+    <RootNamespace>Heroesprofile.Uploader.WpfBridge</RootNamespace>
+    <ApplicationIcon>uploader_icon_light.ico</ApplicationIcon>
+    <LangVersion>latest</LangVersion>
+
+    <Version>2.9.1</Version>
+    <Product>Heroesprofile Uploader</Product>
+    <AssemblyTitle>Heroesprofile Uploader</AssemblyTitle>
+    <Company>Skill Tree Development, LLC</Company>
+    <Copyright>Copyright © 2026</Copyright>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+
+    <!-- Its own packages, outside the repo's central versions and lock files (it's frozen, Windows-only). -->
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
+    <NuGetAudit>false</NuGetAudit>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The old app's: its update events (SquirrelAwareApp), and tools\Squirrel.exe for packaging. -->
+    <PackageReference Include="squirrel.windows" Version="1.7.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyMetadata Include="SquirrelAwareVersion" Value="1" />
+    <Resource Include="uploader_icon_light.ico" />
+  </ItemGroup>
+
+</Project>

@@ -21,7 +21,7 @@ namespace Heroesprofile.Uploader.Desktop
         private static readonly Logger _log = LogManager.GetCurrentClassLogger();
 
         // Same read-only dupe-check endpoint Uploader.cs hits before an upload.
-        private const string FingerprintEndpoint = "https://www.heroesprofile.com/api/external/v1/replays/fingerprints/";
+        private const string FingerprintEndpoint = "https://www.heroesprofile.com/api/external/v1/uploader/replays/fingerprints/";
 
         public static async Task<int> Execute(string replayPathOverride)
         {

@@ -1,0 +1,19 @@
+<Window x:Class="Heroesprofile.Uploader.WpfBridge.NoticeWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Heroesprofile Uploader" Icon="uploader_icon_light.ico"
+        Width="460" SizeToContent="Height" ResizeMode="NoResize" WindowStartupLocation="CenterScreen"
+        Background="#1E1E1E" Foreground="#F0F0F0" FontFamily="Segoe UI" FontSize="13">
+  <StackPanel Margin="24,20,24,20">
+    <TextBlock Text="This uploader has been replaced" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,10" />
+    <TextBlock TextWrapping="Wrap" Margin="0,0,0,8"
+               Text="This version of the Heroes Profile Uploader no longer uploads replays." />
+    <TextBlock TextWrapping="Wrap" Margin="0,0,0,18"
+               Text="Install the new Heroes Profile Uploader to keep uploading. Your settings and upload history move over to it, and it removes this one for you." />
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+      <Button Content="Get the new uploader" Padding="14,6" Margin="0,0,8,0" IsDefault="True" Click="Download_Click"
+              Background="#2E7D32" Foreground="White" BorderThickness="0" />
+      <Button Content="Close" Padding="14,6" IsCancel="True" Click="Close_Click" />
+    </StackPanel>
+  </StackPanel>
+</Window>

@@ -129,15 +129,19 @@ namespace Heroesprofile.Uploader.RankCapture
         /// margin; anything else is Unknown, which is never sent. That matters for captures whose colours are
         /// off - an HDR display's over-saturated, blown-out capture made Gold frames read as Platinum (and as
         /// Bronze once the clipped highlights were left out): those now come out Unknown instead of wrong.
+        /// HDR captures converted back from scRGB (3.0.2 on) sit just outside the SDR ranges - Gold frames up
+        /// to hue 60, Platinum frames' red over green down to 7 (1,392 games, 2026-10-23) - so those two
+        /// ranges reach out to them, still well clear of the leagues either side.
         /// </summary>
         public static League LeagueFromColour(FrameColour c)
         {
             if (c.Saturation >= 90) {
-                // Bronze 20-27 degrees, Gold 31-50 (a warm display shifts both up a little), Diamond ~199.
+                // Bronze 20-27 degrees, Gold 31-50 (a warm display shifts both up a little, HDR Gold to 60),
+                // Diamond ~199.
                 if (c.Hue < 29) {
                     return League.Bronze;
                 }
-                if (c.Hue < 56) {
+                if (c.Hue < 62) {
                     return League.Gold;
                 }
                 if (c.Hue >= 150 && c.Hue < 230 && c.Saturation >= 180) {
@@ -154,7 +158,8 @@ namespace Heroesprofile.Uploader.RankCapture
             if (redOverGreen <= 2 && blueOverRed >= -5 && blueOverRed <= 40) {
                 return League.Silver;
             }
-            if (redOverGreen >= 12 && redOverGreen <= 45 && blueOverRed >= -12 && blueOverRed <= 12) {
+            // Silver's red over green is below 0, Platinum's 12 and up in SDR and 7 and up in HDR.
+            if (redOverGreen >= 5 && redOverGreen <= 45 && blueOverRed >= -12 && blueOverRed <= 12) {
                 return League.Platinum;
             }
             return League.Unknown;

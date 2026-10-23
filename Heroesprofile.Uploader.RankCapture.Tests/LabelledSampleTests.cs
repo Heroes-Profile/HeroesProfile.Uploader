@@ -139,6 +139,52 @@ public class LabelledSampleTests(ITestOutputHelper output)
     }
 
     /// <summary>
+    /// HDR captures (3.0.2 on, converted back from scRGB), checked by eye on the loading screen (2026-10-23).
+    /// The Gold and Platinum ones came out Unknown before their colour ranges were widened; the rest read right
+    /// then and must stay right.
+    /// </summary>
+    private static readonly (string Sample, string Card, string Rank)[] HdrHandChecked = {
+        ("0b704977", "R5", "Gold 1"), ("18c10d8f", "R3", "Gold 2"), ("8d7db4af", "L3", "Gold 1"), ("b3bfd86a", "R3", "Gold 4"),
+        ("446947fb", "R4", "Gold 3"), ("6a5346b1", "R5", "Gold 1"),
+        ("4eb1667b", "R5", "Platinum 3"), ("604c059d", "L5", "Platinum 3"), ("d38af7ad", "L5", "Platinum 4"), ("d38af7ad", "R5", "Platinum 5"),
+        ("2315c29a", "L5", "Platinum 2"),
+        ("3e31a4b0", "L2", "Platinum 1"), ("4eb1667b", "R4", "Platinum 5"), ("39a99661", "R2", "Bronze 1"), ("b3bfd86a", "L2", "Bronze 1"),
+        ("d803418d", "L1", "Diamond 5"), ("023cf38f", "L1", "Gold 5"),
+    };
+
+    [Fact]
+    public async Task Reads_hdr_captures()
+    {
+        Samples.RequireSamples();
+        var templates = RankTemplates.Shipped!;
+        var wrong = new List<string>();
+        foreach (var game in HdrHandChecked.GroupBy(c => c.Sample)) {
+            var folder = Directory.GetDirectories(Samples.Folder, "2*").SelectMany(d => Directory.GetDirectories(d, game.Key + "*")).FirstOrDefault();
+            if (folder == null) {
+                Assert.Skip($"HDR sample {game.Key} isn't here (synced 2026-10-23 or later)");
+            }
+            var frames = new List<(Pixels, Pixels)>();
+            foreach (var files in Samples.FrameFiles(folder)) {
+                var frame = await Samples.DecodeAsync(files);
+                if (LoadingScreenReader.IsLoadingScreen(frame.Left, frame.Right)) {
+                    frames.Add(frame);
+                }
+            }
+            var ranks = LoadingScreenReader.ReadGame(frames, templates);
+            Assert.NotNull(ranks);
+            foreach (var (sample, card, rank) in game) {
+                var read = ranks.Single(r => r.Side == (card[0] == 'L' ? Side.Left : Side.Right) && r.Slot == card[1] - '1');
+                var said = Describe(read.League, read.Division);
+                output.WriteLine($"{sample} {card}: {rank}, read {said}");
+                if (said != rank) {
+                    wrong.Add($"{sample} {card} is {rank}, read {said}");
+                }
+            }
+        }
+        Assert.Empty(wrong);
+    }
+
+    /// <summary>
     /// How close the labelled cards come to each cutoff the reader uses - for tuning, so it's explicit:
     /// <c>Heroesprofile.Uploader.RankCapture.Tests.exe -method "*Report_how_close_the_cards_come_to_the_cutoffs" -explicit only -showliveoutput</c>
     /// </summary>

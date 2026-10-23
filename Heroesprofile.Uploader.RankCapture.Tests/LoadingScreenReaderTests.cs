@@ -68,6 +68,8 @@ public class LoadingScreenReaderTests
     [InlineData(60, 180, 230, League.Diamond)]    // cyan
     [InlineData(150, 160, 175, League.Silver)]    // neutral, slightly blue grey
     [InlineData(190, 165, 185, League.Platinum)]  // pink-tinted silver
+    [InlineData(200, 195, 96, League.Gold)]       // HDR gold, converted back from scRGB: yellower (hue 57)
+    [InlineData(180, 169, 182, League.Platinum)]  // HDR platinum: less pink (red over green 11)
     [InlineData(150, 90, 200, League.Unknown)]    // a purple cosmetic border
     public void Frame_colours_map_to_leagues(float r, float g, float b, League league)
     {

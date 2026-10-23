@@ -34,9 +34,8 @@ on:
         description: >-
           auto: develop makes a prerelease, master a release. draft: only maintainers can see it.
           prerelease: testers get it (installed copies with beta updates on update to it). release:
-          everyone gets it, and it becomes Latest. Note the Windows output also carries a Squirrel-format
-          RELEASES file, so old WPF installs with "Allow beta updates" on could be offered a prerelease
-          too; a full release drops it.
+          everyone gets it, and it becomes Latest. Every release also carries the WPF uploader's last
+          update (2.9.1) for old 2.x installs, which send their users to the download page.
         required: true
         default: auto
         type: choice
@@ -384,6 +383,14 @@ jobs:
           cp single/$MAIN_EXE packaging/linux/README.md packaging/linux/heroesprofile-uploader.service dist/HeroesProfileUploader/
           tar -czf extra/HeroesProfileUploader-linux-x64.tar.gz -C dist HeroesProfileUploader
 
+      # The WPF uploader's last update (2.9.1, legacy/WpfBridge): it uploads nothing and sends its users to the
+      # download page. Old 2.x installs update to it through Squirrel, from the RELEASES file the upload job
+      # attaches in place of Velopack's.
+      - name: WPF uploader's last update
+        if: matrix.channel == 'win'
+        shell: pwsh
+        run: legacy/WpfBridge/build.ps1 extra/wpf-bridge
+
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-${{ matrix.channel }}
@@ -462,7 +469,13 @@ jobs:
           # The website links to .../releases/latest/download/HeroesProfileUploaderSetup.exe (the WPF
           # app's installer name); a copy under that name keeps those links working.
           cp release-win/releases/*-win-Setup.exe HeroesProfileUploaderSetup.exe
-          gh release upload "v$VERSION" HeroesProfileUploader-linux-x64.tar.gz SHA256SUMS HeroesProfileUploaderSetup.exe "${extra[@]}" --clobber
+          # Old WPF installs (2.x) update through Squirrel from the newest release's RELEASES file. Velopack
+          # writes one too, pointing at this release - but Squirrel would unpack v3 into the old app's folder
+          # under the old program's name. So every release carries the WPF uploader's last update's RELEASES
+          # instead, prereleases included (old installs with beta updates on read those): 2.x updates to
+          # 2.9.1, which sends people to the download page. Velopack only reads releases.<channel>.json.
+          gh release upload "v$VERSION" HeroesProfileUploader-linux-x64.tar.gz SHA256SUMS HeroesProfileUploaderSetup.exe "${extra[@]}" \
+            release-win/extra/wpf-bridge/RELEASES release-win/extra/wpf-bridge/Heroesprofile.Uploader-2.9.1-full.nupkg --clobber
           # The release description: which of all these files to download on which OS.
           sed "s|INSTALL_URL|https://github.com/${{ github.repository }}/blob/${{ github.sha }}/packaging/INSTALL.md|"             packaging/release-notes.md > release-notes.md
           # The "Testing this beta" part is only for prerelease versions (3.0.2-beta.1): full releases drop it.
@@ -479,11 +492,7 @@ jobs:
           if [ "$RELEASE" = "prerelease" ]; then
             gh release edit "v$VERSION" --draft=false --prerelease --latest=false
           fi
-          # Old WPF installs update through Squirrel from the newest full release's RELEASES file. Without
-          # it they stay on the old app until the user installs this one, which then removes the old one.
-          # Velopack only reads releases.<channel>.json.
           if [ "$RELEASE" = "release" ]; then
-            gh release delete-asset "v$VERSION" RELEASES --yes
             gh release edit "v$VERSION" --draft=false --prerelease=false --latest
           fi
 

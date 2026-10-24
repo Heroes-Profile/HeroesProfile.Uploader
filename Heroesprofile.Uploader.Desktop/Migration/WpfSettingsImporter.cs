@@ -26,6 +26,9 @@ namespace Heroesprofile.Uploader.Desktop.Migration
 
         private const string SettingsSection = "Heroesprofile.Uploader.Windows.Properties.Settings";
 
+        /// <summary>The main window width the WPF app started with (its Settings.settings default).</summary>
+        private const int WpfDefaultWindowWidth = 700;
+
         /// <summary>Finds and imports the WPF app's settings. False when there are none (or they can't be read).</summary>
         [SupportedOSPlatform("windows")]
         public static bool TryImport(out AppConfig config, out string source)
@@ -116,7 +119,14 @@ namespace Heroesprofile.Uploader.Desktop.Migration
 
             Int("WindowLeft", v => config.WindowLeft = v);
             Int("WindowTop", v => config.WindowTop = v);
-            Int("WindowWidth", v => config.WindowWidth = v);
+            // 700 is the WPF app's own default, so it's what everyone who never resized that window has.
+            // Taken as-is it would undo the extra 60 this app's default adds for the replay id column, and
+            // cut off most replay names, so it keeps this app's default instead.
+            Int("WindowWidth", v => {
+                if (v != WpfDefaultWindowWidth) {
+                    config.WindowWidth = v;
+                }
+            });
             Int("WindowHeight", v => config.WindowHeight = v);
 
             var protectedKey = Get("TwitchUploaderKey");

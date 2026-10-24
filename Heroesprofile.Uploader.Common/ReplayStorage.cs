@@ -47,7 +47,11 @@ namespace Heroesprofile.Uploader.Common
                         var data = files.ToArray();
                         var serializer = new XmlSerializer(data.GetType());
                         serializer.Serialize(stream, data);
-                        File.WriteAllBytes(_filename, stream.ToArray());
+                        // Write next to the real file and swap it in, so getting killed mid-write leaves the
+                        // previous list intact rather than a truncated file that Load would throw away entirely.
+                        var tmp = _filename + ".tmp";
+                        File.WriteAllBytes(tmp, stream.ToArray());
+                        File.Move(tmp, _filename, overwrite: true);
                     }
                 }
             }

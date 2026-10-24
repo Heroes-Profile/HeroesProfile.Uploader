@@ -45,7 +45,10 @@ namespace Heroesprofile.Uploader.Desktop.Gui
                     return;
                 }
                 var file = (ReplayFile)sender;
-                Dispatcher.UIThread.Post(() => OnStatusChanged(file));
+                // Read the status now, on the thread that changed it: by the time the Post runs a retried
+                // file can already be through None and InProgress to its next outcome.
+                var status = file.UploadStatus;
+                Dispatcher.UIThread.Post(() => OnStatusChanged(file, status));
             };
             Rebuild();
         }
@@ -126,22 +129,27 @@ namespace Heroesprofile.Uploader.Desktop.Gui
             return row;
         }
 
-        private void OnStatusChanged(ReplayFile file)
+        private void OnStatusChanged(ReplayFile file, UploadStatus status)
         {
             if (_byFile.TryGetValue(file, out var row)) {
                 row.RefreshFromFile();
             }
-            LogOutcomeIfTerminal(file);
+            LogOutcomeIfTerminal(file, status);
         }
 
-        private void LogOutcomeIfTerminal(ReplayFile file)
+        private void LogOutcomeIfTerminal(ReplayFile file, UploadStatus status)
         {
-            // _logged.Add returns false (and does nothing) once a file's already been logged - a
-            // replay only needs to report its outcome once per run.
-            if (!TerminalStatuses.Contains(file.UploadStatus) || !_logged.Add(file)) {
+            if (status == UploadStatus.None || status == UploadStatus.InProgress) {
+                // Back in the queue (Retry failed) - whatever it ends up as this time is a new outcome.
+                _logged.Remove(file);
                 return;
             }
-            _log.Info($"{Path.GetFileName(file.Filename)}: {file.UploadStatus}");
+            // _logged.Add returns false (and does nothing) once a file's already been logged - each
+            // attempt only needs to report its outcome once, however many property changes follow it.
+            if (!TerminalStatuses.Contains(status) || !_logged.Add(file)) {
+                return;
+            }
+            _log.Info($"{Path.GetFileName(file.Filename)}: {status}");
         }
     }
 }

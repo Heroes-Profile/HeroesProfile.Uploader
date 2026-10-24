@@ -249,6 +249,26 @@ public class MainWindowPresentationTests
     }
 
     [Fact]
+    public void An_invalid_webhook_holds_settings_open_only_when_the_user_closes_it()
+    {
+        var main = MainWindow(AppConfig.Theme1Design);
+        main.Config.WebhookUrl = "https://example.com/hook";
+        var settings = new SettingsWindowViewModel(main);
+        var typedPath = Path.Combine(TestHome.Folder, "typed-but-not-applied");
+        settings.ReplayPath = typedPath;
+        settings.WebhookUrl = "example.com/no-scheme";
+
+        Assert.False(settings.TryClose(canStayOpen: true));
+        Assert.NotEqual("", settings.WebhookError);
+
+        // Quit or a Windows shutdown can't be held up: the rest saves, the webhook keeps its old value.
+        Assert.True(settings.TryClose(canStayOpen: false));
+        var saved = AppConfig.Load();
+        Assert.Equal(typedPath, saved.ReplayPath);
+        Assert.Equal("https://example.com/hook", saved.WebhookUrl);
+    }
+
+    [Fact]
     public void Settings_calls_the_designs_default_and_lite()
     {
         var settings = new SettingsWindowViewModel(MainWindow(AppConfig.Theme1Design));

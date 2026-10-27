@@ -81,11 +81,16 @@ internal static class Samples
         return labels;
     }
 
-    /// <summary>A game's frames in the order the tests try them (1, 0, 2, 3, ...), as file pairs.</summary>
+    /// <summary>A game's frames in the order the tests try them (frame 1 first if it has one, then the rest in order), as file pairs.</summary>
     public static IEnumerable<(string Left, string Right)> FrameFiles(string gameFolder)
     {
-        var count = Directory.GetFiles(gameFolder, "frame-*-left.png").Length;
-        foreach (var i in new[] { 1, 0 }.Concat(Enumerable.Range(2, Math.Max(0, count - 2)))) {
+        // The frames a sample has: all 15 in the early ones, a few (0, 7, 14) since 3.0.3 sends only those.
+        var indices = Directory.GetFiles(gameFolder, "frame-*-left.png")
+            .Select(f => int.TryParse(Path.GetFileName(f).Split('-')[1], out var n) ? n : -1)
+            .Where(n => n >= 0)
+            .OrderBy(n => n)
+            .ToList();
+        foreach (var i in indices.Where(n => n == 1).Concat(indices.Where(n => n != 1))) {
             var left = Path.Combine(gameFolder, $"frame-{i}-left.png");
             var right = Path.Combine(gameFolder, $"frame-{i}-right.png");
             if (File.Exists(left) && File.Exists(right)) {

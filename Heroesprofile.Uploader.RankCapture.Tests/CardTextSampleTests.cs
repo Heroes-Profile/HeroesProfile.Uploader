@@ -41,6 +41,33 @@ public class CardTextSampleTests(ITestOutputHelper output)
         }
     }
 
+    /// <summary>
+    /// A game whose first loading-screen frame still shows account-level borders (the screen switches to rank
+    /// badges a second in): its two Grandmasters' positions are only in the later frames.
+    /// </summary>
+    [Fact]
+    public async Task Reads_grandmaster_positions_the_first_frame_doesnt_show()
+    {
+        Samples.RequireSamples();
+        var folder = Directory.GetDirectories(Samples.Folder, "2*").SelectMany(d => Directory.GetDirectories(d, "7fbe4230*")).FirstOrDefault();
+        if (folder == null || !File.Exists(Path.Combine(folder, "frame-7-left.png"))) {
+            Assert.Skip("Sample 7fbe4230 (2026-10-23) and its frames aren't here");
+        }
+        var frames = new List<(Pixels Left, Pixels Right)>();
+        foreach (var i in new[] { 0, 4, 7 }) {
+            frames.Add(await Samples.DecodeAsync((Path.Combine(folder, $"frame-{i}-left.png"), Path.Combine(folder, $"frame-{i}-right.png"))));
+        }
+        var cards = await PlayerRanks.ReadCardsAsync(frames, RankTemplates.Shipped!);
+        Assert.NotNull(cards);
+        string Read(Side side, int slot) => cards.Single(c => c.Rank.Side == side && c.Rank.Slot == slot).Rank.Rank;
+        foreach (var c in cards) {
+            output.WriteLine($"{(c.Rank.Side == Side.Left ? "L" : "R")}{c.Rank.Slot + 1}: {c.Rank.Rank}");
+        }
+        Assert.Equal("Grandmaster #60", Read(Side.Left, 4));
+        Assert.Equal("Grandmaster #73", Read(Side.Right, 0));
+        Assert.Equal("Grandmaster #28", Read(Side.Right, 1));
+    }
+
     [Fact]
     public async Task Matches_cards_to_the_lobby_players()
     {

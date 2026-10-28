@@ -10,8 +10,8 @@ using System.Threading.Tasks;
 namespace Heroesprofile.Uploader.RankCapture
 {
     /// <summary>
-    /// The Ranks build's rank reader, hooked up through Manager.SetLobbyReader/SetStormSaveReader/
-    /// SetReplayUploadedReader while "Read ranks from the loading screen" is on. Per game:
+    /// The Ranks build's rank reader, hooked up through Manager.SetReaders while "Read ranks from the
+    /// loading screen" is on. Per game:
     /// lobby file (the loading screen appears) → capture the game window for its first 15 seconds (in
     /// memory) → first storm save (~80 s into the match; it carries the game mode) → Storm League: read the
     /// ten cards (<see cref="PlayerRanks.ReadCardsAsync"/>), keep what was read until the game's replay is up

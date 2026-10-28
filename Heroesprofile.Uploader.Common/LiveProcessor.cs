@@ -63,7 +63,7 @@ namespace Heroesprofile.Uploader.Common
         /// <summary>
         /// Called with each game's parsed lobby (players, battletags, teams) - for features that run
         /// alongside the pre-match page, like the opt-in rank reader of the Ranks build (see
-        /// Manager.SetLobbyReader). Null when nothing needs it.
+        /// Manager.SetReaders). Null when nothing needs it.
         /// </summary>
         public Action<Replay> LobbyParsed { get; set; }
 

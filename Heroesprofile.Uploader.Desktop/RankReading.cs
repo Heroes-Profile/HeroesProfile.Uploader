@@ -21,12 +21,12 @@ namespace Heroesprofile.Uploader.Desktop
             if (manager == null) {
                 return;
             }
-            if (!on) {
+            if (on) {
+                manager.SetReaders(RankCapture.RankReader.OnLobby, RankCapture.RankReader.OnStormSave, RankCapture.RankReader.OnReplayUploaded);
+            } else {
                 RankCapture.RankReader.Stop();
+                manager.SetReaders(null, null, null);
             }
-            manager.SetLobbyReader(on ? RankCapture.RankReader.OnLobby : null);
-            manager.SetStormSaveReader(on ? RankCapture.RankReader.OnStormSave : null);
-            manager.SetReplayUploadedReader(on ? RankCapture.RankReader.OnReplayUploaded : null);
         }
 
         /// <summary>Show Windows' capture outline around the game (from the next game on).</summary>

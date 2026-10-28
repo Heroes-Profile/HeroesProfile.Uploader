@@ -88,6 +88,15 @@ namespace Heroesprofile.Uploader.Common
 
                 _polledPath = newest.FullName;
                 _polledWrite = newest.LastWriteTimeUtc;
+
+                // The watcher usually got there first: a write it reported - the last of that burst
+                // landing within the cooldown of the event - is the one already read, not a new one.
+                // Without this every save the watcher catches is read a second time by the next poll.
+                lock (_stormSaveLock) {
+                    if (_stormSaveSeen.TryGetValue(newest.FullName, out var seen) && newest.LastWriteTimeUtc <= seen + StormSaveCooldown) {
+                        return;
+                    }
+                }
                 RaiseStormSave(newest.FullName, "poll");
             }
             catch (Exception ex) {
@@ -184,7 +193,7 @@ namespace Heroesprofile.Uploader.Common
             if (_battlelobby_watcher != null) {
                 _battlelobby_watcher.EnableRaisingEvents = false;
             }
-            _log.Debug($"Stopped watching for new replays");
+            _log.Debug($"Stopped watching for new battlelobby");
         }
 
         /// <summary>

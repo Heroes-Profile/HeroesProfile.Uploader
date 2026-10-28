@@ -50,7 +50,11 @@ namespace Heroesprofile.Uploader.Common
                         // Write next to the real file and swap it in, so getting killed mid-write leaves the
                         // previous list intact rather than a truncated file that Load would throw away entirely.
                         var tmp = _filename + ".tmp";
-                        File.WriteAllBytes(tmp, stream.ToArray());
+                        using (var file = new FileStream(tmp, FileMode.Create, FileAccess.Write)) {
+                            stream.WriteTo(file);
+                            // On disk before the swap, or a power cut could keep the rename but not the data.
+                            file.Flush(flushToDisk: true);
+                        }
                         File.Move(tmp, _filename, overwrite: true);
                     }
                 }

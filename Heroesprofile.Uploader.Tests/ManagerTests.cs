@@ -68,7 +68,9 @@ public class ManagerTests
         manager.Start(monitor, monitor, new EligibleAnalyzer(), new BrokenUploader(), null!);
 
         var timer = System.Diagnostics.Stopwatch.StartNew();
-        while (file.UploadStatus != UploadStatus.UploadError && timer.Elapsed < TimeSpan.FromSeconds(5)) {
+        // The status is set before the change notification that refreshes manager.Status, so wait for both.
+        while ((file.UploadStatus != UploadStatus.UploadError || manager.Status != Manager.IdleStatus) &&
+            timer.Elapsed < TimeSpan.FromSeconds(5)) {
             await Task.Delay(20, TestContext.Current.CancellationToken);
         }
         manager.Stop();

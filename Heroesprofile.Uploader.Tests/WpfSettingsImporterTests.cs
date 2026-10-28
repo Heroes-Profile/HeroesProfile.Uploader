@@ -88,6 +88,15 @@ public class WpfSettingsImporterTests
     }
 
     [Fact]
+    public void The_WPF_default_width_keeps_the_wider_default()
+    {
+        var config = WpfSettingsImporter.FromUserConfig(UserConfig(("WindowWidth", "700"), ("WindowHeight", "600")), FakeUnprotect);
+
+        Assert.Equal(760, config.WindowWidth);
+        Assert.Equal(600, config.WindowHeight);
+    }
+
+    [Fact]
     public void Rejects_a_file_that_is_not_the_WPF_apps_settings()
     {
         Assert.Throws<FormatException>(() =>

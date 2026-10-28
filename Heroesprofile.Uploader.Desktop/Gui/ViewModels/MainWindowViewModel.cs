@@ -183,6 +183,21 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
             startOnLogin = Config.StartOnLogin;
             showInAppMenu = OperatingSystem.IsLinux() && DesktopIntegration.IsAppMenuEntryInstalled;
 
+            // The autostart entry can go missing while config.json still has the box ticked - uninstalling
+            // removes it (see Program.BeforeUninstall) but keeps the config, so a reinstall would show
+            // "Start with windows" on with nothing starting - so write it again on every start, which also
+            // points it at wherever the app runs from now. Not on Linux: there the desktop's own autostart
+            // settings turn an entry off by deleting the file, and writing it back would undo that. Windows'
+            // and macOS's own switches (Task Manager, Login Items) leave the entry in place.
+            if (startOnLogin && Platform.SupportsStartOnLogin && !OperatingSystem.IsLinux()) {
+                try {
+                    Platform.SetStartOnLogin(true);
+                }
+                catch (Exception ex) {
+                    _log.Warn(ex, "Could not update the autostart entry");
+                }
+            }
+
             if (!ReplayFolderSetup.TryApply(Platform, Config.ReplayPath, out var error)) {
                 ReplayFolderError = error;
                 _log.Warn($"Replay folder not found: {error}");

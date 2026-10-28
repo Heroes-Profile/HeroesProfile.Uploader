@@ -210,6 +210,7 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
             // The old WPF uploader still installed: offer to uninstall it (this app already has its own
             // copies of the settings and history), so it stops starting with Windows and can't run next
             // to this one. Asked again next start if kept.
+            var legacyStartedWithWindows = LegacyApp.StartsWithWindows();
             if (OperatingSystem.IsWindows() && LegacyApp.IsInstalled()) {
                 var answer = await MessageDialog.ShowAsync(this, "Old uploader installed", LegacyApp.RemovePrompt, "Uninstall", "Keep for now");
                 if (answer == "Uninstall") {
@@ -229,6 +230,15 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
                 }
             } else if (OperatingSystem.IsWindows()) {
                 await System.Threading.Tasks.Task.Run(LegacyApp.CleanUpLeftovers);
+            }
+
+            // Its "Start with windows" was the Startup shortcut just removed above, and the settings import
+            // leaves that setting out (so both apps don't start at login), so carry it over now that it's
+            // gone. Checked on the shortcut itself: a failed uninstall may have left it in place.
+            if (legacyStartedWithWindows && !LegacyApp.StartsWithWindows() &&
+                ViewModel is { SupportsStartOnLogin: true, StartOnLogin: false } viewModel) {
+                _log.Info("The old uploader started with Windows - this app does now instead");
+                viewModel.StartOnLogin = true;
             }
 
             if (ViewModel?.WaitingForLegacyApp == true) {

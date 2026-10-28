@@ -9,6 +9,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Heroesprofile.Uploader.RankCapture
@@ -37,9 +38,13 @@ namespace Heroesprofile.Uploader.RankCapture
         /// <summary>The most frames sent per game: the loading screen doesn't change, so a few are plenty.</summary>
         public const int MaxFramesSent = 3;
 
-        public static async Task UploadAsync(GameCapture game, IReadOnlyList<CapturedFrame> frames, Replay stormSave, RankReader.GameReading reading)
+        /// <summary>
+        /// Sends the game's frames, one request each. <paramref name="stopped"/> is cancelled when rank reading is
+        /// switched off: then nothing more is sent, and a frame on its way is abandoned.
+        /// </summary>
+        public static async Task UploadAsync(GameCapture game, IReadOnlyList<CapturedFrame> frames, Replay stormSave, RankReader.GameReading reading, CancellationToken stopped)
         {
-            if (!Collecting || frames.Count == 0) {
+            if (!Collecting || frames.Count == 0 || stopped.IsCancellationRequested) {
                 return;
             }
             var send = FramesToSend(frames.Count, reading?.LoadingScreenFrames);
@@ -95,10 +100,10 @@ namespace Heroesprofile.Uploader.RankCapture
             var metaJson = JsonConvert.SerializeObject(meta);
             var sent = 0;
             foreach (var i in send) {
-                if (!Collecting) {
+                if (!Collecting || stopped.IsCancellationRequested) {
                     break;
                 }
-                if (await SendFrameAsync(sampleId, metaJson, i, frames[i])) {
+                if (await SendFrameAsync(sampleId, metaJson, i, frames[i], stopped)) {
                     sent++;
                 }
             }
@@ -130,7 +135,7 @@ namespace Heroesprofile.Uploader.RankCapture
         }
 
         /// <summary>Sends one frame; false if it didn't go (and why is logged).</summary>
-        private static async Task<bool> SendFrameAsync(string sampleId, string metaJson, int index, CapturedFrame frame)
+        private static async Task<bool> SendFrameAsync(string sampleId, string metaJson, int index, CapturedFrame frame, CancellationToken stopped)
         {
             try {
                 using var form = new MultipartFormDataContent {
@@ -140,8 +145,8 @@ namespace Heroesprofile.Uploader.RankCapture
                     { Png(frame.RightPng), "frames[]", $"frame-{index}-right.png" },
                 };
 
-                using var reply = await _client.PostAsync(Endpoint, form);
-                var body = await reply.Content.ReadAsStringAsync();
+                using var reply = await _client.PostAsync(Endpoint, form, stopped);
+                var body = await reply.Content.ReadAsStringAsync(stopped);
 
                 JObject json;
                 try {
@@ -164,6 +169,10 @@ namespace Heroesprofile.Uploader.RankCapture
                     return false;
                 }
                 return true;
+            }
+            catch (OperationCanceledException) when (stopped.IsCancellationRequested) {
+                _log.Info("Rank reading: switched off - sample upload stopped");
+                return false;
             }
             catch (Exception ex) {
                 _log.Warn(ex, "Rank reading: sample upload failed");

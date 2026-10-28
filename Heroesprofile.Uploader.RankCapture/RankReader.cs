@@ -5,6 +5,7 @@ using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Heroesprofile.Uploader.RankCapture
@@ -27,6 +28,10 @@ namespace Heroesprofile.Uploader.RankCapture
         private static GameCapture _current;
         private static readonly PendingRanks _pending = new PendingRanks();
 
+        // Cancelled by Stop. A game whose first storm save came just before rank reading was switched off is
+        // still being read in the background; this tells it not to keep the ranks or send the samples.
+        private static CancellationTokenSource _stopped = new CancellationTokenSource();
+
         /// <summary>
         /// Show Windows' yellow capture outline around the game while capturing (Settings, off by default).
         /// Hidden only where Windows allows it (Windows 11); takes effect from the next game.
@@ -48,9 +53,11 @@ namespace Heroesprofile.Uploader.RankCapture
         public static void OnStormSave(Replay save)
         {
             GameCapture game;
+            CancellationToken stopped;
             lock (_lock) {
                 game = _current;
                 _current = null;
+                stopped = _stopped.Token;
             }
             if (game == null) {
                 return;
@@ -73,13 +80,20 @@ namespace Heroesprofile.Uploader.RankCapture
             var fingerprint = Fingerprint(save);
             Task.Run(async () => {
                 var reading = await ReadCardsAsync(frames);
-                if (reading?.Cards != null) {
-                    _pending.Add(new PendingRanks.Game(game.LobbyAt, fingerprint, reading.Cards));
+                // Under the lock, so Stop can't clear the pending ranks between this check and the Add.
+                lock (_lock) {
+                    if (stopped.IsCancellationRequested) {
+                        _log.Info("Rank reading: switched off while reading this game - nothing kept or sent");
+                        return;
+                    }
+                    if (reading?.Cards != null) {
+                        _pending.Add(new PendingRanks.Game(game.LobbyAt, fingerprint, reading.Cards));
+                    }
                 }
                 if (CaptureDump.Enabled) {
                     CaptureDump.Save(mode, frames, reading);
                 }
-                await SampleUploader.UploadAsync(game, frames, save, reading);
+                await SampleUploader.UploadAsync(game, frames, save, reading, stopped);
             });
         }
 
@@ -191,8 +205,10 @@ namespace Heroesprofile.Uploader.RankCapture
             lock (_lock) {
                 _current?.Dispose();
                 _current = null;
+                _stopped.Cancel();
+                _stopped = new CancellationTokenSource();
+                _pending.Clear();
             }
-            _pending.Clear();
         }
     }
 }

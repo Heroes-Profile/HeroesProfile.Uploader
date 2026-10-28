@@ -1,3 +1,4 @@
+using Heroes.ReplayParser;
 using Heroesprofile.Uploader.Common;
 using Xunit;
 
@@ -9,6 +10,72 @@ public class ManagerTests
     {
         public void Save(IEnumerable<ReplayFile> files) { }
         public IEnumerable<ReplayFile> Load() => Array.Empty<ReplayFile>();
+    }
+
+    /// <summary>A replay list that's just the given files, all still to upload.</summary>
+    private sealed class Storage(params ReplayFile[] files) : IReplayStorage
+    {
+        public void Save(IEnumerable<ReplayFile> saved) { }
+        public IEnumerable<ReplayFile> Load() => files;
+    }
+
+    private sealed class NoMonitor : IMonitor, ILiveMonitor
+    {
+        public event EventHandler<EventArgs<string>>? ReplayAdded { add { } remove { } }
+        public event EventHandler<EventArgs<string>>? TempBattleLobbyCreated { add { } remove { } }
+        public event EventHandler<EventArgs<string>>? StormSaveCreated { add { } remove { } }
+        public IEnumerable<string> ScanReplays() => Array.Empty<string>();
+        public void Start() { }
+        public void Stop() { }
+        public void StartBattleLobby() { }
+        public void StartStormSave() { }
+        public void StopBattleLobbyWatcher() { }
+        public void StopStormSaveWatcher() { }
+        public bool IsBattleLobbyRunning() => false;
+        public bool IsStormSaveRunning() => false;
+    }
+
+    /// <summary>Every replay is eligible for upload.</summary>
+    private sealed class EligibleAnalyzer : IAnalyzer
+    {
+        public int MinimumBuild { get; set; }
+        public Replay Analyze(ReplayFile file) => new Replay();
+        public string GetFingerprint(Replay replay) => "";
+    }
+
+    /// <summary>Fails the way the real one does on a reply it can't read, e.g. an html error page sent with a 200.</summary>
+    private sealed class BrokenUploader : IUploader
+    {
+        public Task CheckDuplicate(IEnumerable<ReplayFile> replays) => Task.CompletedTask;
+
+        public Task Upload(Replay replay_results, ReplayFile file, bool PostMatchPage)
+        {
+            file.UploadStatus = UploadStatus.InProgress;
+            throw new Newtonsoft.Json.JsonReaderException("Unexpected character encountered while parsing value: <");
+        }
+
+        public Task<UploadStatus> Upload(Replay replay_results, string fingerprint, string file, bool PostMatchPage) =>
+            throw new NotSupportedException();
+    }
+
+    [Fact]
+    public async Task An_upload_that_throws_is_marked_failed_rather_than_left_uploading()
+    {
+        var file = new ReplayFile("a.StormReplay");
+        var manager = new Manager(new Storage(file));
+        var monitor = new NoMonitor();
+
+        manager.Start(monitor, monitor, new EligibleAnalyzer(), new BrokenUploader(), null!);
+
+        var timer = System.Diagnostics.Stopwatch.StartNew();
+        while (file.UploadStatus != UploadStatus.UploadError && timer.Elapsed < TimeSpan.FromSeconds(5)) {
+            await Task.Delay(20, TestContext.Current.CancellationToken);
+        }
+        manager.Stop();
+
+        // Failed, so Retry failed (and the next launch) picks it up again, and the app stops saying it's uploading.
+        Assert.Equal(UploadStatus.UploadError, file.UploadStatus);
+        Assert.Equal(Manager.IdleStatus, manager.Status);
     }
 
     [Fact]

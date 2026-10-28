@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform;
+using Avalonia.Threading;
 using Heroesprofile.Uploader.Desktop.Gui.ViewModels;
 using Heroesprofile.Uploader.Desktop.Migration;
 using System;
@@ -27,12 +28,21 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
         // The UI scale the window's current size was set for, so a scale change can resize it in proportion.
         private double _shownScale;
 
+        // Where the window last was and how big while normal (not minimized or maximized), kept as it
+        // moves and resizes. By the time it closes it may be hidden in the tray or minimized, and Windows
+        // parks a minimized window at -32000,-32000, so its bounds then aren't the ones to save.
+        private PixelPoint? _normalPosition;
+        private Size? _normalSize;
+        private bool _placementCapturePending;
+
         public MainWindow()
         {
             InitializeComponent();
             SetUpTitleBar();
             DataContextChanged += (_, __) => RestorePlacement();
             PropertyChanged += OnWindowPropertyChanged;
+            PositionChanged += (_, __) => QueuePlacementCapture();
+            Resized += (_, __) => QueuePlacementCapture();
             Opened += OnOpened;
             Closing += (_, __) => SavePlacement();
         }
@@ -89,15 +99,46 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
             }
         }
 
+        /// <summary>
+        /// Windows moves and resizes a window it's minimizing or maximizing before it reports the new
+        /// WindowState, so the bounds are read once that has settled (and once per burst while dragging).
+        /// </summary>
+        private void QueuePlacementCapture()
+        {
+            if (_placementCapturePending) {
+                return;
+            }
+            _placementCapturePending = true;
+            Dispatcher.UIThread.Post(() => {
+                _placementCapturePending = false;
+                CapturePlacement();
+            }, DispatcherPriority.Background);
+        }
+
+        private void CapturePlacement()
+        {
+            if (WindowState == WindowState.Normal && IsVisible) {
+                _normalPosition = Position;
+                _normalSize = new Size(Width, Height);
+            }
+        }
+
+        /// <summary>
+        /// Saves where the window last was while normal - also when it's closed from the tray, closed
+        /// minimized or maximized, or the app is restarting for an update.
+        /// </summary>
         private void SavePlacement()
         {
-            if (ViewModel == null || WindowState != WindowState.Normal || !IsVisible) {
+            CapturePlacement();
+            if (ViewModel == null || _normalPosition is not PixelPoint position) {
                 return;
             }
             var config = ViewModel.Config;
-            config.WindowLeft = Position.X;
-            config.WindowTop = Position.Y;
-            config.RememberWindowSize(_shownDesign, Width, Height);
+            config.WindowLeft = position.X;
+            config.WindowTop = position.Y;
+            if (_normalSize is Size size) {
+                config.RememberWindowSize(_shownDesign, size.Width, size.Height);
+            }
             ViewModel.SaveConfig();
         }
 
@@ -113,9 +154,12 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
         private void SwitchSize()
         {
             var config = ViewModel.Config;
-            if (WindowState == WindowState.Normal && IsVisible) {
-                config.RememberWindowSize(_shownDesign, Width, Height);
+            CapturePlacement();
+            if (_normalSize is Size size) {
+                config.RememberWindowSize(_shownDesign, size.Width, size.Height);
             }
+            // The size captured from here on is the new design's; until then it keeps what it had.
+            _normalSize = null;
             _shownDesign = ViewModel.Design;
             if (WindowState == WindowState.Normal) {
                 ApplySize(config.WindowSizeFor(_shownDesign));
@@ -159,6 +203,10 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
 
         private async void OnOpened(object sender, EventArgs e)
         {
+            // Opened fires on every Show(), and restoring from the tray shows the window again - these
+            // are questions for the first time it opens, not every time it comes back from the tray.
+            Opened -= OnOpened;
+
             // The old WPF uploader still installed: offer to uninstall it (this app already has its own
             // copies of the settings and history), so it stops starting with Windows and can't run next
             // to this one. Asked again next start if kept.
@@ -227,6 +275,8 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
         /// <summary>The update banner's "Restart now." link.</summary>
         public void RestartNow()
         {
+            // Velopack ends the process without closing the window, so Closing never saves its placement.
+            SavePlacement();
             // Minimized to the tray right now (hidden, not just iconified) - relaunch the same way so the
             // new process doesn't suddenly pop a window the user had tucked away.
             ViewModel.RestartNow(minimized: !IsVisible);

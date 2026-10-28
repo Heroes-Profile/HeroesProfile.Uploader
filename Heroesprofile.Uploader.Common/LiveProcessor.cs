@@ -30,7 +30,10 @@ namespace Heroesprofile.Uploader.Common
 
 
         private static Logger _log = LogManager.GetCurrentClassLogger();
-        HttpClient client = new HttpClient();
+        // Manager makes a LiveProcessor per game, so a client each would leave one behind per game
+        // (and a fresh connection to set up just as the pre-match page is wanted). One for the app's
+        // lifetime instead, as in Uploader.cs.
+        private static readonly HttpClient client = new HttpClient();
 
 
 

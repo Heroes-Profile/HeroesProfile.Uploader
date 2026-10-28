@@ -24,7 +24,6 @@ namespace Heroesprofile.Uploader.Common
         protected string StormSavePath { get { return ReplayLocation.Current; } }
         protected FileSystemWatcher _battlelobby_watcher;
         protected FileSystemWatcher _stormsave_watcher;
-        private string _watchedStormSavePath;
 
         /// <summary>
         /// The game keeps one save per game and rewrites it as the match goes on. On most
@@ -143,13 +142,6 @@ namespace Heroesprofile.Uploader.Common
         /// </summary>
         public void StartStormSave()
         {
-            if (_stormsave_watcher != null && _watchedStormSavePath != StormSavePath) {
-                // replay folder was changed in settings, rebuild the watcher around the new one
-                _stormsave_watcher.EnableRaisingEvents = false;
-                _stormsave_watcher.Created -= OnStormSaveAdded;
-                _stormsave_watcher.Dispose();
-                _stormsave_watcher = null;
-            }
             if (_stormsave_watcher == null) {
                 try {
                     _stormsave_watcher = new FileSystemWatcher() {
@@ -164,7 +156,6 @@ namespace Heroesprofile.Uploader.Common
                     // game's talents missing for anyone whose system does it that way.
                     _stormsave_watcher.Changed -= OnStormSaveAdded;
                     _stormsave_watcher.Changed += OnStormSaveAdded;
-                    _watchedStormSavePath = StormSavePath;
                 }
                 catch (Exception ex) {
                     _log.Error(ex, $"Failed to watch replay directory for storm saves: {StormSavePath}");
@@ -211,22 +202,6 @@ namespace Heroesprofile.Uploader.Common
             }
 
             _log.Debug($"Stopped watching for new storm save files");
-        }
-
-        /// <summary>
-        /// Checks whether battlelobby watcher is running
-        /// </summary>
-        public bool IsBattleLobbyRunning()
-        {
-            return _battlelobby_watcher == null ? false : true;
-        }
-
-        /// <summary>
-        /// Checks whether stormsave watcher is running
-        /// </summary>
-        public bool IsStormSaveRunning()
-        {
-            return _stormsave_watcher == null ? false : true;
         }
     }
 }

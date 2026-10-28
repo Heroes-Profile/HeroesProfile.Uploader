@@ -114,48 +114,35 @@ namespace Heroesprofile.Uploader.Common
         private Action<Replay, ReplayFile> _uploadedReader;
 
         /// <summary>
-        /// Something to call with each game's parsed lobby, or null for none. The normal app never sets
-        /// one; the Ranks build sets its rank reader here while rank reading is switched on. Takes effect
-        /// straight away, like <see cref="SetTwitchEnabled"/>.
+        /// What to call with each game's live files and finished replay, or null for any of them to call
+        /// nothing. The normal app never sets any; the Ranks build sets its rank reader's three here while
+        /// rank reading is switched on. Set together so turning it on or off restarts the live watchers once,
+        /// not once per reader. Takes effect straight away, like <see cref="SetTwitchEnabled"/>.
         /// </summary>
-        public void SetLobbyReader(Action<Replay> reader)
+        /// <param name="lobby">Called with each game's parsed lobby.</param>
+        /// <param name="stormSave">
+        /// Called with each storm save of the game in progress, parsed (players, map and game mode - the
+        /// lobby file has no mode). The game writes the first one as the match starts. The rank reader uses
+        /// it to drop what it captured in anything but a Storm League game.
+        /// </param>
+        /// <param name="uploaded">
+        /// Called with each replay once Heroes Profile has it - uploaded now, or found already there - with
+        /// its parsed contents and its file (which carries the replay's id on the site). The rank reader uses
+        /// it to send the ranks it read with that id.
+        /// </param>
+        public void SetReaders(Action<Replay> lobby, Action<Replay> stormSave, Action<Replay, ReplayFile> uploaded)
         {
-            if (_lobbyReader == reader) {
+            _uploadedReader = uploaded;
+
+            if (_lobbyReader == lobby && _stormSaveReader == stormSave) {
                 return;
             }
-            _lobbyReader = reader;
+            _lobbyReader = lobby;
+            _stormSaveReader = stormSave;
 
             if (_initialized) {
                 RestartLiveWatchers();
             }
-        }
-
-        /// <summary>
-        /// Something to call with each storm save of the game in progress, parsed (players, map and game mode
-        /// - the lobby file has no mode), or null for none. The game writes the first one as the match
-        /// starts. The Ranks build's rank reader uses it to drop what it captured in anything but a Storm
-        /// League game. Takes effect straight away.
-        /// </summary>
-        public void SetStormSaveReader(Action<Replay> reader)
-        {
-            if (_stormSaveReader == reader) {
-                return;
-            }
-            _stormSaveReader = reader;
-
-            if (_initialized) {
-                RestartLiveWatchers();
-            }
-        }
-
-        /// <summary>
-        /// Something to call with each replay once Heroes Profile has it - uploaded now, or found already
-        /// there - with its parsed contents and its file (which carries the replay's id on the site), or null
-        /// for none. The Ranks build's rank reader uses it to send the ranks it read with that id.
-        /// </summary>
-        public void SetReplayUploadedReader(Action<Replay, ReplayFile> reader)
-        {
-            _uploadedReader = reader;
         }
 
 
@@ -634,7 +621,7 @@ namespace Heroesprofile.Uploader.Common
                     DeleteAfterUpload.HasFlag(DeleteFiles.StormLeague) && replay.GameMode == GameMode.StormLeague
                 );
         }
-        private static async Task SafeCopy(string source, string dest, bool overwrite)
+        internal static async Task SafeCopy(string source, string dest, bool overwrite)
         {
             var watchdog = 10;
             var retry = false;
@@ -644,13 +631,17 @@ namespace Heroesprofile.Uploader.Common
                     retry = false;
                 }
                 catch (Exception ex) {
-                    Debug.WriteLine($"Failed to copy ${source} to ${dest}. Counter at ${watchdog} CAUSED BY ${ex}");
+                    Debug.WriteLine($"Failed to copy {source} to {dest}. Counter at {watchdog} CAUSED BY {ex}");
                     if (watchdog <= 0) {
                         throw;
                     }
                     retry = true;
                 }
-                await Task.Delay(1000);
+                // Only between attempts: a copy that worked is ready now, and waiting here held up every
+                // battle lobby (so the pre-match page) and storm save by a second.
+                if (retry) {
+                    await Task.Delay(1000);
+                }
             } while (watchdog-- > 0 && retry);
         }
     }

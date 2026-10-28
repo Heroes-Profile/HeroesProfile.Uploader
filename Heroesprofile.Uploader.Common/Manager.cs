@@ -529,9 +529,10 @@ namespace Heroesprofile.Uploader.Common
         private List<ReplayFile> ScanReplays()
         {
             var replays = new List<ReplayFile>(_storage.Load());
-            var lookup = new HashSet<ReplayFile>(replays);
-            var comparer = new ReplayFile.ReplayFileComparer();
-            replays.AddRange(_monitor.ScanReplays().Select(x => new ReplayFile(x)).Where(x => !lookup.Contains(x, comparer)));
+            // The comparer has to live in the set itself. Passing it to Contains instead binds to the LINQ
+            // overload, which walks every stored entry for each scanned file and stalls startup on big folders.
+            var lookup = new HashSet<ReplayFile>(replays, new ReplayFile.ReplayFileComparer());
+            replays.AddRange(_monitor.ScanReplays().Select(x => new ReplayFile(x)).Where(x => !lookup.Contains(x)));
             return replays.OrderByDescending(x => x.Created).ToList();
         }
 

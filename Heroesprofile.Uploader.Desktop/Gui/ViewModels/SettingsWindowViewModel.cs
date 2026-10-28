@@ -14,7 +14,8 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
     /// Backs the Settings dialog, which mirrors the WPF app's SettingsWindow: replay folder, theme,
     /// (hidden) beta updates, Twitch uploader key, and webhook. As in WPF, changes apply straight away -
     /// there's no Save/Cancel - and settings are written when the window closes. The one guard is also
-    /// WPF's: an invalid webhook url can't be saved, so it blocks closing until it's fixed or cleared.
+    /// WPF's: an invalid webhook url can't be saved, so it blocks closing until it's fixed or cleared
+    /// (unless the app is quitting - see <see cref="TryClose"/>).
     /// </summary>
     public partial class SettingsWindowViewModel : ObservableObject
     {
@@ -266,16 +267,21 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
         }
 
         /// <summary>
-        /// Called as the window closes. Returns false (keep the window open) while the webhook url is
-        /// invalid; otherwise applies what was typed but not yet applied and writes config.json.
+        /// Called as the window closes: applies what was typed but not yet applied and writes config.json.
+        /// When the user closes the window (<paramref name="canStayOpen"/>), an invalid webhook url keeps it
+        /// open - returns false - so it can be fixed or cleared. When the app or the OS is shutting down the
+        /// window has to go, so the rest is saved and the webhook keeps its previous value.
         /// </summary>
-        public bool TryClose()
+        public bool TryClose(bool canStayOpen)
         {
-            if (!IsValidWebhookUrl(WebhookUrl)) {
+            if (IsValidWebhookUrl(WebhookUrl)) {
+                _main.ApplyWebhookUrl(WebhookUrl);
+            } else if (canStayOpen) {
                 WebhookError = InvalidWebhookMessage;
                 return false;
+            } else {
+                _log.Warn("Settings closed by shutdown with an invalid webhook url - keeping the previous one");
             }
-            _main.ApplyWebhookUrl(WebhookUrl);
             if ((ReplayPath ?? "").Trim() != (_main.Config.ReplayPath ?? "")) {
                 _main.ApplyReplayPath(ReplayPath);
             }

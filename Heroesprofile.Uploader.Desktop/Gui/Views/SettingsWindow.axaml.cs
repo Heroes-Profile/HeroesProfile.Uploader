@@ -10,7 +10,7 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
     /// <summary>
     /// Replay folder, theme, Twitch key and webhook - see <see cref="SettingsWindowViewModel"/>. Like the
     /// WPF SettingsWindow there are no Save/Cancel buttons: changes apply as they're made and are saved
-    /// on close, which an invalid webhook url blocks.
+    /// on close, which an invalid webhook url blocks (unless the app is quitting).
     /// </summary>
     public partial class SettingsWindow : Window
     {
@@ -34,7 +34,11 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
 
         private void OnClosing(object sender, WindowClosingEventArgs e)
         {
-            if (!ViewModel.TryClose()) {
+            // Only the user closing this window itself may be held up by an invalid webhook url. The tray's
+            // Quit closes the main window, which asks this one first (OwnerWindowClosing), and logoff/shutdown
+            // closes everything (ApplicationShutdown/OSShutdown) - a cancel here would cancel those too, so
+            // Quit would do nothing and Windows would show the app as preventing shutdown.
+            if (!ViewModel.TryClose(canStayOpen: e.CloseReason == WindowCloseReason.WindowClosing)) {
                 e.Cancel = true;
             }
         }

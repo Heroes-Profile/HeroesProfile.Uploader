@@ -29,8 +29,8 @@ namespace Heroesprofile.Uploader.RankCapture
                 return null;
             }
 
-            // Names, heroes and ladder positions from the first loading-screen frame: they don't change
-            // between frames, and reading text is the slow part.
+            // Names and heroes from the first loading-screen frame: they don't change between frames, and
+            // reading text is the slow part. Ladder positions can be missing from it (GrandmasterNumberAsync).
             var (left, right) = loading[0];
             var cards = new List<Card>();
             foreach (var rank in ranks) {
@@ -39,11 +39,32 @@ namespace Heroesprofile.Uploader.RankCapture
                     await CardText.ReadNameAsync(strip, rank.Side, rank.Slot),
                     await CardText.ReadHeroAsync(strip, rank.Side, rank.Slot));
                 var read = rank.League == League.Grandmaster
-                    ? rank with { LadderPosition = await CardText.ReadGrandmasterNumberAsync(strip, rank.Side, rank.Slot, templates) }
+                    ? rank with { LadderPosition = await GrandmasterNumberAsync(loading, rank, templates) }
                     : rank;
                 cards.Add(new Card(read, text));
             }
             return cards;
+        }
+
+        /// <summary>
+        /// A Grandmaster's ladder position, from the first loading-screen frame that shows their Grandmaster badge.
+        /// The loading screen opens on everyone's account-level border and only switches to rank badges a second
+        /// or so in, so the first frame captured can be without it (sample 7fbe4230, 2026-10-23: two
+        /// Grandmasters sent without their #73 and #28).
+        /// </summary>
+        private static async Task<int?> GrandmasterNumberAsync(IReadOnlyList<(Pixels Left, Pixels Right)> loading, CardRank rank, RankTemplates templates)
+        {
+            foreach (var (left, right) in loading) {
+                var strip = rank.Side == Side.Left ? left : right;
+                if (LoadingScreenReader.ReadCard(strip, rank.Side, rank.Slot, templates).League != League.Grandmaster) {
+                    continue;
+                }
+                var number = await CardText.ReadGrandmasterNumberAsync(strip, rank.Side, rank.Slot, templates);
+                if (number != null) {
+                    return number;
+                }
+            }
+            return null;
         }
 
         /// <summary>Each of <paramref name="players"/>' ranks (by index into them), or null if the cards can't be matched.</summary>

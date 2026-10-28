@@ -398,14 +398,16 @@ namespace Heroesprofile.Uploader.Common
         }
 
         // Files is added to from background threads without a lock, so a plain enumeration can race an
-        // insert and throw; copying it again is cheap and safe.
+        // insert and throw; copying it again is cheap and safe. ToList copies with CopyTo rather than
+        // enumerating, and that fails differently: an insert between it reading the count and copying
+        // makes the copy too long for the array it sized (ArgumentException).
         private List<ReplayFile> Snapshot()
         {
             while (true) {
                 try {
                     return Files.ToList();
                 }
-                catch (InvalidOperationException) {
+                catch (Exception ex) when (ex is InvalidOperationException || ex is ArgumentException) {
                     // Files changed mid-copy - try again.
                 }
             }
@@ -433,7 +435,7 @@ namespace Heroesprofile.Uploader.Common
             Task.Run(() => {
                 try {
                     var comparer = new ReplayFile.ReplayFileComparer();
-                    var known = new HashSet<ReplayFile>(Files, comparer);
+                    var known = new HashSet<ReplayFile>(Snapshot(), comparer);
                     var found = _monitor.ScanReplays()
                         .Select(x => new ReplayFile(x))
                         .Where(x => !known.Contains(x))
@@ -459,8 +461,9 @@ namespace Heroesprofile.Uploader.Common
         {
             while (await processingQueue.OutputAvailableAsync()) {
                 await _resumed.WaitAsync();
+                ReplayFile file = null;
                 try {
-                    var file = await processingQueue.TakeAsync();
+                    file = await processingQueue.TakeAsync();
 
                     file.UploadStatus = UploadStatus.InProgress;
 
@@ -486,14 +489,24 @@ namespace Heroesprofile.Uploader.Common
                 }
                 catch (Exception ex) {
                     _log.Error(ex, "Error in upload loop");
+                    // Uploader only turns network failures into UploadError - anything else (a reply that
+                    // isn't the JSON it expects, the replay gone from disk) lands here. Left InProgress, the
+                    // file would show as uploading forever, keep Status on "Uploading..." and be skipped
+                    // by RetryFailed; as a failed upload it's retried like any other.
+                    if (file != null && file.UploadStatus == UploadStatus.InProgress) {
+                        file.UploadStatus = UploadStatus.UploadError;
+                    }
                 }
             }
         }
 
         private void RefreshStatusAndAggregates()
         {
-            _status = Files.Any(x => x.UploadStatus == UploadStatus.InProgress) ? UploadingStatus : IdleStatus;
-            _aggregates = Files.GroupBy(x => x.UploadStatus).ToDictionary(x => x.Key, x => x.Count());
+            // Called from whichever thread changed a file or the list, so take a copy: enumerating Files
+            // itself can race an insert and throw out of the UploadStatus setter that triggered this.
+            var files = Snapshot();
+            _status = files.Any(x => x.UploadStatus == UploadStatus.InProgress) ? UploadingStatus : IdleStatus;
+            _aggregates = files.GroupBy(x => x.UploadStatus).ToDictionary(x => x.Key, x => x.Count());
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Status)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Aggregates)));
         }
@@ -503,7 +516,7 @@ namespace Heroesprofile.Uploader.Common
             try {
                 // save only replays with fixed status. Will retry failed ones on next launch.
                 var ignored = new[] { UploadStatus.None, UploadStatus.UploadError, UploadStatus.InProgress };
-                _storage.Save(Files.Where(x => !ignored.Contains(x.UploadStatus)));
+                _storage.Save(Snapshot().Where(x => !ignored.Contains(x.UploadStatus)));
             }
             catch (Exception ex) {
                 _log.Error(ex, "Error saving replay list");
@@ -516,9 +529,10 @@ namespace Heroesprofile.Uploader.Common
         private List<ReplayFile> ScanReplays()
         {
             var replays = new List<ReplayFile>(_storage.Load());
-            var lookup = new HashSet<ReplayFile>(replays);
-            var comparer = new ReplayFile.ReplayFileComparer();
-            replays.AddRange(_monitor.ScanReplays().Select(x => new ReplayFile(x)).Where(x => !lookup.Contains(x, comparer)));
+            // The comparer has to live in the set itself. Passing it to Contains instead binds to the LINQ
+            // overload, which walks every stored entry for each scanned file and stalls startup on big folders.
+            var lookup = new HashSet<ReplayFile>(replays, new ReplayFile.ReplayFileComparer());
+            replays.AddRange(_monitor.ScanReplays().Select(x => new ReplayFile(x)).Where(x => !lookup.Contains(x)));
             return replays.OrderByDescending(x => x.Created).ToList();
         }
 

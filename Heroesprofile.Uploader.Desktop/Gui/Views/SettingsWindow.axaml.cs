@@ -43,16 +43,27 @@ namespace Heroesprofile.Uploader.Desktop.Gui.Views
             }
         }
 
-        /// <summary>Turning rank reading on asks first: it captures the game window and, during the beta, uploads part of it.</summary>
+        /// <summary>
+        /// Turning rank reading on asks first: it captures the game window and, during the beta, uploads part of
+        /// it. The box is bound one way, so ticking it only ticks the box - the setting (and with it the capture)
+        /// is turned on once the user agrees. Bound both ways, the tick turned rank reading on before the
+        /// question even showed, so a game loading meanwhile was captured and could be sent without consent.
+        /// </summary>
         private async void ReadRanks_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is not CheckBox { IsChecked: true }) {
+            var box = (CheckBox)sender;
+            if (box.IsChecked != true) {
+                ViewModel.ReadRanks = false;
                 return;
             }
             var answer = await MessageDialog.ShowAsync(this, "Read ranks from the loading screen",
                 SettingsWindowViewModel.RankReadingConsent, "Turn on", "Cancel");
-            if (answer != "Turn on") {
-                ViewModel.ReadRanks = false;
+            if (answer == "Turn on") {
+                ViewModel.ReadRanks = true;
+            } else {
+                // The setting never changed, so the binding has nothing to push: untick the box the way the
+                // tick was made (ToggleButton.Toggle uses SetCurrentValue too).
+                box.SetCurrentValue(CheckBox.IsCheckedProperty, false);
             }
         }
 

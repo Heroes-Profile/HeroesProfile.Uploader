@@ -32,11 +32,18 @@ namespace Heroesprofile.Uploader.RankCapture
         /// <summary>A player as the finished replay has them.</summary>
         public sealed record ReplayPlayer(string Name, int BattleTag, int Region, int Team, string Hero);
 
-        /// <summary>What's sent for one game: the replay's id, and each identified player's rank.</summary>
+        /// <summary>
+        /// What's sent for one game: the replay's id, and each identified player's rank - only actual ranks, Bronze
+        /// to Grandmaster. A card without a division badge isn't sent: the loading screen opens on everyone's
+        /// chosen portrait border and swaps in ranks after, and on some screens a ranked player's swap never
+        /// came while we captured (Varylux#1314, 2026-10-31: Gold 1 on one uploader, their Basic Border on another
+        /// in the same game). No badge can't tell unranked from not shown, so it says nothing. Unknown (colours
+        /// off) isn't a rank either.
+        /// </summary>
         public static object Payload(int replayId, IReadOnlyList<ReplayPlayer> players, IReadOnlyList<PlayerRanks.PlayerRank> ranks) => new {
             replayID = replayId,
             uploaderVersion = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,
-            ranks = ranks.Where(r => r.Match.Identified && players[r.Player].BattleTag > 0).Select(r => new {
+            ranks = ranks.Where(r => r.Match.Identified && players[r.Player].BattleTag > 0 && r.Rank.League is not (League.Unranked or League.Unknown)).Select(r => new {
                 battletag = $"{players[r.Player].Name}#{players[r.Player].BattleTag}",
                 region = players[r.Player].Region,
                 league = r.Rank.League.ToString(),

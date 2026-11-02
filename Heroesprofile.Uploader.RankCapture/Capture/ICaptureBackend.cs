@@ -8,7 +8,18 @@ namespace Heroesprofile.Uploader.RankCapture
     /// captured off an HDR display and converted back to the game's colours (see ScRgb), its SDR white then
     /// <see cref="SdrWhiteNits"/>.
     /// </summary>
-    internal sealed record RawFrame(int Width, int Height, int Stride, byte[] Bgra, bool Hdr = false, float SdrWhiteNits = 0);
+    internal sealed record RawFrame(int Width, int Height, int Stride, byte[] Bgra, bool Hdr = false, float SdrWhiteNits = 0)
+    {
+        /// <summary>A copy of part of the frame, e.g. a windowed game's own image without its title bar and borders.</summary>
+        public RawFrame Crop(int x, int y, int width, int height)
+        {
+            var bytes = new byte[width * height * 4];
+            for (var row = 0; row < height; row++) {
+                Buffer.BlockCopy(Bgra, (y + row) * Stride + x * 4, bytes, row * width * 4, width * 4);
+            }
+            return this with { Width = width, Height = height, Stride = width * 4, Bgra = bytes };
+        }
+    }
 
     /// <summary>
     /// How this OS captures the game's window (<see cref="CaptureBackends.Current"/>): Windows' own capture

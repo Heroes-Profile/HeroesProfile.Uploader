@@ -147,4 +147,26 @@ public class ManagerTests
 
         Assert.True(timer.ElapsedMilliseconds < 100);
     }
+
+    [Fact]
+    public async Task A_live_file_that_copies_first_time_is_not_held_up()
+    {
+        // Every battle lobby goes through this before the pre-match page opens. Named so the battle lobby
+        // and storm save watchers of an uploader running on this machine don't pick it up.
+        var dir = Directory.CreateTempSubdirectory("hp-copy-");
+        try {
+            var source = Path.Combine(dir.FullName, "live.bin");
+            var dest = Path.Combine(dir.FullName, "copy.bin");
+            File.WriteAllBytes(source, new byte[1000]);
+            var timer = System.Diagnostics.Stopwatch.StartNew();
+
+            await Manager.SafeCopy(source, dest, true);
+
+            Assert.True(timer.ElapsedMilliseconds < 500, $"took {timer.ElapsedMilliseconds}ms");
+            Assert.Equal(1000, new FileInfo(dest).Length);
+        }
+        finally {
+            dir.Delete(recursive: true);
+        }
+    }
 }

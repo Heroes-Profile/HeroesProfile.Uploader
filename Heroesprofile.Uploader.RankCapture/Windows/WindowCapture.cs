@@ -24,6 +24,8 @@ namespace Heroesprofile.Uploader.RankCapture
     /// On an HDR display (<see cref="DisplayColour"/>) it captures the screen's own scRGB image instead of
     /// asking Windows for an 8-bit one - which came out over-saturated and blown out - and turns it back into
     /// the game's colours itself (<see cref="ScRgb"/>).
+    /// A game in a window is captured with its title bar and borders; each frame is cut down to the game's own
+    /// image (<see cref="ClientArea"/>), which is what the loading-screen reader measures from.
     /// </summary>
     internal sealed class WindowCapture : IDisposable
     {
@@ -38,6 +40,8 @@ namespace Heroesprofile.Uploader.RankCapture
         public DisplayColour Colour { get; }
 
         private readonly Action<RawFrame> _onFrame;
+        private readonly IntPtr _window;
+        private bool _loggedWindowed;
         private readonly IDirect3DDevice _device;
         private readonly Direct3D.Device _d3d;
         private readonly object _hdrLock = new object();
@@ -56,6 +60,7 @@ namespace Heroesprofile.Uploader.RankCapture
             Interval = interval;
             Colour = colour;
             _onFrame = onFrame;
+            _window = window;
             _d3d = Direct3D.CreateDevice();
             _device = _d3d.WinRT;
             _item = CaptureItemForWindow(window);
@@ -153,14 +158,14 @@ namespace Heroesprofile.Uploader.RankCapture
                 if (Colour.Hdr) {
                     var hdr = ReadHdr(frame);
                     if (hdr != null) {
-                        _onFrame(hdr);
+                        _onFrame(GameImage(hdr));
                     }
                     return;
                 }
                 using var bitmap = await SoftwareBitmap.CreateCopyFromSurfaceAsync(frame.Surface, BitmapAlphaMode.Ignore);
                 var bytes = new byte[bitmap.PixelWidth * bitmap.PixelHeight * 4];
                 bitmap.CopyToBuffer(bytes.AsBuffer());
-                _onFrame(new RawFrame(bitmap.PixelWidth, bitmap.PixelHeight, bitmap.PixelWidth * 4, bytes));
+                _onFrame(GameImage(new RawFrame(bitmap.PixelWidth, bitmap.PixelHeight, bitmap.PixelWidth * 4, bytes)));
             }
             catch (Exception ex) {
                 _log.Debug($"Couldn't copy a captured frame: {ex.Message}");
@@ -168,6 +173,19 @@ namespace Heroesprofile.Uploader.RankCapture
             finally {
                 Interlocked.Exchange(ref _busy, 0);
             }
+        }
+
+        /// <summary>The game's own image in a captured frame: without the title bar and borders, if it's in a window.</summary>
+        private RawFrame GameImage(RawFrame frame)
+        {
+            if (ClientArea.Of(_window, frame.Width, frame.Height) is not ClientArea.Rect area || (area.Width == frame.Width && area.Height == frame.Height)) {
+                return frame;
+            }
+            if (!_loggedWindowed) {
+                _loggedWindowed = true;
+                _log.Info($"Rank reading: the game is in a window ({frame.Width} x {frame.Height} with its title bar and borders) - reading its {area.Width} x {area.Height} image");
+            }
+            return frame.Crop(area.Left, area.Top, area.Width, area.Height);
         }
 
         /// <summary>

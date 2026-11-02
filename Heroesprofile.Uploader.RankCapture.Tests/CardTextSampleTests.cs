@@ -354,4 +354,20 @@ public class CardTextSampleTests(ITestOutputHelper output)
         Assert.Contains("\"battletag\":\"Zemill#1940\"", json);
         Assert.Contains("\"replayID\":123", json);
     }
+
+    [Fact]
+    public void Only_actual_ranks_are_sent()
+    {
+        var players = Enumerable.Range(0, 4).Select(i => new RankUploader.ReplayPlayer("Player" + i, 1000 + i, 1, 0, "Hero")).ToList();
+        PlayerRanks.PlayerRank Read(int player, League league, int? division) =>
+            new(player, new CardRank(Side.Left, player, league, division), new PlayerMatcher.Match(player, player, 1, "Player" + player, 1, "Hero"));
+        var ranks = new[] { Read(0, League.Gold, 1), Read(1, League.Unranked, null), Read(2, League.Unknown, 3), Read(3, League.Grandmaster, null) };
+
+        var json = System.Text.Json.JsonSerializer.Serialize(RankUploader.Payload(1, players, ranks));
+        output.WriteLine(json);
+        Assert.Contains("Player0#1000", json);
+        Assert.Contains("Player3#1003", json);
+        Assert.DoesNotContain("Player1#1001", json);  // no badge: unranked, or a rank not shown
+        Assert.DoesNotContain("Player2#1002", json);  // colours off
+    }
 }

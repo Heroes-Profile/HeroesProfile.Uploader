@@ -242,9 +242,13 @@ namespace Heroesprofile.Uploader.Common
         private void StartBattleLobbyWatcherEvent()
         {
             if (WatchesLiveGames) {
-                _live_monitor.TempBattleLobbyCreated += async (_, e) => {
+                // The handler can take a while (pre-match request, Twitch), and a settings change can swap
+                // in a new monitor meanwhile, so it works on the one that raised the event rather than
+                // whatever _live_monitor is by the time it finishes.
+                var monitor = _live_monitor;
+                monitor.TempBattleLobbyCreated += async (_, e) => {
 
-                    _live_monitor.StopBattleLobbyWatcher();
+                    monitor.StopBattleLobbyWatcher();
                     _liveProcessor = new LiveProcessor(PreMatchPage, Twitch) { LobbyParsed = _lobbyReader };
 
                     var tmpPath = Path.GetTempFileName();
@@ -266,11 +270,15 @@ namespace Heroesprofile.Uploader.Common
                         catch (Exception ex) {
                             _log.Debug($"Could not delete temp battlelobby copy '{tmpPath}': {ex.Message}");
                         }
-                        _live_monitor.StartBattleLobby();
+                        // A replaced monitor stays stopped: its replacement is already watching, or isn't
+                        // meant to be if the live features were switched off.
+                        if (monitor == _live_monitor) {
+                            monitor.StartBattleLobby();
+                        }
                     }
                 };
 
-                _live_monitor.StartBattleLobby();
+                monitor.StartBattleLobby();
             }
         }
 
@@ -413,10 +421,9 @@ namespace Heroesprofile.Uploader.Common
             _monitor.Stop();
             _monitor.Start();
 
-            if (_live_monitor.IsStormSaveRunning()) {
-                _live_monitor.StopStormSaveWatcher();
-                _live_monitor.StartStormSave();
-            }
+            // The storm saves live in the replay folder, and on Linux the battle lobby folder sits in the
+            // same Wine prefix, so both watchers have to move with it.
+            RestartLiveWatchers();
 
             // scanning can take a while on a big folder, keep it off the caller's (ui) thread
             Task.Run(() => {

@@ -31,8 +31,6 @@ public class ManagerTests
         public void StartStormSave() { }
         public void StopBattleLobbyWatcher() { }
         public void StopStormSaveWatcher() { }
-        public bool IsBattleLobbyRunning() => false;
-        public bool IsStormSaveRunning() => false;
     }
 
     /// <summary>Every replay is eligible for upload.</summary>

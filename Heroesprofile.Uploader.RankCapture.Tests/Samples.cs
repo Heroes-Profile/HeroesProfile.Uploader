@@ -7,6 +7,8 @@ namespace Heroesprofile.Uploader.RankCapture.Tests;
 /// The players' loading-screen samples in rank-samples/ (a gitignored mirror of the private sl-rank-samples
 /// bucket: one folder per game, its frames' left and right card strips as PNGs) and their labels,
 /// rank-samples/reference/labels.csv - one row per card, checked by hand in part (see LabelledSampleTests).
+/// The games the tests use are all in the golden set (golden/games), so a machine needs only golden/ and
+/// reference/ from the bucket: <see cref="FindGame"/> looks there first, then in the date folders.
 /// </summary>
 internal static class Samples
 {
@@ -62,9 +64,21 @@ internal static class Samples
         }
     }
 
+    /// <summary>
+    /// A game's folder by the start of its id: its golden copy if there is one, else its date folder; null
+    /// when neither is here.
+    /// </summary>
+    public static string? FindGame(string id)
+    {
+        var golden = Path.Combine(GoldenFolder, "games");
+        var places = Directory.Exists(golden) ? new[] { golden } : Array.Empty<string>();
+        return places.Concat(Directory.Exists(Folder) ? Directory.GetDirectories(Folder, "2*") : Array.Empty<string>())
+            .SelectMany(d => Directory.GetDirectories(d, id + "*"))
+            .FirstOrDefault();
+    }
+
     public static IReadOnlyList<Label> LoadLabels()
     {
-        var folders = Directory.GetDirectories(Folder, "2*").SelectMany(Directory.GetDirectories).ToList();
         var labels = new List<Label>();
         foreach (var line in File.ReadLines(LabelsFile).Skip(1)) {
             var parts = line.Split(',');
@@ -73,7 +87,7 @@ internal static class Samples
             }
             // "2026-10-16/520cc08e-*" names the game folder by the start of its id (unique on its own).
             var id = parts[0].Split('/')[1].TrimEnd('*').TrimEnd('-');
-            var folder = folders.Single(f => Path.GetFileName(f).StartsWith(id, StringComparison.Ordinal));
+            var folder = FindGame(id) ?? throw new DirectoryNotFoundException($"Labelled game {id} isn't here (sync gs://sl-rank-samples/golden)");
             var side = parts[1][0] == 'L' ? Side.Left : Side.Right;
             var offColours = parts.Length > 3 && parts[3].Contains("over-saturated", StringComparison.Ordinal);
             labels.Add(new Label(folder, id, side, parts[1][1] - '1', parts[2], offColours));
@@ -113,6 +127,42 @@ internal static class Samples
         }
         return null;
     }
+
+    /// <summary>
+    /// The golden set: games picked to cover every league, screen and hard case, each trimmed to its
+    /// loading-screen frames, with one label per card (golden/labels.csv: sample, card, rank, source). Built
+    /// from reference/golden-labels.csv by <see cref="GoldenSetBuilder"/>, and kept in the bucket's golden/
+    /// prefix so a machine can sync just it.
+    /// </summary>
+    public static string GoldenFolder => Path.Combine(Folder, "golden");
+
+    public static string GoldenLabelsFile => Path.Combine(GoldenFolder, "labels.csv");
+
+    /// <summary>Skips the calling test when the golden set isn't on this machine.</summary>
+    public static void RequireGolden()
+    {
+        if (!File.Exists(GoldenLabelsFile)) {
+            Assert.Skip("No golden set here (sync gs://sl-rank-samples/golden to rank-samples/golden)");
+        }
+    }
+
+    /// <summary>
+    /// One golden card: its game's folder name, card ("L1".."R5"), rank as the screen shows it ("Gold 3",
+    /// "Grandmaster #17", "Master", "Unranked" for no badge) and where the label came from: "hand-checked ...",
+    /// "labels.csv: ..." or "N uploaders agree" (that many uploaders in the same game read it the same).
+    /// </summary>
+    public sealed record GoldenLabel(string Game, string Card, string Rank, string Source)
+    {
+        public Side Side => Card[0] == 'L' ? Side.Left : Side.Right;
+        public int Slot => Card[1] - '1';
+    }
+
+    public static IReadOnlyList<GoldenLabel> LoadGoldenLabels() =>
+        File.ReadLines(GoldenLabelsFile).Skip(1)
+            .Select(line => line.Split(',', 4))
+            .Where(parts => parts.Length == 4)
+            .Select(parts => new GoldenLabel(parts[0], parts[1], parts[2], parts[3]))
+            .ToList();
 
     /// <summary>
     /// Whether a game is in the half the templates are built from: its id starts 0-7. The other half (8-f)

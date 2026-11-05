@@ -159,7 +159,7 @@ public class LabelledSampleTests(ITestOutputHelper output)
         var templates = RankTemplates.Shipped!;
         var wrong = new List<string>();
         foreach (var game in HdrHandChecked.GroupBy(c => c.Sample)) {
-            var folder = Directory.GetDirectories(Samples.Folder, "2*").SelectMany(d => Directory.GetDirectories(d, game.Key + "*")).FirstOrDefault();
+            var folder = Samples.FindGame(game.Key);
             if (folder == null) {
                 Assert.Skip($"HDR sample {game.Key} isn't here (synced 2026-10-23 or later)");
             }

@@ -49,7 +49,7 @@ public class CardTextSampleTests(ITestOutputHelper output)
     public async Task Reads_grandmaster_positions_the_first_frame_doesnt_show()
     {
         Samples.RequireSamples();
-        var folder = Directory.GetDirectories(Samples.Folder, "2*").SelectMany(d => Directory.GetDirectories(d, "7fbe4230*")).FirstOrDefault();
+        var folder = Samples.FindGame("7fbe4230");
         if (folder == null || !File.Exists(Path.Combine(folder, "frame-7-left.png"))) {
             Assert.Skip("Sample 7fbe4230 (2026-10-23) and its frames aren't here");
         }

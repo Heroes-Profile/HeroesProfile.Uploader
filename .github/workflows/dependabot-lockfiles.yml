@@ -1,0 +1,61 @@
+name: Dependabot lock files
+
+# Dependabot only rewrites the packages.lock.json of the project that names a package. The others that
+# get it through a project reference (Tests uses Avalonia through Desktop, for example) keep the old
+# version, and CI's locked restore then fails with NU1004. This regenerates every lock file on a
+# Dependabot PR and pushes them to its branch.
+#
+# A push made with GITHUB_TOKEN doesn't start other workflows, so CI is started on the fixed branch
+# by hand afterwards (workflow_dispatch is the exception to that rule); its checks show on the PR.
+# Dependabot won't rebase a PR with someone else's commit on it by itself: comment
+# `@dependabot recreate` to start it over, and this runs again on the new branch.
+on:
+  pull_request:
+    branches: [develop]
+
+permissions:
+  contents: write   # push the regenerated lock files
+  actions: write    # start CI on the new commit
+
+concurrency:
+  group: dependabot-lockfiles-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  lockfiles:
+    # Only Dependabot's own branches in this repo - never a fork's PR.
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          submodules: recursive
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      # The same projects CI restores (which covers Common and Desktop through their references).
+      - name: Regenerate lock files
+        run: |
+          for project in Heroesprofile.Uploader.Tests Heroesprofile.Uploader.RankCapture Heroesprofile.Uploader.RankCapture.Tests; do
+            dotnet restore "$project" --force-evaluate -p:RestoreLockedMode=false
+          done
+
+      - name: Push them and start CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          if git diff --quiet -- '**/packages.lock.json'; then
+            echo "Lock files already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- '**/packages.lock.json'
+          git commit -m "Update the other projects' lock files"
+          git push origin "HEAD:$BRANCH"
+          gh workflow run ci.yml --ref "$BRANCH"

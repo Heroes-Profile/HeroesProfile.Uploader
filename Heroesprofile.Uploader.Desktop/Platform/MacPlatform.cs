@@ -70,8 +70,14 @@ namespace Heroesprofile.Uploader.Desktop.Platform
                 ? new[] { "/usr/bin/open", "-a", bundle, "--args", "--minimized" }
                 : new[] { exe, "--minimized" };
 
+            // Called again at every start while the box is ticked (MainWindowViewModel), so leave an
+            // unchanged agent alone rather than rewriting the same file each time.
+            var plist = MacLaunchAgent.Plist(LaunchAgentLabel, arguments);
+            if (File.Exists(LaunchAgentPath) && File.ReadAllText(LaunchAgentPath) == plist) {
+                return;
+            }
             Directory.CreateDirectory(Path.GetDirectoryName(LaunchAgentPath));
-            File.WriteAllText(LaunchAgentPath, MacLaunchAgent.Plist(LaunchAgentLabel, arguments));
+            File.WriteAllText(LaunchAgentPath, plist);
             _log.Info($"Wrote {LaunchAgentPath}");
         }
 

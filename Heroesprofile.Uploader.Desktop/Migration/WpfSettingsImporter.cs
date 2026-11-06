@@ -18,7 +18,8 @@ namespace Heroesprofile.Uploader.Desktop.Migration
     ///
     /// Not imported: "Start with windows". The WPF app's Startup-folder shortcut keeps starting the WPF
     /// app until it's removed; registering this app too would start both at login. The first-run
-    /// "remove the old uploader" prompt (LegacyApp) takes care of that.
+    /// "remove the old uploader" prompt (LegacyApp) takes care of that, and turns this app's own
+    /// "Start with windows" on once that shortcut is gone (MainWindow.OnOpened).
     /// </summary>
     internal static class WpfSettingsImporter
     {

@@ -77,7 +77,7 @@
 
         <Border IsVisible="{Binding ShowRestartBanner}" Background="{DynamicResource AppAccentBrush}" CornerRadius="4" Padding="8,5">
           <StackPanel Spacing="2">
-            <TextBlock Text="An update is downloaded and will be installed when you restart the uploader."
+            <TextBlock Text="{Binding RestartBannerText}"
                        FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource AppAccentInkBrush}" />
             <Button Classes="link-btn" Click="RestartNow_Click">
               <TextBlock Text="Restart now." FontWeight="SemiBold" TextDecorations="Underline" Foreground="{DynamicResource AppAccentInkBrush}" />

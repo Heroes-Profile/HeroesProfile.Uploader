@@ -50,6 +50,24 @@ namespace Heroesprofile.Uploader.Desktop
         }
 
         /// <summary>
+        /// Whether another instance is running, without asking it to show itself - for deciding, before
+        /// anything else starts, whether it's safe to apply a staged update (which stops every running
+        /// copy). A check that fails says no, as it did before there was a check.
+        /// </summary>
+        public static bool IsRunning()
+        {
+            try {
+                using var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+                client.Connect(new UnixDomainSocketEndPoint(SocketPath));
+                return true;
+            }
+            catch (Exception) {
+                // Nobody listening, no socket file, or no Unix sockets at all.
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Becomes the running instance, or returns null after asking the one already running to show
         /// itself. With <paramref name="waitForPrevious"/> (a relaunch right after an update), waits a
         /// while for the previous instance to exit instead of handing over to it straight away.

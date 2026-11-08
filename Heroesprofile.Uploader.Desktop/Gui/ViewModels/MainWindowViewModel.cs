@@ -31,8 +31,11 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
         public AppConfig Config { get; }
         public Manager Manager { get; private set; }
 
-        /// <summary>WPF's title: "Heroesprofile.com Uploader v2.9" (patch and prerelease only when there is one).</summary>
-        public string WindowTitle { get; } = $"Heroesprofile.com Uploader {VersionString(ReleaseVersion.Current())}";
+        /// <summary>
+        /// WPF's title: "Heroesprofile.com Uploader v2.9" (patch and prerelease only when there is one), with
+        /// "(Rank Reading)" in the Ranks build so a screenshot shows which build it is.
+        /// </summary>
+        public string WindowTitle { get; } = $"Heroesprofile.com Uploader {VersionString(ReleaseVersion.Current())}{(RankReading.IsAvailable ? " (Rank Reading)" : "")}";
 
         /// <summary>Theme 2's footer shows the version (Theme 1 has it in the title only, as in WPF).</summary>
         public string VersionText { get; } = VersionString(ReleaseVersion.Current());

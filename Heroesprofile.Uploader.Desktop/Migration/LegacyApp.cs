@@ -45,8 +45,8 @@ namespace Heroesprofile.Uploader.Desktop.Migration
         public const string RemovePrompt =
             "The old Heroes Profile uploader is still installed. This app replaces it, and has already " +
             "copied over your settings and upload history.\n\n" +
-            "Uninstall the old uploader now? It also stops it starting with Windows. Your settings and " +
-            "upload history in this app are kept.";
+            "Uninstall the old uploader now? If it starts with Windows, this app will instead. Your settings " +
+            "and upload history in this app are kept.";
 
         /// <summary>True when the WPF app is running for any user on this machine. Always false off Windows.</summary>
         public static bool IsRunning()
@@ -75,6 +75,31 @@ namespace Heroesprofile.Uploader.Desktop.Migration
         internal static bool IsInstalledIn(string root) =>
             File.Exists(Path.Combine(root, "Update.exe")) &&
             (File.Exists(Path.Combine(root, "Heroesprofile.Uploader.exe")) || Directory.EnumerateDirectories(root, "app-*").Any());
+
+        /// <summary>
+        /// True when the WPF app is set to start with Windows: its "Start with windows" setting was just its
+        /// shortcut in the Startup folder. Always false off Windows. Never throws.
+        /// </summary>
+        public static bool StartsWithWindows()
+        {
+            if (!OperatingSystem.IsWindows()) {
+                return false;
+            }
+            try {
+                return HasShortcutIn(Environment.GetFolderPath(Environment.SpecialFolder.Startup), InstallRoot);
+            }
+            catch (Exception ex) {
+                _log.Warn(ex, "Could not check whether the old uploader starts with Windows");
+                return false;
+            }
+        }
+
+        /// <summary>True when <paramref name="folder"/> has the WPF app's shortcut, pointing into <paramref name="root"/>.</summary>
+        internal static bool HasShortcutIn(string folder, string root)
+        {
+            var shortcut = Path.Combine(folder, ShortcutName);
+            return File.Exists(shortcut) && PointsInto(shortcut, root);
+        }
 
         /// <summary>
         /// Uninstalls the WPF app: closes it, then removes its program files, shortcuts (the Startup one
@@ -207,7 +232,7 @@ namespace Heroesprofile.Uploader.Desktop.Migration
             var startMenuFolder = Path.Combine(programsFolder, StartMenuFolderName);
             foreach (var folder in folders.Append(startMenuFolder)) {
                 var shortcut = Path.Combine(folder, ShortcutName);
-                if (File.Exists(shortcut) && PointsInto(shortcut, root)) {
+                if (HasShortcutIn(folder, root)) {
                     File.Delete(shortcut);
                     _log.Info($"Removed {shortcut}");
                 }

@@ -69,9 +69,14 @@ namespace Heroesprofile.Uploader.RankCapture
                 if (CaptureDump.Enabled) {
                     // Testers' copy (macOS/Linux prereleases): read it anyway, to show what the reader made of it.
                     _log.Info($"Rank reading: {mode} game, not Storm League - nothing sent, a copy kept for testing");
-                    Task.Run(async () => CaptureDump.Save(mode, frames, await ReadCardsAsync(frames)));
+                    Task.Run(async () => {
+                        var reading = await ReadCardsAsync(frames);
+                        ReturnMemory();
+                        CaptureDump.Save(mode, frames, reading);
+                    });
                 } else {
                     _log.Info($"Rank reading: {mode} game, not Storm League - dropped what was captured");
+                    Task.Run(ReturnMemory);
                 }
                 return;
             }
@@ -80,6 +85,7 @@ namespace Heroesprofile.Uploader.RankCapture
             var fingerprint = Fingerprint(save);
             Task.Run(async () => {
                 var reading = await ReadCardsAsync(frames);
+                ReturnMemory();
                 // Under the lock, so Stop can't clear the pending ranks between this check and the Add.
                 lock (_lock) {
                     if (stopped.IsCancellationRequested) {
@@ -177,14 +183,21 @@ namespace Heroesprofile.Uploader.RankCapture
                     _log.Warn("Rank reading: this build has no rank templates - can't read ranks");
                     return null;
                 }
+                // One frame at a time, keeping only those that show the loading screen: the cards are read
+                // from those alone (PlayerRanks.ReadCardsAsync), and a decoded strip is 12 bytes a pixel -
+                // all 15 frames at once came to hundreds of MB (issue #91).
+                var loadingScreen = new List<int>();
                 var decoded = new List<(Pixels Left, Pixels Right)>();
-                foreach (var frame in frames) {
-                    decoded.Add((await Png.DecodeAsync(frame.LeftPng), await Png.DecodeAsync(frame.RightPng)));
+                for (var i = 0; i < frames.Count; i++) {
+                    var left = await Png.DecodeAsync(frames[i].LeftPng);
+                    var right = await Png.DecodeAsync(frames[i].RightPng);
+                    if (LoadingScreenReader.IsLoadingScreen(left, right)) {
+                        loadingScreen.Add(i);
+                        decoded.Add((left, right));
+                    }
                 }
-                var loadingScreen = Enumerable.Range(0, decoded.Count)
-                    .Where(i => LoadingScreenReader.IsLoadingScreen(decoded[i].Left, decoded[i].Right))
-                    .ToList();
                 var cards = await PlayerRanks.ReadCardsAsync(decoded, templates);
+                decoded.Clear();
                 if (cards == null) {
                     _log.Info("Rank reading: none of the frames shows the loading screen - no ranks read");
                 } else {
@@ -196,6 +209,22 @@ namespace Heroesprofile.Uploader.RankCapture
             catch (Exception ex) {
                 _log.Warn(ex, "Rank reading: couldn't read the ranks");
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// Gives the memory a game's capture and reading used back to the system. Capturing (a full frame a
+        /// second) and reading (each strip as floats) go through hundreds of MB in a few seconds, and .NET
+        /// keeps what it has grown to rather than handing it back - so the app sat at 1.5 GB after a few
+        /// games until restarted (issue #91). Once per game, after the work, so the pause doesn't matter.
+        /// </summary>
+        private static void ReturnMemory()
+        {
+            try {
+                GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true);
+            }
+            catch (Exception ex) {
+                _log.Debug($"Rank reading: couldn't return memory: {ex.Message}");
             }
         }
 

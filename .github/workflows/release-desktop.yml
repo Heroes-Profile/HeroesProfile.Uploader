@@ -405,12 +405,17 @@ jobs:
     environment: release-signing
     permissions:
       contents: write
+      # The release notes name the pull request each change came in (packaging/release-changes.sh).
+      pull-requests: read
     env:
       VERSION: ${{ needs.version.outputs.version }}
       SIGN_LINUX: ${{ secrets.LINUX_GPG_PRIVATE_KEY != '' }}
 
     steps:
+      # The whole history and its tags: the release notes list what changed since the previous release.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
@@ -476,8 +481,13 @@ jobs:
           # 2.9.1, which sends people to the download page. Velopack only reads releases.<channel>.json.
           gh release upload "v$VERSION" HeroesProfileUploader-linux-x64.tar.gz SHA256SUMS HeroesProfileUploaderSetup.exe "${extra[@]}" \
             release-win/extra/wpf-bridge/RELEASES release-win/extra/wpf-bridge/Heroesprofile.Uploader-2.9.1-full.nupkg --clobber
-          # The release description: which of all these files to download on which OS.
-          sed "s|INSTALL_URL|https://github.com/${{ github.repository }}/blob/${{ github.sha }}/packaging/INSTALL.md|"             packaging/release-notes.md > release-notes.md
+          # The release description: what changed since the previous release (packaging/release-changes.sh -
+          # left out if it can't be worked out, rather than failing the release), then which of all these
+          # files to download on which OS.
+          bash packaging/release-changes.sh "$VERSION" "${{ github.sha }}" > release-notes.md ||
+            { echo "::warning::Couldn't list this release's changes - its notes go out without them"; : > release-notes.md; }
+          sed "s|INSTALL_URL|https://github.com/${{ github.repository }}/blob/${{ github.sha }}/packaging/INSTALL.md|" \
+            packaging/release-notes.md >> release-notes.md
           # The "Testing this beta" part is only for prerelease versions (3.0.2-beta.1): full releases drop it.
           if [[ "$VERSION" == *-* ]]; then
             sed -i '/^<!-- \/\?beta -->$/d' release-notes.md

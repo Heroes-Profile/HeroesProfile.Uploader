@@ -136,7 +136,7 @@ namespace Heroesprofile.Uploader.Common
                     }
                     using (var reply = await _client.SendAsync(request)) {
                         if (!reply.IsSuccessStatusCode) {
-                            if (await WaitIfThrottled(reply.StatusCode)) {
+                            if (await WaitIfThrottled(reply)) {
                                 return await UploadFile(replay_results, fingerprint, file, PostMatchPage);
                             }
                             _log.Warn($"Error uploading file '{file}': HTTP {(int)reply.StatusCode} {Describe(await reply.Content.ReadAsStringAsync())}");
@@ -223,7 +223,7 @@ namespace Heroesprofile.Uploader.Common
                         } else {
                             lastResponse = $"HTTP {(int)reply.StatusCode}";
                             _log.Warn($"Parsed check for replay {replayID} failed ({lastResponse})");
-                            await WaitIfThrottled(reply.StatusCode);
+                            await WaitIfThrottled(reply);
                         }
                     }
                 }
@@ -261,7 +261,7 @@ namespace Heroesprofile.Uploader.Common
             try {
                 using (var reply = await _client.GetAsync($"{HeroesProfileApiEndpoint}/replays/fingerprints/{fingerprint}")) {
                     if (!reply.IsSuccessStatusCode) {
-                        if (await WaitIfThrottled(reply.StatusCode)) {
+                        if (await WaitIfThrottled(reply)) {
                             return await CheckDuplicate(fingerprint);
                         }
                         _log.Warn($"Error checking fingerprint '{fingerprint}': HTTP {(int)reply.StatusCode}");
@@ -288,7 +288,7 @@ namespace Heroesprofile.Uploader.Common
                 using (var body = new StringContent(String.Join("\n", fingerprints), Encoding.UTF8))
                 using (var reply = await _client.PostAsync($"{HeroesProfileApiEndpoint}/replays/fingerprints", body)) {
                     if (!reply.IsSuccessStatusCode) {
-                        if (await WaitIfThrottled(reply.StatusCode)) {
+                        if (await WaitIfThrottled(reply)) {
                             return await CheckDuplicate(fingerprints);
                         }
                         _log.Warn($"Error checking fingerprint array: HTTP {(int)reply.StatusCode}");
@@ -313,20 +313,35 @@ namespace Heroesprofile.Uploader.Common
             replays.Where(x => exists.Contains(x.Fingerprint)).Map(x => x.UploadStatus = UploadStatus.Duplicate);
         }
 
+        // The most a Retry-After is honoured for; the site asks for an hour while uploads are paused.
+        private static readonly TimeSpan MaxRetryAfter = TimeSpan.FromHours(2);
+
         /// <summary>
-        /// Check if Heroes Profile API request limit is reached and wait if it is
+        /// Check if Heroes Profile API request limit is reached and wait if it is - as long as the
+        /// server's Retry-After asks (an hour while uploads are paused), or the default delay without one
         /// </summary>
-        /// <param name="status">Status code of the server's response</param>
+        /// <param name="reply">The server's response</param>
         /// <returns>true if it was a "too many requests" response and the caller should retry</returns>
-        private async Task<bool> WaitIfThrottled(HttpStatusCode status)
+        private async Task<bool> WaitIfThrottled(HttpResponseMessage reply)
         {
-            if (status == HttpStatusCode.TooManyRequests) {
-                _log.Warn($"Too many requests, waiting");
-                await Task.Delay(_throttleDelay);
+            if (reply.StatusCode == HttpStatusCode.TooManyRequests) {
+                var delay = RetryAfter(reply) ?? _throttleDelay;
+                _log.Warn($"Too many requests, waiting {delay}");
+                await Task.Delay(delay);
                 return true;
             } else {
                 return false;
             }
+        }
+
+        private static TimeSpan? RetryAfter(HttpResponseMessage reply)
+        {
+            var header = reply.Headers.RetryAfter;
+            var delay = header?.Delta ?? (header?.Date - DateTimeOffset.UtcNow);
+            if (delay == null || delay <= TimeSpan.Zero) {
+                return null;
+            }
+            return delay > MaxRetryAfter ? MaxRetryAfter : delay;
         }
 
         /// <summary>

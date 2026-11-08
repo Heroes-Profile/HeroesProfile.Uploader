@@ -26,7 +26,7 @@ public class WindowedCaptureTests(ITestOutputHelper output)
         Samples.RequireSamples();
         var templates = RankTemplates.Shipped!;
         foreach (var (sample, top, left, right, bottom, noBadge) in WindowedGames) {
-            var folder = Directory.GetDirectories(Samples.Folder, "2*").SelectMany(d => Directory.GetDirectories(d, sample + "*")).FirstOrDefault();
+            var folder = Samples.FindGame(sample);
             if (folder == null) {
                 Assert.Skip($"Windowed sample {sample} isn't here");
             }

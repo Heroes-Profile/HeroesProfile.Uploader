@@ -91,16 +91,31 @@ namespace Heroesprofile.Uploader.Desktop.Updates
         }
 
         /// <summary>
-        /// Exits this process, applies the downloaded update and starts the new version (minimized if
-        /// <paramref name="minimized"/>). Returns false, doing nothing, if there's no downloaded update.
+        /// Starts the updater - which waits for this process to exit, applies the downloaded update and
+        /// starts the new version (minimized if <paramref name="minimized"/>) - then runs
+        /// <paramref name="beforeExit"/> and exits. Returns false, doing nothing, if there's no downloaded
+        /// update; throws, before <paramref name="beforeExit"/> runs, if the updater can't be started.
         /// </summary>
-        public bool ApplyAndRestart(bool minimized)
+        public bool ApplyAndRestart(bool minimized, Action beforeExit)
         {
             if (_manager == null || _ready == null) {
                 return false;
             }
             _log.Info($"Restarting to install {_ready.Version}");
-            _manager.ApplyUpdatesAndRestart(_ready, minimized ? new[] { "--minimized" } : Array.Empty<string>());
+            // The updater first, since it's the part that can fail (Update.exe missing or blocked), and
+            // beforeExit stops uploading for good - so it only runs once the restart is certain. This is
+            // ApplyUpdatesAndRestart split in two, with our clean-up in the middle.
+            _manager.WaitExitThenApplyUpdates(_ready, silent: false, restart: true,
+                minimized ? new[] { "--minimized" } : Array.Empty<string>());
+            try {
+                beforeExit();
+            }
+            catch (Exception ex) {
+                // Exit anyway: the updater is already waiting on this process, and goes ahead without it
+                // after a minute.
+                _log.Error(ex, "Could not finish up before restarting");
+            }
+            Environment.Exit(0);
             return true;
         }
     }

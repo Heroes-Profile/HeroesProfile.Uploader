@@ -120,4 +120,24 @@ public sealed class WpfMigrationTests : IDisposable
         Assert.False(Directory.Exists(Path.Combine(programs, "Heroes Profile")));
         Assert.True(File.Exists(Path.Combine(desktop, "Heroesprofile Uploader.lnk")));
     }
+
+    [Fact]
+    public void Old_app_starts_with_windows_only_while_its_startup_shortcut_is_there()
+    {
+        var install = Sub("Heroesprofile");
+        var startup = Sub("Startup");
+        var programs = Sub("Programs");
+        var shortcut = Path.Combine(startup, "Heroesprofile Uploader.lnk");
+        Directory.CreateDirectory(startup);
+
+        // This app's own shortcut by the same name isn't the old app starting with Windows.
+        File.WriteAllBytes(shortcut, Encoding.Unicode.GetBytes(Sub("Heroesprofile.Uploader", "current", "HeroesProfileUploader.exe")));
+        Assert.False(LegacyApp.HasShortcutIn(startup, install));
+
+        File.WriteAllBytes(shortcut, Encoding.Unicode.GetBytes(Path.Combine(install, "Heroesprofile.Uploader.exe")));
+        Assert.True(LegacyApp.HasShortcutIn(startup, install));
+
+        LegacyApp.RemoveShortcuts(install, new[] { startup }, programs);
+        Assert.False(LegacyApp.HasShortcutIn(startup, install));
+    }
 }

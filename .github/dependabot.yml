@@ -4,8 +4,12 @@ updates:
   # Directory.Packages.props (Common, Desktop, Tests) and the dotnet tool manifest (vpk - keep it in
   # step with the Velopack package). Minor/patch bumps arrive as one grouped PR a week; majors come one
   # per PR so they get a proper look. CI (ci.yml) builds and tests each PR on all three OSes.
+  # PRs go to develop, like all other work (develop -> master). Dependabot reads this file from the
+  # default branch (master), so a change here takes effect once it's merged there. It only rewrites
+  # the lock file of the project that names a package; dependabot-lockfiles.yml fixes the others.
   - package-ecosystem: nuget
     directory: /
+    target-branch: develop
     schedule:
       interval: weekly
     groups:
@@ -14,6 +18,7 @@ updates:
 
   - package-ecosystem: github-actions
     directory: /
+    target-branch: develop
     schedule:
       interval: weekly
     groups:

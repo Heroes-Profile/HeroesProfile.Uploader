@@ -130,6 +130,12 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
         [ObservableProperty]
         private bool showRestartBanner;
 
+        private const string UpdateDownloadedText = "An update is downloaded and will be installed when you restart the uploader.";
+
+        /// <summary>The banner's text: what's waiting, or that "Restart now." couldn't install it (the link stays, to try again).</summary>
+        [ObservableProperty]
+        private string restartBannerText = UpdateDownloadedText;
+
         private readonly AppUpdater _updater = new AppUpdater();
         private bool _restarting;
 
@@ -182,6 +188,21 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
             minimizeToTray = Config.MinimizeToTray;
             startOnLogin = Config.StartOnLogin;
             showInAppMenu = OperatingSystem.IsLinux() && DesktopIntegration.IsAppMenuEntryInstalled;
+
+            // The autostart entry can go missing while config.json still has the box ticked - uninstalling
+            // removes it (see Program.BeforeUninstall) but keeps the config, so a reinstall would show
+            // "Start with windows" on with nothing starting - so write it again on every start, which also
+            // points it at wherever the app runs from now. Not on Linux: there the desktop's own autostart
+            // settings turn an entry off by deleting the file, and writing it back would undo that. Windows'
+            // and macOS's own switches (Task Manager, Login Items) leave the entry in place.
+            if (startOnLogin && Platform.SupportsStartOnLogin && !OperatingSystem.IsLinux()) {
+                try {
+                    Platform.SetStartOnLogin(true);
+                }
+                catch (Exception ex) {
+                    _log.Warn(ex, "Could not update the autostart entry");
+                }
+            }
 
             if (!ReplayFolderSetup.TryApply(Platform, Config.ReplayPath, out var error)) {
                 ReplayFolderError = error;
@@ -554,6 +575,7 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
             switch (result.Outcome) {
                 case AppUpdater.Outcome.ReadyToRestart:
                     ShowRestartBanner = true;
+                    RestartBannerText = UpdateDownloadedText;
                     if (manual) {
                         UpdateStatusText = "";
                     }
@@ -624,16 +646,23 @@ namespace Heroesprofile.Uploader.Desktop.Gui.ViewModels
             }
             _restarting = true;
             try {
-                // Finish what's in flight and save the upload history before Velopack ends this process.
-                Manager?.Stop();
-                SaveConfig();
-                if (!_updater.ApplyAndRestart(minimized)) {
+                // Finish what's in flight and save the upload history before the process ends - but only
+                // once the updater has started: Manager.Stop can't be undone, so a restart that fails
+                // after it would leave the uploader showing Idle and uploading nothing until restarted.
+                var updating = _updater.ApplyAndRestart(minimized, beforeExit: () => {
+                    Manager?.Stop();
+                    SaveConfig();
+                });
+                if (!updating) {
                     _log.Warn("Restart now: no downloaded update to install.");
                     _restarting = false;
                 }
             }
             catch (Exception ex) {
+                // The updater didn't start, so nothing was stopped: keep uploading, and say so where the
+                // user just clicked.
                 _log.Error(ex, "Restart now failed");
+                RestartBannerText = "Couldn't install the update - see log.";
                 _restarting = false;
             }
         }

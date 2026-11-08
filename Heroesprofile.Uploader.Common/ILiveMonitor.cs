@@ -13,9 +13,5 @@ namespace Heroesprofile.Uploader.Common
 
         void StopBattleLobbyWatcher();
         void StopStormSaveWatcher();
-
-        bool IsBattleLobbyRunning();
-        bool IsStormSaveRunning();
-
     }
 }

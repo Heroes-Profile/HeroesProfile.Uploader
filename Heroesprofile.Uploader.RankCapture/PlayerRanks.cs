@@ -52,7 +52,7 @@ namespace Heroesprofile.Uploader.RankCapture
         /// or so in, so the first frame captured can be without it (sample 7fbe4230, 2026-10-23: two
         /// Grandmasters sent without their #73 and #28).
         /// </summary>
-        private static async Task<int?> GrandmasterNumberAsync(IReadOnlyList<(Pixels Left, Pixels Right)> loading, CardRank rank, RankTemplates templates)
+        internal static async Task<int?> GrandmasterNumberAsync(IReadOnlyList<(Pixels Left, Pixels Right)> loading, CardRank rank, RankTemplates templates)
         {
             foreach (var (left, right) in loading) {
                 var strip = rank.Side == Side.Left ? left : right;

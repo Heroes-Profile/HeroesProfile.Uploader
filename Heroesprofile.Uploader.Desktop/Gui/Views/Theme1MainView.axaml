@@ -99,7 +99,7 @@
     <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Margin="0,12,0,0" Orientation="Horizontal"
                 IsVisible="{Binding ShowRestartBanner}">
       <TextBlock Foreground="{DynamicResource UpdateAvailableTextBrush}" VerticalAlignment="Center"
-                 Text="❗ An update is downloaded and will be installed when you restart the uploader. " />
+                 Text="{Binding RestartBannerText, StringFormat='❗ {0} '}" />
       <Button Classes="link" Click="RestartNow_Click" VerticalAlignment="Center">
         <TextBlock Text="Restart now." />
       </Button>

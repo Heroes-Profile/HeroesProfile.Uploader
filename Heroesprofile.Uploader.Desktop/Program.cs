@@ -19,17 +19,23 @@ namespace Heroesprofile.Uploader.Desktop
             // The first non-flag argument is the subcommand; no args (or just "--minimized") means "launch the GUI".
             var command = FindCommand(args);
 
-            if (command != null || args.Contains("--help") || args.Contains("-h") || args.Contains("--version")) {
+            if (!IsGuiLaunch(args)) {
                 AttachToParentConsole();
             }
 
             // Velopack first, before anything else reads the arguments: it handles its install/update/
             // uninstall hooks here (and exits for those), and applies an update an earlier run downloaded,
-            // restarting into the new version. Not for the headless `run`: under systemd that restart
-            // would be killed along with the old process, so the service just keeps its version.
+            // restarting into the new version. Applying stops the copy already running (Windows kills
+            // everything in the install folder, macOS quits the app) and restarts with this launch's
+            // arguments, so only do it for a plain GUI launch with no uploader already running: a second
+            // launch (app menu clicked while the tray copy runs) would otherwise kill the running one
+            // mid-upload, and a one-shot like `--version` or `scan` would come back as that command and
+            // leave no uploader running. The running copy installs the update itself, on "Restart now" or
+            // its next start. Not for the headless `run` either: under systemd that restart would be
+            // killed along with the old process, so the service just keeps its version.
             var restartedAfterUpdate = false;
             var velopack = VelopackApp.Build()
-                .SetAutoApplyOnStartup(command != "run")
+                .SetAutoApplyOnStartup(AppliesStagedUpdate(args, SingleInstance.IsRunning))
                 .OnRestarted(_ => restartedAfterUpdate = true);
             if (OperatingSystem.IsWindows()) {
                 // Only Windows installs have an uninstaller to hook into.
@@ -178,6 +184,17 @@ namespace Heroesprofile.Uploader.Desktop
             var index = Array.IndexOf(args, name);
             return index >= 0 && index + 1 < args.Length ? args[index + 1] : null;
         }
+
+        /// <summary>
+        /// Whether this launch installs an update an earlier run downloaded, before starting (see Main):
+        /// only a plain GUI launch - the app menu, or start on login's --minimized - with no other copy
+        /// running. <paramref name="anotherCopyRunning"/> is only asked for a GUI launch.
+        /// </summary>
+        internal static bool AppliesStagedUpdate(string[] args, Func<bool> anotherCopyRunning) =>
+            IsGuiLaunch(args) && !anotherCopyRunning();
+
+        private static bool IsGuiLaunch(string[] args) =>
+            FindCommand(args) == null && !args.Contains("--help") && !args.Contains("-h") && !args.Contains("--version");
 
         // Options that consume the following argument as their value - anything here must be skipped
         // over (both the flag and its value) when scanning for the subcommand, or e.g.

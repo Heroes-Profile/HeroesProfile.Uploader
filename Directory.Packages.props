@@ -14,9 +14,9 @@
   </ItemGroup>
 
   <ItemGroup Label="Desktop app">
-    <PackageVersion Include="Avalonia" Version="12.1.5" />
-    <PackageVersion Include="Avalonia.Desktop" Version="12.1.5" />
-    <PackageVersion Include="Avalonia.Themes.Simple" Version="12.1.5" />
+    <PackageVersion Include="Avalonia" Version="12.1.6" />
+    <PackageVersion Include="Avalonia.Desktop" Version="12.1.6" />
+    <PackageVersion Include="Avalonia.Themes.Simple" Version="12.1.6" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <!-- PNG for the rank reader (RankCapture); the version Avalonia ships, so the app carries one copy -->
     <PackageVersion Include="SkiaSharp" Version="3.119.4" />

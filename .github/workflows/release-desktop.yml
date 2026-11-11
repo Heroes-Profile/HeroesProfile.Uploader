@@ -336,7 +336,7 @@ jobs:
           if [ "$SIGN_MACOS" = "true" ]; then
             args+=(--signAppIdentity "Developer ID Application: $MACOS_PUBLISHER ($TEAM_ID)"
                    --signInstallIdentity "Developer ID Installer: $MACOS_PUBLISHER ($TEAM_ID)"
-                   --signEntitlements packaging/macos/entitlements.plist
+                   --signEntitlements packaging/macos/HeroesProfileUploader.entitlements
                    --notaryProfile heroesprofile-notary --keychain "$KEYCHAIN")
           fi
           dotnet vpk pack "${args[@]}"

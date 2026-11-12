@@ -114,7 +114,8 @@ public class ManagerTests
         try {
             var path = Path.Combine(dir.FullName, "replay.server.battlelobby");
             File.WriteAllBytes(path, new byte[1000]);
-            var manager = new Manager(new NoStorage()) { LiveFileSettleTime = TimeSpan.FromMilliseconds(300) };
+            // Well over the writer's 100ms gaps: a stalled CI runner once let a 300ms settle time pass mid-write.
+            var manager = new Manager(new NoStorage()) { LiveFileSettleTime = TimeSpan.FromMilliseconds(1000) };
 
             var cancel = TestContext.Current.CancellationToken;
             var writer = Task.Run(async () => {

@@ -298,11 +298,16 @@ jobs:
           keychain="$RUNNER_TEMP/signing.keychain-db"
           password=$(openssl rand -hex 16)
           security create-keychain -p "$password" "$keychain"
-          security set-keychain-settings -lut 3600 "$keychain"
+          # No auto-lock: notarizing can take hours, and a locked keychain makes the .pkg signing wait on a
+          # password prompt nobody can answer. The keychain is deleted at the end of the job anyway.
+          security set-keychain-settings "$keychain"
           security unlock-keychain -p "$password" "$keychain"
           for p12 in "$CERTIFICATES_P12" "$INSTALLER_P12"; do
             echo "$p12" | base64 --decode > "$RUNNER_TEMP/certificates.p12"
-            security import "$RUNNER_TEMP/certificates.p12" -k "$keychain" -P "$CERTIFICATES_PASSWORD" -T /usr/bin/codesign -T /usr/bin/productsign
+            # vpk signs the app with codesign and the .pkg with productbuild; any tool not listed here gets
+            # an "allow access" prompt instead, which hangs the job.
+            security import "$RUNNER_TEMP/certificates.p12" -k "$keychain" -P "$CERTIFICATES_PASSWORD" \
+              -T /usr/bin/codesign -T /usr/bin/productsign -T /usr/bin/productbuild -T /usr/bin/pkgbuild
             rm "$RUNNER_TEMP/certificates.p12"
           done
           security set-key-partition-list -S apple-tool:,apple: -s -k "$password" "$keychain" > /dev/null
@@ -314,6 +319,8 @@ jobs:
           echo "KEYCHAIN=$keychain" >> "$GITHUB_ENV"
 
       - name: Pack
+        # Notarizing has taken up to ~2.5 hours; anything past this is a hang, not Apple being slow.
+        timeout-minutes: 240
         env:
           TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
         run: |

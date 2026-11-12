@@ -87,5 +87,5 @@ need to download it.
 The Windows builds are code-signed by Skill Tree Development LLC, the company behind Heroes Profile.
 The Linux downloads are covered by `SHA256SUMS`, which is signed with our release key (`SHA256SUMS.asc`).
 
-The Mac builds aren't signed yet, because we're still waiting on Apple. Until then macOS warns you the
-first time you open one. The [install instructions](INSTALL_URL) explain how to get past that.
+The Mac builds are signed by Skill Tree Development, LLC and notarized by Apple, so macOS opens them
+without a warning.

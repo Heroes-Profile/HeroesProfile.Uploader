@@ -3,9 +3,8 @@
 The uploader is one app for Windows, macOS and Linux. Download it from the
 [latest release](https://github.com/Heroes-Profile/HeroesProfile.Uploader/releases/latest).
 
-The Windows builds are code-signed by Skill Tree Development LLC, and the Linux downloads come with a
-signed `SHA256SUMS`. The Mac builds aren't signed yet while we wait on Apple, so macOS warns you the
-first time you open one; the macOS steps below say how to get past that.
+The Windows and Mac builds are code-signed by Skill Tree Development LLC (the Mac ones are also
+notarized by Apple), and the Linux downloads come with a signed `SHA256SUMS`.
 
 Installed copies update themselves: when an update is ready you'll see a banner with **Restart now**.
 
@@ -34,9 +33,7 @@ To uninstall, use **Settings → Apps** in Windows. Your settings and upload his
 1. Download the macOS installer for your Mac:
    - **Apple Silicon** (M1 and later): the file with **`osx-arm64`** in its name.
    - **Intel**: the file with **`osx-x64`** in its name.
-2. Because it isn't signed yet (we're waiting on Apple), double-clicking shows "can't be opened". Instead:
-   - right-click it and choose **Open**, then **Open** again; or
-   - open **System Settings → Privacy & Security** and click **Open Anyway**.
+2. Double-click it and follow the installer.
 3. Heroes of the Storm's replays are found automatically
    (`~/Library/Application Support/Blizzard/Heroes of the Storm/Accounts`).
 

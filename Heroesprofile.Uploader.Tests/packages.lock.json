@@ -327,7 +327,7 @@
           "Avalonia.Themes.Simple": "[12.1.6, )",
           "CommunityToolkit.Mvvm": "[8.4.2, )",
           "Heroesprofile.Uploader.Common": "[1.0.4, )",
-          "System.Security.Cryptography.ProtectedData": "[10.0.14, )",
+          "System.Security.Cryptography.ProtectedData": "[11.0.0, )",
           "Velopack": "[1.2.161, )"
         }
       },
@@ -420,9 +420,9 @@
       },
       "System.Security.Cryptography.ProtectedData": {
         "type": "CentralTransitive",
-        "requested": "[10.0.14, )",
-        "resolved": "10.0.14",
-        "contentHash": "UuaBUHgmtc9h6CMxaQqFDDJxkS5JVy7XEB+DbtCvD68GFcVM9/AccuNwFpARx8nwCnvjaxzoOBjG3gPz32P1Eg=="
+        "requested": "[11.0.0, )",
+        "resolved": "11.0.0",
+        "contentHash": "iS9iyAMwLDPFBzTdcREDkzRBYmwy7aENYl7EXxAvnNJNCbl7+UVRgJfWaVLtVjSeDmT3JIItgGODmuAPljXFww=="
       },
       "Velopack": {
         "type": "CentralTransitive",

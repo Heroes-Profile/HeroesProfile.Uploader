@@ -14,9 +14,9 @@
       },
       "SkiaSharp.NativeAssets.Linux": {
         "type": "Direct",
-        "requested": "[3.119.4, )",
-        "resolved": "3.119.4",
-        "contentHash": "UAyVzbqNfZsZbKbzj68zXLyUyF/SbTKmzTfOO6qDu++dtIUMMTzPBe8oOuzU/DiewpfKoUUlOSsJmqWc6blxBw=="
+        "requested": "[4.156.1, )",
+        "resolved": "4.156.1",
+        "contentHash": "l9GWuJzlDd+xZ4gXahlsoDYI0oZkhmibA9ZxMOxJO1uKmDYGlQA3DFkUfLH1ksobGhuVLD4cUbQff3G43XcD1g=="
       },
       "xunit.v3": {
         "type": "Direct",
@@ -257,9 +257,9 @@
       },
       "SkiaSharp.NativeAssets.Linux": {
         "type": "Direct",
-        "requested": "[3.119.4, )",
-        "resolved": "3.119.4",
-        "contentHash": "UAyVzbqNfZsZbKbzj68zXLyUyF/SbTKmzTfOO6qDu++dtIUMMTzPBe8oOuzU/DiewpfKoUUlOSsJmqWc6blxBw=="
+        "requested": "[4.156.1, )",
+        "resolved": "4.156.1",
+        "contentHash": "l9GWuJzlDd+xZ4gXahlsoDYI0oZkhmibA9ZxMOxJO1uKmDYGlQA3DFkUfLH1ksobGhuVLD4cUbQff3G43XcD1g=="
       },
       "xunit.v3": {
         "type": "Direct",

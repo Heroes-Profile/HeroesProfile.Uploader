@@ -77,7 +77,7 @@
         "type": "Project",
         "dependencies": {
           "Heroes.ReplayParser": "[1.0.0, )",
-          "NLog": "[6.2.1, )",
+          "NLog": "[6.2.2, )",
           "Newtonsoft.Json": "[13.0.4, )",
           "Nito.AsyncEx.Coordination": "[5.1.2, )"
         }
@@ -100,9 +100,9 @@
       },
       "NLog": {
         "type": "CentralTransitive",
-        "requested": "[6.2.1, )",
-        "resolved": "6.2.1",
-        "contentHash": "fTGNuJyzkgDc1TBEGXF+FMT4b6kB7gygkSN3dLei2Ziiwx/rugXA+OyyFWZ60P1G/+SzzSKiWHlQ4OklC8AgRg=="
+        "requested": "[6.2.2, )",
+        "resolved": "6.2.2",
+        "contentHash": "Hoxigm/d7wY/+y4y2ILF2ERSojhxgLd8ASBZQbrnm52jB5NHkF4AWW5tZzMxJ/HTOp0bLwClGOokrA31iSXuMA=="
       }
     },
     "net10.0-windows10.0.22621": {
@@ -175,7 +175,7 @@
         "type": "Project",
         "dependencies": {
           "Heroes.ReplayParser": "[1.0.0, )",
-          "NLog": "[6.2.1, )",
+          "NLog": "[6.2.2, )",
           "Newtonsoft.Json": "[13.0.4, )",
           "Nito.AsyncEx.Coordination": "[5.1.2, )"
         }
@@ -198,9 +198,9 @@
       },
       "NLog": {
         "type": "CentralTransitive",
-        "requested": "[6.2.1, )",
-        "resolved": "6.2.1",
-        "contentHash": "fTGNuJyzkgDc1TBEGXF+FMT4b6kB7gygkSN3dLei2Ziiwx/rugXA+OyyFWZ60P1G/+SzzSKiWHlQ4OklC8AgRg=="
+        "requested": "[6.2.2, )",
+        "resolved": "6.2.2",
+        "contentHash": "Hoxigm/d7wY/+y4y2ILF2ERSojhxgLd8ASBZQbrnm52jB5NHkF4AWW5tZzMxJ/HTOp0bLwClGOokrA31iSXuMA=="
       }
     }
   }

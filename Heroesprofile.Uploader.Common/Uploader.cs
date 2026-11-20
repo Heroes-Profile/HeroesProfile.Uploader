@@ -94,6 +94,9 @@ namespace Heroesprofile.Uploader.Common
                 _log.Debug($"File {file} marked as duplicate");
                 SetReplayId(file, duplicate.ReplayId);
                 file.UploadStatus = UploadStatus.Duplicate;
+                // Someone else in the match (or another uploader) got it there first - the game just
+                // ended all the same, so the postmatch page is as wanted as after an upload of our own.
+                StartPostMatch(file.Filename, duplicate.ReplayId, PostMatchPage);
             } else {
                 var (status, replayId) = await UploadFile(replay_results, file.Fingerprint, file.Filename, PostMatchPage);
                 // Before the status: the status change is what the list refreshes on
@@ -148,27 +151,7 @@ namespace Heroesprofile.Uploader.Common
 
                 UploadResult result = UploadResult.FromJson(response);
 
-                try {
-                    int replayID = result.ReplayId;
-                    var fileAge = DateTime.Now - File.GetLastWriteTime(file);
-                    _log.Debug($"Postmatch check: replayID={replayID}, PostMatchPage={PostMatchPage}, fileAge={fileAge.TotalSeconds:F1}s");
-                    if (fileAge <= TimeSpan.FromSeconds(60) && PostMatchPage && replayID != 0) {
-                        // In the background: the site can take a while to parse the replay, and the
-                        // upload queue shouldn't wait on it
-                        Task.Run(async () => {
-                            try {
-                                await postMatchAnalysis(replayID);
-                            }
-                            catch (Exception ex) {
-                                _log.Error(ex, "Postmatch failed");
-                            }
-                        }).Forget();
-                    }
-                }
-                catch (Exception ex) {
-                    _log.Error(ex, "Postmatch failed");
-                }
-
+                StartPostMatch(file, result.ReplayId, PostMatchPage);
 
                 if (!string.IsNullOrEmpty(result.Status)) {
                     if (Enum.TryParse<UploadStatus>((string)result.Status, out UploadStatus status)) {
@@ -188,6 +171,33 @@ namespace Heroesprofile.Uploader.Common
             catch (Exception ex) when (IsNetworkFailure(ex)) {
                 _log.Warn(ex, $"Error uploading file '{file}'");
                 return (UploadStatus.UploadError, 0);
+            }
+        }
+
+        /// <summary>
+        /// Open the replay's match page once the site has parsed it - if the setting is on, the site gave
+        /// an id, and the replay is from a game that just ended (not one found in a folder scan).
+        /// </summary>
+        private void StartPostMatch(string file, int replayID, bool PostMatchPage)
+        {
+            try {
+                var fileAge = DateTime.Now - File.GetLastWriteTime(file);
+                _log.Debug($"Postmatch check: replayID={replayID}, PostMatchPage={PostMatchPage}, fileAge={fileAge.TotalSeconds:F1}s");
+                if (fileAge <= TimeSpan.FromSeconds(60) && PostMatchPage && replayID != 0) {
+                    // In the background: the site can take a while to parse the replay, and the
+                    // upload queue shouldn't wait on it
+                    Task.Run(async () => {
+                        try {
+                            await postMatchAnalysis(replayID);
+                        }
+                        catch (Exception ex) {
+                            _log.Error(ex, "Postmatch failed");
+                        }
+                    }).Forget();
+                }
+            }
+            catch (Exception ex) {
+                _log.Error(ex, "Postmatch failed");
             }
         }
 

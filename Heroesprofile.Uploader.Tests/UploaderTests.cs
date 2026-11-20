@@ -157,6 +157,40 @@ public sealed class UploaderTests : IDisposable
     }
 
     [Fact]
+    public async Task A_duplicate_of_a_game_that_just_ended_still_gets_its_postmatch_page()
+    {
+        // Issue 103: a teammate's uploader got the replay there first. Never "true" - that would open a real browser.
+        var server = new FakeServer(new[] { Json("""{ "exists": true, "replayID": 456 }""") }
+            .Concat(Enumerable.Repeat(Json("false"), 50)).ToArray());
+        var uploader = UploaderFor(server);
+        uploader.PostMatchWaitTime = TimeSpan.FromMilliseconds(300);
+        uploader.PostMatchPollInterval = TimeSpan.FromMilliseconds(50);
+        var file = Replay();
+
+        await uploader.Upload(null!, file, PostMatchPage: true);
+
+        Assert.Equal(UploadStatus.Duplicate, file.UploadStatus);
+        await Task.Delay(uploader.PostMatchWaitTime + TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
+        var checks = server.Requests.ToArray().Where(r => r.Uri.AbsolutePath.EndsWith("/replays/parsed")).ToList();
+        Assert.NotEmpty(checks);
+        Assert.All(checks, r => Assert.Contains("replayID=456", r.Uri.Query));
+    }
+
+    [Fact]
+    public async Task An_old_duplicate_from_a_folder_scan_does_not_open_a_postmatch_page()
+    {
+        File.SetLastWriteTime(_replay, DateTime.Now.AddHours(-1));
+        var server = new FakeServer(Json("""{ "exists": true, "replayID": 456 }"""));
+        var uploader = UploaderFor(server);
+        uploader.PostMatchPollInterval = TimeSpan.FromMilliseconds(50);
+
+        await uploader.Upload(null!, Replay(), PostMatchPage: true);
+
+        await Task.Delay(200, TestContext.Current.CancellationToken);
+        Assert.Single(server.Requests);
+    }
+
+    [Fact]
     public async Task An_upload_keeps_the_replays_id_for_its_match_page()
     {
         var server = new FakeServer(Json("""{ "exists": false }"""),

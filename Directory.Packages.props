@@ -10,7 +10,7 @@
   <ItemGroup Label="Common">
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageVersion Include="Nito.AsyncEx.Coordination" Version="5.1.2" />
-    <PackageVersion Include="NLog" Version="6.2.1" />
+    <PackageVersion Include="NLog" Version="6.2.2" />
   </ItemGroup>
 
   <ItemGroup Label="Desktop app">
@@ -22,13 +22,13 @@
     <PackageVersion Include="SkiaSharp" Version="3.119.4" />
     <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="3.119.4" />
     <!-- DPAPI, for the Twitch key on Windows - the same protection the WPF app used -->
-    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="10.0.14" />
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="10.0.15" />
     <!-- Installs and updates on all three OSes; keep in step with vpk in dotnet-tools.json -->
     <PackageVersion Include="Velopack" Version="1.2.161" />
   </ItemGroup>
 
   <ItemGroup Label="Tests">
-    <PackageVersion Include="xunit.v3" Version="4.0.2" />
+    <PackageVersion Include="xunit.v3" Version="4.0.3" />
   </ItemGroup>
 
   <ItemGroup Label="Known, reviewed advisories">
